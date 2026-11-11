@@ -3,6 +3,7 @@ package com.areslib.codegen
 import com.areslib.subsystem.SubsystemDocument
 import com.areslib.subsystem.SubsystemHardwareKind
 import com.areslib.subsystem.SubsystemHomingComparison
+import com.areslib.subsystem.SubsystemMeasurementSource
 import com.areslib.subsystem.SubsystemValueType
 
 /** Shared source fragments used by physical and mock IO renderers. */
@@ -57,16 +58,29 @@ override fun latchOutputFault() {
         val homing = document.safety.homing
         val actuator = document.hardware.first { it.hardwareId == homing.actuatorId }
         val searchOutput = requireNotNull(homing.searchOutput).kotlinDouble()
-        val write = if (isFtc) {
-            "requireNotNull(${actuator.hardwareId}) { ${("Missing ${actuator.displayName}").quoted()} }.power = ($searchOutput / 12.0).coerceIn(-1.0, 1.0)"
-        } else {
-            "${actuator.hardwareId}.setVoltage($searchOutput)"
+        val targets = listOf(actuator to searchOutput) + document.followersOf(actuator.hardwareId).map { follower ->
+            follower to follower.following!!.transformedExpression(searchOutput)
+        }
+        val write = targets.joinToString("\n                        ") { (target, expression) ->
+            val bounded = "($expression).coerceIn(-12.0, 12.0)"
+            val hwWrite = if (isFtc) {
+                "requireNotNull(${target.hardwareId}) { ${("Missing ${target.displayName}").quoted()} }.power = (${target.hardwareId}Command / 12.0).coerceIn(-1.0, 1.0)"
+            } else {
+                "${target.hardwareId}.setVoltage(${target.hardwareId}Command)"
+            }
+            "${target.hardwareId}Command = $bounded\n                        $hwWrite"
         }
         val zero = if (actuator.kind == SubsystemHardwareKind.MOTOR) {
-            if (isFtc) {
-                "requireNotNull(${actuator.hardwareId}) { ${("Missing ${actuator.displayName}").quoted()} }.mode = com.qualcomm.robotcore.hardware.DcMotor.RunMode.STOP_AND_RESET_ENCODER"
-            } else {
-                "check(${actuator.hardwareId}.setPosition(${homing.zeroPosition.kotlinDouble()}).isOK) { \"Failed to establish home position\" }"
+            targets.joinToString("\n                        ") { (target, _) ->
+                if (isFtc) {
+                    val motorVar = "${target.hardwareId}HomingMotor"
+                    "val $motorVar = requireNotNull(${target.hardwareId}) { ${("Missing ${target.displayName}").quoted()} }\n" +
+                        "                        $motorVar.mode = com.qualcomm.robotcore.hardware.DcMotor.RunMode.STOP_AND_RESET_ENCODER\n" +
+                        "                        $motorVar.mode = com.qualcomm.robotcore.hardware.DcMotor.RunMode.RUN_WITHOUT_ENCODER\n" +
+                        "                        ${target.hardwareId}HomeOffsetNative = ${homing.zeroPosition.kotlinDouble()}"
+                } else {
+                    "check(${target.hardwareId}.setPosition(${homing.zeroPosition.kotlinDouble()}).isOK) { \"Failed to establish home position\" }"
+                }
             }
         } else "// This homing strategy does not reset an encoder."
         return """
@@ -77,6 +91,7 @@ override fun latchOutputFault() {
                         $write
                         true
                     } catch (_: Exception) {
+                        safe()
                         false
                     }
                 }
@@ -117,17 +132,33 @@ override fun latchOutputFault() {
         val homing = document.safety.homing
         val actuator = document.hardware.first { it.hardwareId == homing.actuatorId }
         val output = requireNotNull(homing.searchOutput).kotlinDouble()
+        val targets = listOf(actuator to output) + document.followersOf(actuator.hardwareId).map { follower ->
+            follower to follower.following!!.transformedExpression(output)
+        }
+        val writes = targets.joinToString("\n                    ") { (target, expression) ->
+            val applied = "(${target.invertedExpression(expression)}).coerceIn(-12.0, 12.0)"
+            "${target.hardwareId}Command = $applied\n                    ${target.hardwareId}SimSignal.publish(${target.hardwareId}Command)"
+        }
+        val zeroPositionReset = targets.flatMap { (target, _) ->
+            target.measurements.filter { it.source == SubsystemMeasurementSource.MOTOR_POSITION_NATIVE }
+        }.distinctBy { it.fieldId }.mapNotNull { measurement ->
+            val field = document.field(measurement.fieldId) ?: return@mapNotNull null
+            if (field.type == SubsystemValueType.DOUBLE) {
+                "${field.fieldId} = ${homing.zeroPosition.kotlinDouble()} * ${measurement.scale.kotlinDouble()} + ${measurement.offset.kotlinDouble()}"
+            } else null
+        }.joinToString("\n                    ")
         return """
                 override fun commandHoming(): Boolean {
                     if (!configurationHealthy || !feedbackValid || !currentReadingValid ||
                         outputFaultLatched || homingFaultLatched || closed) return false
                     if (failNextWrite) { failNextWrite = false; return false }
-                    ${actuator.hardwareId}Command = $output
+                    $writes
                     return true
                 }
 
                 override fun establishHome(): Boolean {
                     if (!homingConditionMet || !recoverWithNeutral()) return false
+                    ${if (zeroPositionReset.isBlank()) "// No native motor position fields declared." else zeroPositionReset}
                     homed = true
                     homingFaultLatched = false
                     return true

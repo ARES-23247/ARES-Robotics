@@ -293,12 +293,14 @@ class ServiceRegistry {
 
     /** Releases every project-scoped runtime owner before another workspace becomes observable. */
     internal suspend fun releaseWorkspaceOwnership() = withContext(NonCancellable) {
-        keyboardDriveState.disarm()
-        nt4ClientService.stop()
-        phoenixDiagnosticsService.stop()
-        projectBuildService.killActiveBuildAndJoin()
-        robotDeploymentService.cancelAndJoin()
-        simulatorProcessService.stopAndJoin()
+        if (lazyFieldInitialized(::keyboardDriveState)) keyboardDriveState.disarm()
+        if (lazyFieldInitialized(::xrpLinkService)) xrpLinkService.stop()
+        if (lazyFieldInitialized(::nt4ClientService)) nt4ClientService.stop()
+        if (lazyFieldInitialized(::replayEngineService)) replayEngineService.clearSession()
+        if (lazyFieldInitialized(::phoenixDiagnosticsService)) phoenixDiagnosticsService.stop()
+        if (lazyFieldInitialized(::projectBuildService)) projectBuildService.killActiveBuildAndJoin()
+        if (lazyFieldInitialized(::robotDeploymentService)) robotDeploymentService.cancelAndJoin()
+        if (lazyFieldInitialized(::simulatorProcessService)) simulatorProcessService.stopAndJoin()
     }
 
     /** Tears down services that hold coroutine scopes or background jobs, in dependency order. */
@@ -316,7 +318,7 @@ class ServiceRegistry {
             integrationCenterService.close()
         }
         if (lazyFieldInitialized(::targetScannerService)) {
-            targetScannerService.stopScanning()
+            targetScannerService.disposeAndJoin()
         }
         // Native summary queries can delay import cancellation beyond the desktop watchdog.
         // Stop owned processes first so that delay cannot orphan a running simulator. Imports

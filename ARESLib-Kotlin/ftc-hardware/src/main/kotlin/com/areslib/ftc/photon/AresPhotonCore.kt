@@ -62,14 +62,12 @@ object AresPhotonCore : OpModeManagerNotifier.Notifications {
     val isActive = AtomicBoolean(false)
 
     private var modules: List<LynxModule> = emptyList()
-    private var syncLock: Any? = null
-
     private val messageSync = Any()
 
-    private var robotUsbDevice: RobotUsbDevice? = null
     private val usbDeviceMap = HashMap<LynxModule, RobotUsbDevice>()
+    private val lynxUsbDeviceMap = HashMap<AresPhotonLynxModule, LynxUsbDeviceImpl>()
+    private val syncLockMap = HashMap<AresPhotonLynxModule, Any>()
     private val originalModules = HashMap<AresPhotonLynxModule, LynxModule>()
-    private var lastUsbDevice: LynxUsbDeviceImpl? = null
 
     /** Control Hub [LynxModule] reference (if present on embedded serial number). */
     var CONTROL_HUB: LynxModule? = null
@@ -77,6 +75,7 @@ object AresPhotonCore : OpModeManagerNotifier.Notifications {
     var EXPANSION_HUB: LynxModule? = null
 
     /** Toggle controlling whether servo PWM write commands are parallelized alongside motor power commands. */
+    @Volatile
     var PARALLELIZE_SERVOS = false
 
     private var opModeManager: OpModeManagerImpl? = null
@@ -180,9 +179,9 @@ object AresPhotonCore : OpModeManagerNotifier.Notifications {
                 }
 
                 val bytes = datagram.toByteArray()
-
-                if (syncLock != null) {
-                    synchronized(syncLock!!) {
+                val moduleSyncLock = syncLockMap[photonModule]
+                if (moduleSyncLock != null) {
+                    synchronized(moduleSyncLock) {
                         mappedUsbDevice.write(bytes)
                     }
                 } else {
@@ -280,7 +279,6 @@ object AresPhotonCore : OpModeManagerNotifier.Notifications {
             }
         }
 
-        var usbDevice: LynxUsbDeviceImpl? = null
         for (s in moduleNames) {
             val module = map.get(LynxModule::class.java, s)
             
@@ -319,53 +317,49 @@ object AresPhotonCore : OpModeManagerNotifier.Notifications {
                     EXPANSION_HUB = targetModule
                 }
 
-                if (targetModule.isParent) {
-                    val f1 = AresPhotonReflectionUtils.getField(targetModule.javaClass, "lynxUsbDevice")
-                    val tmp = f1?.get(targetModule) as? LynxUsbDevice
-                    if (tmp != null) {
-                        if (tmp is LynxUsbDeviceDelegate) {
-                            val tmp2 = AresPhotonReflectionUtils.getField(LynxUsbDeviceDelegate::class.java, "delegate")
-                            tmp2?.isAccessible = true
-                            usbDevice = tmp2?.get(tmp) as? LynxUsbDeviceImpl
-                        } else {
-                            usbDevice = tmp as? LynxUsbDeviceImpl
-                        }
-                        if (usbDevice != null) {
-                            val f2 = AresPhotonReflectionUtils.getField(usbDevice.javaClass.superclass, "robotUsbDevice")
-                            f2?.isAccessible = true
-                            robotUsbDevice = f2?.get(usbDevice) as? RobotUsbDevice
-                            
-                            val f3 = AresPhotonReflectionUtils.getField(usbDevice.javaClass, "engageLock")
-                            f3?.isAccessible = true
-                            syncLock = f3?.get(usbDevice)
-
-                            if (robotUsbDevice != null) {
-                                usbDeviceMap[targetModule] = robotUsbDevice!!
-                            }
-                            lastUsbDevice = usbDevice
-                        }
+                val f1 = AresPhotonReflectionUtils.getField(targetModule.javaClass, "lynxUsbDevice")
+                val tmp = f1?.get(targetModule) as? LynxUsbDevice
+                val usbDevice = when (tmp) {
+                    is LynxUsbDeviceDelegate -> {
+                        val tmp2 = AresPhotonReflectionUtils.getField(LynxUsbDeviceDelegate::class.java, "delegate")
+                        tmp2?.isAccessible = true
+                        tmp2?.get(tmp) as? LynxUsbDeviceImpl
                     }
+                    else -> tmp as? LynxUsbDeviceImpl
+                }
+                if (usbDevice != null) {
+                    val f2 = AresPhotonReflectionUtils.getField(usbDevice.javaClass.superclass, "robotUsbDevice")
+                    f2?.isAccessible = true
+                    val moduleRobotUsb = f2?.get(usbDevice) as? RobotUsbDevice
+                    val f3 = AresPhotonReflectionUtils.getField(usbDevice.javaClass, "engageLock")
+                    f3?.isAccessible = true
+                    val moduleEngageLock = f3?.get(usbDevice)
+                    if (moduleRobotUsb != null) {
+                        usbDeviceMap[targetModule] = moduleRobotUsb
+                    }
+                    if (moduleEngageLock != null) {
+                        syncLockMap[targetModule] = moduleEngageLock
+                    }
+                    lynxUsbDeviceMap[targetModule] = usbDevice
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
             }
         }
 
-        if (usbDevice != null) {
-            for (m in replacements.keys) {
-                usbDevice.removeConfiguredModule(m)
-                try {
-                    @Suppress("UNCHECKED_CAST")
-                    val knownModules = AresPhotonReflectionUtils.getField(usbDevice.javaClass, "knownModules")?.get(usbDevice) as? ConcurrentHashMap<Int, LynxModule>
-                    if (knownModules != null) {
-                        synchronized(knownModules) {
-                            val photonLynxModule = replacements[m]!!
-                            knownModules[photonLynxModule.moduleAddress] = photonLynxModule
-                        }
+        for ((original, photonLynxModule) in replacements) {
+            val usbDevice = lynxUsbDeviceMap[photonLynxModule] ?: continue
+            usbDevice.removeConfiguredModule(original)
+            try {
+                @Suppress("UNCHECKED_CAST")
+                val knownModules = AresPhotonReflectionUtils.getField(usbDevice.javaClass, "knownModules")?.get(usbDevice) as? ConcurrentHashMap<Int, LynxModule>
+                if (knownModules != null) {
+                    synchronized(knownModules) {
+                        knownModules[photonLynxModule.moduleAddress] = photonLynxModule
                     }
-                } catch (e: Exception) {
-                    e.printStackTrace()
                 }
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
         }
 
@@ -430,25 +424,22 @@ object AresPhotonCore : OpModeManagerNotifier.Notifications {
         disable()
         RobotStatusTracker.ftcPhotonActive = false
         synchronized(messageSync) {
-            val usbDevice = lastUsbDevice
-            if (usbDevice != null) {
+            for ((photon, original) in originalModules) {
+                val usbDevice = lynxUsbDeviceMap[photon] ?: continue
+                usbDevice.removeConfiguredModule(photon)
                 @Suppress("UNCHECKED_CAST")
                 val knownModules = AresPhotonReflectionUtils.getField(usbDevice.javaClass, "knownModules")
                     ?.get(usbDevice) as? ConcurrentHashMap<Int, LynxModule>
                 if (knownModules != null) {
                     synchronized(knownModules) {
-                        for ((photon, original) in originalModules) {
-                            usbDevice.removeConfiguredModule(photon)
-                            knownModules[original.moduleAddress] = original
-                        }
+                        knownModules[original.moduleAddress] = original
                     }
                 }
             }
             originalModules.clear()
-            lastUsbDevice = null
+            lynxUsbDeviceMap.clear()
             usbDeviceMap.clear()
-            robotUsbDevice = null
-            syncLock = null
+            syncLockMap.clear()
             CONTROL_HUB = null
             EXPANSION_HUB = null
         }

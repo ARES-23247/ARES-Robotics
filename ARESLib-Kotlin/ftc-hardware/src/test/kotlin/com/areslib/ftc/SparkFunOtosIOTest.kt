@@ -56,7 +56,17 @@ class SparkFunOtosIOTest {
         driver.setPosition(SparkFunOTOS.Pose2D(100.0, 0.0, 0.0))
         val sample2 = otosIO.getPoseUpdate()
         assertEquals(SparkFunOtosIO.HealthStatus.IMPLAUSIBLE, otosIO.healthStatus)
-        // Stays on last valid sample
+        // Stays on last valid sample and marks motion untrusted
         assertEquals(sample1.xMeters, sample2.xMeters, 1e-6)
+        assertFalse(sample2.motionMeasurementsValid)
+        assertEquals(0L, sample2.timestampMs)
+        assertEquals(0.0, sample2.xVelocityMetersPerSecond)
+    }
+
+    @Test
+    fun testNonfiniteConstructorParametersRejected() {
+        val driver = SparkFunOTOS()
+        assertThrows(IllegalArgumentException::class.java) { SparkFunOtosIO(driver, xOffsetMeters = Double.NaN) }
+        assertThrows(IllegalArgumentException::class.java) { SparkFunOtosIO(driver, linearScalar = Double.POSITIVE_INFINITY) }
     }
 }

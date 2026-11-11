@@ -939,6 +939,82 @@ class SubsystemKotlinGeneratorTest {
         assertTrue(io.contains("solenoidCommand = (requested).coerceIn(0.0, 1.0)"))
         assertTrue(io.contains("solenoid.set(solenoidCommand >= 0.5)"))
         assertTrue(mock.contains("solenoidCommand = 0.0"))
+
+        val invertedClaw = document.copy(
+            hardware = document.hardware.map { it.copy(inverted = true) },
+        )
+        val invertedFiles = SubsystemKotlinGenerator.generate(
+            invertedClaw,
+            SubsystemKotlinCodegenTarget(SubsystemPlatform.FRC, "com.example.generated.subsystems"),
+        )
+        val invertedIo = invertedFiles.single { it.relativePath.endsWith("FrcClawIO.kt") }.content
+        val invertedMock = invertedFiles.single { it.relativePath.endsWith("MockClawIO.kt") }.content
+        val invertedTest = invertedFiles.single { it.relativePath.endsWith("ClawGeneratedTest.kt") }.content
+        assertTrue(invertedIo.contains("solenoid.set((1.0 - (0.0)) >= 0.5)"))
+        assertTrue(invertedIo.contains("ownDevice { Solenoid(1, PneumaticsModuleType.REVPH, 0) }"))
+        assertTrue(invertedMock.contains("solenoidCommand: Double = 1.0 - (0.0)"))
+        assertTrue(invertedTest.contains("assertEquals(1.0 - (0.0), io.solenoidCommand, 0.0)"))
+    }
+
+    @Test
+    fun `FTC and FRC homed dual motor generation restores run mode applies home offset and drives followers`() {
+        fun homedDualMotor(platform: SubsystemPlatform) = subsystem("homed-lift", "HomedLift", platform) {
+            val target = state.double("target", "Target", SubsystemFieldRole.TARGET, 0.0, "m", 0.0, 1.0)
+            val position = state.double("position", "Position", SubsystemFieldRole.MEASUREMENT, 0.0, "m")
+            val homeSwitch = state.boolean("homeSwitch", "Home switch", SubsystemFieldRole.MEASUREMENT, false)
+            val leader = hardware.motor("leader", "Leader") {
+                if (platform == SubsystemPlatform.FTC) hardwareMapName = "leader" else { canId = 10; canBus = "rio" }
+                measurement(position, com.areslib.subsystem.SubsystemMeasurementSource.MOTOR_POSITION_NATIVE, scale = 0.01)
+            }
+            hardware.motor("follower", "Follower") {
+                if (platform == SubsystemPlatform.FTC) hardwareMapName = "follower" else { canId = 11; canBus = "rio" }
+                follow(leader, SubsystemFollowerTransform.INVERTED)
+            }
+            hardware.digitalInput("limit", "Home limit") {
+                if (platform == SubsystemPlatform.FTC) hardwareMapName = "limit" else channel = 2
+                measurement(homeSwitch)
+            }
+            control.positionPid("position", "Position", leader, target, position) { kP = 2.0 }
+        }.let { doc ->
+            doc.copy(
+                safety = doc.safety.copy(
+                    homing = com.areslib.subsystem.SubsystemHomingDocument(
+                        method = com.areslib.subsystem.SubsystemHomingMethod.DIGITAL_SENSOR,
+                        actuatorId = "leader",
+                        searchOutput = -2.5,
+                        zeroPosition = 42.0,
+                        evidence = listOf(
+                            com.areslib.subsystem.SubsystemHomingEvidenceDocument(
+                                fieldId = "homeSwitch",
+                                comparison = com.areslib.subsystem.SubsystemHomingComparison.TRUE,
+                            )
+                        ),
+                    )
+                )
+            )
+        }
+
+        val ftcFiles = SubsystemKotlinGenerator.generate(
+            homedDualMotor(SubsystemPlatform.FTC),
+            SubsystemKotlinCodegenTarget(SubsystemPlatform.FTC, "org.example.subsystems"),
+        )
+        val ftcIo = ftcFiles.single { it.artifact == SubsystemArtifact.PLATFORM_IO }.content
+        val ftcMock = ftcFiles.single { it.artifact == SubsystemArtifact.MOCK_IO }.content
+        assertTrue(ftcIo.contains("RunMode.STOP_AND_RESET_ENCODER"))
+        assertTrue(ftcIo.contains("RunMode.RUN_WITHOUT_ENCODER"))
+        assertTrue(ftcIo.contains("leaderHomeOffsetNative = 42.0"))
+        assertTrue(ftcIo.contains("followerHomeOffsetNative = 42.0"))
+        assertTrue(ftcIo.contains("((leader?.currentPosition?.toDouble() ?: 0.0) + leaderHomeOffsetNative)"))
+        assertTrue(ftcIo.contains("followerCommand = (-(-2.5)).coerceIn(-12.0, 12.0)"))
+        assertTrue(ftcMock.contains("followerCommand = (-(-2.5)).coerceIn(-12.0, 12.0)"))
+        assertTrue(ftcMock.contains("position = 42.0 * 0.01 + 0.0"))
+
+        val frcIo = SubsystemKotlinGenerator.generate(
+            homedDualMotor(SubsystemPlatform.FRC),
+            SubsystemKotlinCodegenTarget(SubsystemPlatform.FRC, "com.example.subsystems"),
+        ).single { it.artifact == SubsystemArtifact.PLATFORM_IO }.content
+        assertTrue(frcIo.contains("leader.setPosition(42.0)"))
+        assertTrue(frcIo.contains("follower.setPosition(42.0)"))
     }
 
     @Test

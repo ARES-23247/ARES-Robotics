@@ -382,16 +382,41 @@ def replace_marker(path, value):
   f.write(value)
   f.flush()
  sync()
- os.rename(path+'.next',path)
+ getattr(os,'replace',os.rename)(path+'.next',path)
  sync()
+def entries(path):
+ if hasattr(os,'ilistdir'): return [(i[0],bool(i[1]&0x4000)) for i in os.ilistdir(path)]
+ return [(n,bool(os.stat(path+'/'+n)[0]&0x4000)) for n in os.listdir(path)]
+def rmtree(path):
+ for entry,is_dir in entries(path):
+  child=path+'/'+entry
+  if is_dir: rmtree(child)
+  else: os.remove(child)
+ os.rmdir(path)
 """ + f"next_slot={target}\n" + """try:
  current=read_slot('/ares_active_slot.txt')
 except (OSError, AssertionError, SyntaxError, ValueError):
  try: current=read_slot('/ares_active_slot.prev')
  except (OSError, AssertionError, SyntaxError, ValueError): current=None
+try:
+ prev=read_slot('/ares_active_slot.prev')
+except (OSError, AssertionError, SyntaxError, ValueError):
+ prev=None
 if current and current != next_slot:
  replace_marker('/ares_active_slot.prev',current)
+ prev=current
 replace_marker('/ares_active_slot.txt',next_slot)
+keep={next_slot}
+if prev: keep.add(prev)
+try:
+ for entry,is_dir in entries('/ares_slots'):
+  candidate='/ares_slots/'+entry
+  if is_dir and entry.startswith('slot-') and candidate not in keep:
+   try: rmtree(candidate)
+   except OSError: pass
+ sync()
+except OSError:
+ pass
 """
 
 

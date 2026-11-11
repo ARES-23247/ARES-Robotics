@@ -1059,6 +1059,7 @@ public final class com/areslib/ftc/hardware/OctoQuadFWv3 : com/qualcomm/robotcor
 	public fun <init> (Lcom/qualcomm/robotcore/hardware/I2cDeviceSynch;)V
 	public fun close ()V
 	public final fun copyLocalizerDataInto (Lcom/areslib/ftc/hardware/OctoQuadFWv3$LocalizerDataBlock;)V
+	public final fun copyLocalizerSnapshotInto (Lcom/areslib/ftc/hardware/OctoQuadFWv3$LocalizerDataBlock;)J
 	public final fun getCachedPosition (I)I
 	public final fun getCachedPulseWidth (I)I
 	public final fun getCachedVelocity (I)I
@@ -1160,6 +1161,8 @@ public final class com/areslib/ftc/hardware/SrsHubDigitalIO {
 public final class com/areslib/ftc/hardware/SrsHubDriver : com/qualcomm/robotcore/hardware/I2cDeviceSynchDevice, java/lang/AutoCloseable {
 	public fun <init> (Lcom/qualcomm/robotcore/hardware/I2cDeviceSynch;)V
 	public fun close ()V
+	public final fun copyI2cColorRgbaInto (I[I)V
+	public final fun copyI2cOdometryInto (I[D)J
 	public final fun copyVL53L5CXDistances (I[I)I
 	public final fun getAnalogVoltage (I)D
 	public fun getDeviceName ()Ljava/lang/String;

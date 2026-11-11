@@ -77,6 +77,12 @@ fun OnboardingScreen(
         contentScrollState.scrollTo(0)
     }
 
+    LaunchedEffect(state.currentStep, state.league) {
+        if (state.currentStep == OnboardingStep.REVIEW && !state.areBuildToolsCurrent && !state.isVerifyingJava) {
+            viewModel.handleIntent(OnboardingIntent.VerifyJava)
+        }
+    }
+
     LaunchedEffect(state.teamId, token) {
         if (token != null && state.teamId.isNotBlank()) {
             viewModel.handleIntent(OnboardingIntent.FetchCloudRobots(token))

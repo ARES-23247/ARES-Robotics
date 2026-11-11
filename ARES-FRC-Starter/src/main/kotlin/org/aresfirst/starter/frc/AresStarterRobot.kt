@@ -44,6 +44,8 @@ class AresStarterRobot internal constructor(
     private lateinit var autonomousRuntime: StarterFrcAutonomousRuntime
     private var studioSimulationBridge: FrcStudioSimulationBridge? = null
     private val simulation = StarterDriveSimulation()
+    private val simulatorPoseFrame = DoubleArray(10)
+    private var simulatorPoseSequence = 0L
     private var lastSimulationMs = 0L
     private var hasSimulationTimestamp = false
     private val neutralDrive = RobotAction.JoystickDriveIntent(0.0, 0.0, 0.0, isFieldCentric = true)
@@ -177,9 +179,14 @@ class AresStarterRobot internal constructor(
     }
 
     override fun simulationPeriodic() = runRobotCallback {
+        val wasEnabled = DriverStation.isEnabled()
         studioSimulationBridge?.update()
+        applyAlliance()
         // Bridge lease/mode changes take effect in this tick, before the next mode callback.
-        if (DriverStation.isDisabled()) clearDriveIntent()
+        if (DriverStation.isDisabled()) {
+            if (wasEnabled) generatedControls.cancelAll("Studio control lease expired")
+            clearDriveIntent()
+        }
         val nowMs = RobotClock.currentTimeMillis()
         val elapsedMs = nowMs - lastSimulationMs
         val dt = if (hasSimulationTimestamp && nowMs >= lastSimulationMs && elapsedMs > 0L) {
@@ -188,6 +195,20 @@ class AresStarterRobot internal constructor(
         lastSimulationMs = nowMs
         hasSimulationTimestamp = true
         robot.store.dispatch(simulation.step(robot.store.state, dt, nowMs))
+        val state = robot.store.state
+        val estimatedPose = state.drive.poseEstimator.estimatedPose
+        simulatorPoseFrame[0] = simulation.xMeters
+        simulatorPoseFrame[1] = simulation.yMeters
+        simulatorPoseFrame[2] = simulation.headingRadians
+        simulatorPoseFrame[3] = estimatedPose.x
+        simulatorPoseFrame[4] = estimatedPose.y
+        simulatorPoseFrame[5] = estimatedPose.heading.radians
+        simulatorPoseFrame[6] = state.drive.odometryX
+        simulatorPoseFrame[7] = state.drive.odometryY
+        simulatorPoseFrame[8] = state.drive.odometryHeading
+        simulatorPoseFrame[9] = simulatorPoseSequence.toDouble()
+        simulatorPoseSequence = if (simulatorPoseSequence < MAX_SIMULATOR_POSE_SEQUENCE) simulatorPoseSequence + 1L else 0L
+        robot.telemetry.putDoubleArray("ARES/SimulatorPoseFrame", simulatorPoseFrame)
         robot.telemetry.putNumber("ARES/TruePose/0", simulation.xMeters)
         robot.telemetry.putNumber("ARES/TruePose/1", simulation.yMeters)
         robot.telemetry.putNumber("ARES/TruePose/2", simulation.headingRadians)
@@ -241,6 +262,10 @@ class AresStarterRobot internal constructor(
         if (::robot.isInitialized) attempt { robot.close() }
         attempt { super.close() }
         failure?.let { throw it }
+    }
+
+    private companion object {
+        const val MAX_SIMULATOR_POSE_SEQUENCE = 9_007_199_254_740_990L
     }
 }
 

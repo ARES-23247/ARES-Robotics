@@ -64,4 +64,11 @@ class TargetScannerService {
         scannerJob?.cancel()
         scannerJob = null
     }
+
+    suspend fun disposeAndJoin() {
+        val active = scannerJob
+        scannerJob = null
+        active?.cancelAndJoin()
+        serviceScope.coroutineContext[Job]?.cancelAndJoin()
+    }
 }

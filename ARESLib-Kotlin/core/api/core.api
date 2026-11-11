@@ -6605,6 +6605,7 @@ public abstract class com/areslib/subsystem/HolonomicDriveFacade {
 	protected final fun getHeadingPID ()Lcom/areslib/control/feedback/PIDController;
 	public final fun getMaxAngularSpeedRps ()D
 	public final fun getMaxSpeedMps ()D
+	protected fun getMirroredAlliance ()Lcom/areslib/state/Alliance;
 	public final fun getOdometryHeading ()D
 	public final fun getOdometryX ()D
 	public final fun getOdometryY ()D
@@ -6959,6 +6960,8 @@ public final class com/areslib/subsystem/SubsystemVerificationEvidence : java/la
 
 public final class com/areslib/subsystem/SwerveDriveFacade : com/areslib/subsystem/HolonomicDriveFacade {
 	public fun <init> (Lcom/areslib/Store;)V
+	public fun <init> (Lcom/areslib/Store;Lcom/areslib/state/Alliance;)V
+	public synthetic fun <init> (Lcom/areslib/Store;Lcom/areslib/state/Alliance;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun brake ()V
 }
 

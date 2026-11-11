@@ -252,7 +252,13 @@ class OnboardingViewModel(
                 }
                 is OnboardingIntent.UpdateSeasonId -> updateRequiredField { it.copy(seasonId = intent.seasonId) }
                 is OnboardingIntent.UpdateRobotId -> updateRequiredField { it.copy(robotId = intent.robotId) }
-                is OnboardingIntent.UpdateRobotName -> _state.update { it.copy(robotName = intent.robotName) }
+                is OnboardingIntent.UpdateRobotName -> _state.update {
+                    it.copy(
+                        robotName = intent.robotName,
+                        fieldErrors = it.fieldErrors.copy(robotName = null),
+                        errorMessage = null,
+                    )
+                }
                 is OnboardingIntent.UpdateLeague -> _state.update { current ->
                     val template = projectTemplateService.templateForOrNull(intent.league)
                     val next = current.copy(
@@ -311,6 +317,9 @@ class OnboardingViewModel(
         try {
             val robots = syncEngineService.getRemoteRobotProfiles()
             _state.update { it.copy(cloudRobots = robots, isCloudLoading = false) }
+        } catch (cancelled: CancellationException) {
+            _state.update { it.copy(isCloudLoading = false) }
+            throw cancelled
         } catch (_: Exception) {
             _state.update { it.copy(cloudRobots = emptyList(), isCloudLoading = false) }
         }
@@ -470,12 +479,17 @@ class OnboardingViewModel(
                 syncEngineService.mutateRemoteRobotProfiles { existing ->
                     if (existing.none { it.robotId == profile.robotId }) existing + profile else existing
                 }
+            } catch (cancelled: CancellationException) {
+                throw cancelled
             } catch (_: Exception) {
                 // Offline setup is intentionally sufficient.
             }
 
             _state.update { it.copy(isSaving = false, saveSuccess = true) }
             onConfigured(config)
+        } catch (cancelled: CancellationException) {
+            _state.update { it.copy(isSaving = false) }
+            throw cancelled
         } catch (e: Exception) {
             _state.update {
                 it.copy(
@@ -502,6 +516,9 @@ class OnboardingViewModel(
                     driveDestinationError = null,
                 )
             }
+        } catch (cancelled: CancellationException) {
+            _state.update { it.copy(isDriveDestinationBusy = false) }
+            throw cancelled
         } catch (e: Exception) {
             _state.update {
                 it.copy(

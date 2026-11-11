@@ -76,6 +76,8 @@ class PinpointIO @kotlin.jvm.JvmOverloads constructor(
     private var offsetHeading = 0.0
 
     init {
+        require(xOffsetMm.isFinite() && yOffsetMm.isFinite()) { "Pinpoint mounting offsets must be finite" }
+        require(encoderResolution == null || encoderResolution.isFinite()) { "Pinpoint encoder resolution must be finite" }
         setOffsets(xOffsetMm, yOffsetMm)
         if (encoderResolution != null && encoderResolution > 0.0) {
             driver.setEncoderResolution(encoderResolution, DistanceUnit.MM)
@@ -152,12 +154,16 @@ class PinpointIO @kotlin.jvm.JvmOverloads constructor(
                 kotlin.math.abs(rawHeadingVelocity) <= MAX_ANGULAR_SPEED_RADIANS_PER_SECOND
 
             var deltaPlausible = true
-            if (finite && hasObservationBaseline && now > observationTimestampMs) {
-                val dtSeconds = (now - observationTimestampMs) / 1000.0
-                val maxDistance = MAX_LINEAR_SPEED_METERS_PER_SECOND * dtSeconds + POSITION_JUMP_TOLERANCE_METERS
-                val maxHeading = MAX_ANGULAR_SPEED_RADIANS_PER_SECOND * dtSeconds + HEADING_JUMP_TOLERANCE_RADIANS
-                deltaPlausible = kotlin.math.hypot(x - observationX, y - observationY) <= maxDistance &&
-                    kotlin.math.abs(wrapAngle(nextHeading - observationHeading)) <= maxHeading
+            if (finite && hasObservationBaseline) {
+                if (now < observationTimestampMs) {
+                    deltaPlausible = false
+                } else if (now > observationTimestampMs) {
+                    val dtSeconds = (now - observationTimestampMs) / 1000.0
+                    val maxDistance = MAX_LINEAR_SPEED_METERS_PER_SECOND * dtSeconds + POSITION_JUMP_TOLERANCE_METERS
+                    val maxHeading = MAX_ANGULAR_SPEED_RADIANS_PER_SECOND * dtSeconds + HEADING_JUMP_TOLERANCE_RADIANS
+                    deltaPlausible = kotlin.math.hypot(x - observationX, y - observationY) <= maxDistance &&
+                        kotlin.math.abs(wrapAngle(nextHeading - observationHeading)) <= maxHeading
+                }
             }
 
             // Always advance the observation baseline for finite packets. After a reconnect,
@@ -196,16 +202,15 @@ class PinpointIO @kotlin.jvm.JvmOverloads constructor(
             }
         }
 
-        var ts = lastTimestampMs
-        if (ts == 0L) ts = com.areslib.util.RobotClock.currentTimeMillis()
-
+        val trusted = hasTrustedSample && healthStatus == HealthStatus.HEALTHY
         reusablePoseUpdate.xMeters = lastX
         reusablePoseUpdate.yMeters = lastY
         reusablePoseUpdate.headingRadians = lastHeading
         reusablePoseUpdate.angularVelocityRadiansPerSecond = lastHeadingVelocity
-        reusablePoseUpdate.timestampMs = ts
+        reusablePoseUpdate.timestampMs = if (trusted) lastTimestampMs else 0L
         reusablePoseUpdate.xVelocityMetersPerSecond = lastVelX
         reusablePoseUpdate.yVelocityMetersPerSecond = lastVelY
+        reusablePoseUpdate.motionMeasurementsValid = trusted
         reusablePoseUpdate.isReset = false
 
         return reusablePoseUpdate
@@ -227,6 +232,9 @@ class PinpointIO @kotlin.jvm.JvmOverloads constructor(
     }
 
     private fun markReadFailure(status: HealthStatus) {
+        lastVelX = 0.0
+        lastVelY = 0.0
+        lastHeadingVelocity = 0.0
         consecutiveReadFailures++
         healthStatus = status
     }
@@ -277,6 +285,10 @@ class PinpointIO @kotlin.jvm.JvmOverloads constructor(
                 lastY = pose.y
                 lastHeading = pose.heading.radians
             }
+            lastVelX = 0.0
+            lastVelY = 0.0
+            lastHeadingVelocity = 0.0
+            hasTrustedSample = false
             hasObservationBaseline = false
             consecutiveReadFailures = 0
             healthStatus = HealthStatus.STARTING

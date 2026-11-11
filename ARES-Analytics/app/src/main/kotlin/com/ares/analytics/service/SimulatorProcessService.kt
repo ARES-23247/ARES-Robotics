@@ -22,6 +22,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.runInterruptible
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.util.concurrent.atomic.AtomicBoolean
@@ -59,9 +61,10 @@ class SimulatorProcessService internal constructor(
     )
     val output: SharedFlow<String> = _output.asSharedFlow()
 
-    private var process: Process? = null
-    private var job: Job? = null
-    private var runtimeWorkspace: SimulatorRuntimeWorkspace? = null
+    private val lifecycleMutex = Mutex()
+    @Volatile private var process: Process? = null
+    @Volatile private var job: Job? = null
+    @Volatile private var runtimeWorkspace: SimulatorRuntimeWorkspace? = null
 
     fun start(projectPath: String, product: SimulationProductId, simulatorCommand: String? = null) {
         if (shuttingDown.get()) return
@@ -78,86 +81,92 @@ class SimulatorProcessService internal constructor(
             }
             return
         }
-        stop()
+        runBlocking {
+            lifecycleMutex.withLock {
+                if (shuttingDown.get()) return@withLock
+                stopLocked()
+                val replacement = scope.launch(start = CoroutineStart.LAZY) {
+                    var ownedProcess: Process? = null
+                    var ownedWorkspace: SimulatorRuntimeWorkspace? = null
+                    try {
+                        _state.value = SimulatorProcessState(true, projectRoot.path, league)
+                        val isWindows = System.getProperty("os.name").contains("win", ignoreCase = true)
+                        val userCommand = simulatorCommand?.takeIf(String::isNotBlank)
+                        val fatJar = File(projectRoot, "simulator/build/libs/simulator-all.jar")
+                        val simulationJavaHome = if (league == League.FRC) {
+                            ManagedToolchainPaths.resolveFrcSimulationJavaHome()
+                        } else {
+                            ManagedToolchainPaths.resolveJavaHome()
+                        }
+                        val javaExecutable = simulationJavaHome
+                            ?.let { File(it, "bin/${if (isWindows) "java.exe" else "java"}") }
+                            ?.takeIf(File::isFile)
+                            ?.path
+                            ?: File(
+                                System.getProperty("java.home"),
+                                "bin/${if (isWindows) "java.exe" else "java"}",
+                            ).path
+                        val command = when {
+                            userCommand != null && isWindows -> listOf("cmd.exe", "/d", "/s", "/c", userCommand)
+                            userCommand != null -> listOf("sh", "-c", userCommand)
+                            product == SimulationProductId.FTC_DESKTOP_OPMODE && fatJar.isFile ->
+                                listOf(javaExecutable, "-jar", fatJar.absolutePath)
+                            else -> commandFactory.simulation(isWindows, product)
+                        }
 
-        val replacement = scope.launch(start = CoroutineStart.LAZY) {
-            var ownedProcess: Process? = null
-            var ownedWorkspace: SimulatorRuntimeWorkspace? = null
-            try {
-                _state.value = SimulatorProcessState(true, projectRoot.path, league)
-                val isWindows = System.getProperty("os.name").contains("win", ignoreCase = true)
-                val userCommand = simulatorCommand?.takeIf(String::isNotBlank)
-                val fatJar = File(projectRoot, "simulator/build/libs/simulator-all.jar")
-                val simulationJavaHome = if (league == League.FRC) {
-                    ManagedToolchainPaths.resolveFrcSimulationJavaHome()
-                } else {
-                    ManagedToolchainPaths.resolveJavaHome()
-                }
-                val javaExecutable = simulationJavaHome
-                    ?.let { File(it, "bin/${if (isWindows) "java.exe" else "java"}") }
-                    ?.takeIf(File::isFile)
-                    ?.path
-                    ?: File(
-                        System.getProperty("java.home"),
-                        "bin/${if (isWindows) "java.exe" else "java"}",
-                    ).path
-                val command = when {
-                    userCommand != null && isWindows -> listOf("cmd.exe", "/d", "/s", "/c", userCommand)
-                    userCommand != null -> listOf("sh", "-c", userCommand)
-                    product == SimulationProductId.FTC_DESKTOP_OPMODE && fatJar.isFile ->
-                        listOf(javaExecutable, "-jar", fatJar.absolutePath)
-                    else -> commandFactory.simulation(isWindows, product)
-                }
-
-                _output.emit("[SYSTEM] Starting Simulation: ${command.joinToString(" ")}")
-                val builder = commandFactory.configureEnvironment(
-                    ProcessBuilder(command).directory(projectRoot).redirectErrorStream(true),
-                )
-                if (league == League.FRC && simulationJavaHome != null) {
-                    ManagedToolchainPaths.configureJavaEnvironment(builder, simulationJavaHome)
-                    _output.emit("[SYSTEM] FRC simulator Java: ${simulationJavaHome.path}")
-                }
-                val workspace = SimulatorRuntimeWorkspace.create()
-                ownedWorkspace = workspace
-                runtimeWorkspace = workspace
-                workspace.configureEnvironment(builder)
-                val child = builder.start()
-                ownedProcess = child
-                process = child
-                workspace.retainProcessTree(child)
-                currentCoroutineContext().ensureActive()
-                child.inputStream.bufferedReader(Charsets.UTF_8).use { reader ->
-                    while (true) {
-                        val line = reader.readLine() ?: break
+                        _output.emit("[SYSTEM] Starting Simulation: ${command.joinToString(" ")}")
+                        val builder = commandFactory.configureEnvironment(
+                            ProcessBuilder(command).directory(projectRoot).redirectErrorStream(true),
+                        )
+                        if (league == League.FRC && simulationJavaHome != null) {
+                            ManagedToolchainPaths.configureJavaEnvironment(builder, simulationJavaHome)
+                            _output.emit("[SYSTEM] FRC simulator Java: ${simulationJavaHome.path}")
+                        }
+                        val workspace = SimulatorRuntimeWorkspace.create()
+                        ownedWorkspace = workspace
+                        runtimeWorkspace = workspace
+                        workspace.configureEnvironment(builder)
+                        val child = builder.start()
+                        ownedProcess = child
+                        process = child
+                        workspace.retainProcessTree(child)
                         currentCoroutineContext().ensureActive()
-                        _output.emit(line)
+                        child.inputStream.bufferedReader(Charsets.UTF_8).use { reader ->
+                            while (true) {
+                                val line = reader.readLine() ?: break
+                                currentCoroutineContext().ensureActive()
+                                _output.emit(line)
+                            }
+                        }
+                        currentCoroutineContext().ensureActive()
+                        val exitCode = runInterruptible(Dispatchers.IO) { child.waitFor() }
+                        _output.emit("[SYSTEM] Simulation finished with exit code $exitCode")
+                    } catch (cancelled: CancellationException) {
+                        throw cancelled
+                    } catch (error: Exception) {
+                        currentCoroutineContext().ensureActive()
+                        _output.emit("[SYSTEM] Error running simulation: ${error.message}")
+                    } finally {
+                        ownedProcess?.let {
+                            ownedWorkspace?.retainProcessTree(it)
+                            if (it.isAlive) terminateProcessTree(it)
+                        }
+                        runCatching { ownedWorkspace?.cleanup() }.onSuccess { cleaned ->
+                            if (cleaned == false) _output.tryEmit("[SYSTEM] Simulator runtime retained because an owned process is still alive: ${ownedWorkspace?.directory}")
+                        }.onFailure { error ->
+                            _output.tryEmit("[SYSTEM] Simulator runtime cleanup failed: ${error.message}")
+                        }
+                        if (runtimeWorkspace === ownedWorkspace) runtimeWorkspace = null
+                        if (process === ownedProcess) process = null
+                        if (job === coroutineContext[Job] || job == null) {
+                            _state.value = SimulatorProcessState()
+                        }
                     }
                 }
-                currentCoroutineContext().ensureActive()
-                val exitCode = runInterruptible(Dispatchers.IO) { child.waitFor() }
-                _output.emit("[SYSTEM] Simulation finished with exit code $exitCode")
-            } catch (cancelled: CancellationException) {
-                throw cancelled
-            } catch (error: Exception) {
-                currentCoroutineContext().ensureActive()
-                _output.emit("[SYSTEM] Error running simulation: ${error.message}")
-            } finally {
-                ownedProcess?.let {
-                    ownedWorkspace?.retainProcessTree(it)
-                    if (it.isAlive) terminateProcessTree(it)
-                }
-                runCatching { ownedWorkspace?.cleanup() }.onSuccess { cleaned ->
-                    if (cleaned == false) _output.tryEmit("[SYSTEM] Simulator runtime retained because an owned process is still alive: ${ownedWorkspace?.directory}")
-                }.onFailure { error ->
-                    _output.tryEmit("[SYSTEM] Simulator runtime cleanup failed: ${error.message}")
-                }
-                if (runtimeWorkspace === ownedWorkspace) runtimeWorkspace = null
-                if (process === ownedProcess) process = null
-                _state.value = SimulatorProcessState()
+                job = replacement
+                replacement.start()
             }
         }
-        job = replacement
-        replacement.start()
     }
 
     fun stop() {
@@ -175,6 +184,12 @@ class SimulatorProcessService internal constructor(
     }
 
     internal suspend fun stopAndJoin() = withContext(NonCancellable) {
+        lifecycleMutex.withLock {
+            stopLocked()
+        }
+    }
+
+    private suspend fun stopLocked() {
         val ownedProcess = process
         val ownedJob = job
         ownedJob?.cancel()

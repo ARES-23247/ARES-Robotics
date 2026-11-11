@@ -121,7 +121,7 @@ internal fun ReplayTimelineScrubber(
                         } else if (sessionMode == SessionMode.LIVE_REWIND) {
                             "LIVE REWIND"
                         } else {
-                            "REPLAY · "
+                            "REPLAY · ${sessionInfo?.robotId ?: sessionId?.take(12)}"
                         },
                         color = modeColor,
                         fontSize = 11.sp,
@@ -337,7 +337,7 @@ internal fun ReplayTimelineScrubber(
                 isSeeking -> "Seeking…"
                 sessionInfo != null -> {
                     val elapsed = (playheadTimestamp - sessionInfo!!.startTimestampMs).coerceAtLeast(0L)
-                    " / "
+                    "${formatReplayDuration(elapsed)} / ${formatReplayDuration(sessionInfo!!.endTimestampMs - sessionInfo!!.startTimestampMs)}"
                 }
                 else -> "0:00.000"
             }
@@ -352,7 +352,7 @@ internal fun ReplayTimelineScrubber(
             if (currentFrame != null && !isLiveConnection) {
                 val sampleAge = (currentFrame!!.playheadMs - currentFrame!!.timestampMs).coerceAtLeast(0L)
                 Text(
-                    text = if (sampleAge == 0L) "Exact sample" else "Held  ms",
+                    text = if (sampleAge == 0L) "Exact sample" else "Held ${sampleAge} ms",
                     color = if (sampleAge == 0L) AresGreen else AresTextTertiary,
                     fontSize = 10.sp,
                     maxLines = 1,
@@ -393,7 +393,7 @@ internal fun ReplayTimelineScrubber(
                 TextButton(
                     onClick = { speedExpanded = !speedExpanded }
                 ) {
-                    Text("×", color = AresAmber, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    Text("${speed}×", color = AresAmber, fontSize = 12.sp, fontWeight = FontWeight.Bold)
                 }
                 DropdownMenu(
                     expanded = speedExpanded,
@@ -401,7 +401,7 @@ internal fun ReplayTimelineScrubber(
                 ) {
                     listOf(0.25, 0.5, 1.0, 2.0, 4.0, 8.0).forEach { s ->
                         DropdownMenuItem(
-                            text = { Text("×", color = AresTextPrimary) },
+                            text = { Text("${s}×", color = AresTextPrimary) },
                             onClick = {
                                 scope.launch { replayEngine.setSpeed(s) }
                                 speedExpanded = false
@@ -415,7 +415,7 @@ internal fun ReplayTimelineScrubber(
 
     if (loadState == ReplayLoadState.ERROR && !loadError.isNullOrBlank()) {
         LaunchedEffect(loadError) {
-            System.err.println("[Replay] ")
+            System.err.println("[Replay] ${loadError.orEmpty()}")
         }
     }
 }

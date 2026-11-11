@@ -14,6 +14,25 @@ import java.util.concurrent.atomic.AtomicInteger
 import kotlin.test.*
 
 class OnboardingSubmissionTest {
+    @Test
+    fun `updating robotName clears its validation error and banner`() = runBlocking {
+        withFixture { fixture ->
+            val vm = fixture.viewModel(NewProjectHistoryInitializer.NONE)
+            fixture.prepare(vm)
+            vm.handleIntent(OnboardingIntent.NextStep)
+            vm.handleIntent(OnboardingIntent.UpdateRobotName("x".repeat(81)))
+            vm.handleIntent(OnboardingIntent.NextStep)
+            fixture.drainIntents()
+            assertNotNull(vm.state.value.fieldErrors.robotName)
+            assertNotNull(vm.state.value.errorMessage)
+
+            vm.handleIntent(OnboardingIntent.UpdateRobotName("Valid Robot"))
+            fixture.drainIntents()
+            assertNull(vm.state.value.fieldErrors.robotName)
+            assertNull(vm.state.value.errorMessage)
+        }
+    }
+
     @Test fun `creation trims the same identity values accepted by validation`() = runBlocking {
         withFixture { fixture ->
             val vm = fixture.viewModel(NewProjectHistoryInitializer.NONE)

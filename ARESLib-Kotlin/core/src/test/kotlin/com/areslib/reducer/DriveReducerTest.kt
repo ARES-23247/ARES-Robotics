@@ -148,6 +148,36 @@ class DriveReducerTest {
     }
 
     @Test
+    fun `untrusted zero timestamp pose sentinel does not advance estimator or overwrite odometry`() {
+        val store = Store(RobotState())
+        store.dispatch(
+            RobotAction.PoseUpdate(
+                xMeters = 5.0,
+                yMeters = -3.0,
+                headingRadians = 1.2,
+                timestampMs = 0L,
+                motionMeasurementsValid = false,
+            )
+        )
+        assertEquals(0.0, store.state.drive.odometryX)
+        assertEquals(0.0, store.state.drive.odometryY)
+        assertEquals(0.0, store.state.drive.poseEstimator.estimatedPoseX)
+        assertEquals(-1L, store.state.drive.poseEstimator.lastObservationTimestampMs)
+
+        store.dispatch(
+            RobotAction.PoseUpdate(
+                xMeters = 1.5,
+                yMeters = -0.5,
+                headingRadians = 0.25,
+                timestampMs = 0L,
+                motionMeasurementsValid = true,
+            )
+        )
+        assertEquals(1.5, store.state.drive.odometryX, 1e-9)
+        assertEquals(0L, store.state.drive.poseEstimator.lastObservationTimestampMs)
+    }
+
+    @Test
     fun `pose update keeps measured field velocity separate from drive commands`() {
         val initialState = RobotState(
             drive = DriveState(

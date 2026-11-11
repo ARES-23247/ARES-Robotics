@@ -54,6 +54,7 @@ import com.areslib.subsystem.SubsystemTemplate
 import com.areslib.subsystem.SubsystemSchema
 import com.areslib.project.AresProjectAuthoringModel
 import java.io.File
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -322,8 +323,15 @@ internal fun RobotStudioWorkspace(
                                 if (destination != null) {
                                     actionScope.launch {
                                         exportInProgress = true
-                                        ideMessage = export(destination)
-                                        exportInProgress = false
+                                        try {
+                                            ideMessage = export(destination)
+                                        } catch (cancelled: CancellationException) {
+                                            throw cancelled
+                                        } catch (failure: Exception) {
+                                            ideMessage = failure.message ?: "Standalone archive export failed."
+                                        } finally {
+                                            exportInProgress = false
+                                        }
                                     }
                                 }
                             },

@@ -203,4 +203,17 @@ class FtcVisionPortalSdk12Test {
         assertEquals(wrap(outward+PI),wrap(pose.rotation.z),1e-7)
         assertEquals(decode,RobotFieldManager.activeConfig.apriltags.single())
     }
+
+    @Test fun `negative and wrapped nanoTime intervals are accepted via subtraction`() {
+        val wrappedMs = 9_223_372_036_855L // positive ms whose *1_000_000 wraps signed 64-bit nanoTime negative
+        RobotClock.useMockTime(wrappedMs)
+        val nowNs = RobotClock.nanoTime()
+        assertTrue(nowNs < 0L)
+        val capturedNs = nowNs - 100_000_000L
+        processor.frame = arrayListOf(singleton(AprilTagPoseFtc(x = 0.5, y = 2.0, z = 0.6), time = capturedNs))
+        io().updateInputs(inputs)
+        val m = inputs.measurements.single()
+        assertEquals(100.0, m.latencyMs, 1e-9)
+        assertEquals(wrappedMs - 100L, m.timestampMs)
+    }
 }

@@ -12,7 +12,7 @@ internal object SubsystemMockIoRenderer {
             "    override var ${field.fieldId}: ${field.kotlinType()} = ${field.defaultKotlinLiteral()}"
         }
         val commandFields = document.hardware.filter { it.kind.isActuator() }.joinToString("\n") { device ->
-            "    var ${device.hardwareId}Command: Double = ${requireNotNull(device.safeOutput).kotlinDouble()}\n        private set"
+            "    var ${device.hardwareId}Command: Double = ${device.invertedExpression(requireNotNull(device.safeOutput).kotlinDouble())}\n        private set"
         }
         val simSignalFields = document.hardware.filter { it.kind.isActuator() }.joinToString("\n") { device ->
             "    private val ${device.hardwareId}SimSignal = com.areslib.simulation.SimAppliedOutputRegistry.register(${document.uid.quoted()}, ${device.hardwareId.quoted()})"

@@ -8,6 +8,8 @@ import io.ktor.serialization.kotlinx.json.*
 import io.ktor.server.application.*
 import io.ktor.server.auth.*
 import io.ktor.server.plugins.contentnegotiation.*
+import io.ktor.server.plugins.forwardedheaders.XForwardedHeaders
+import io.ktor.server.plugins.origin
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import io.ktor.server.testing.*
@@ -68,5 +70,43 @@ class GatewayRouteTest {
             setBody("{}")
         }
         assertEquals(HttpStatusCode.Unauthorized, response.status)
+    }
+
+    @Test
+    fun `oauth-exchange rate limit keys on last proxy in X-Forwarded-For`() = testApplication {
+        application {
+            install(XForwardedHeaders) {
+                useLastProxy()
+            }
+            install(RateLimit) {
+                register(RateLimitName("oauth-exchange")) {
+                    requestKey { call -> call.request.origin.remoteHost }
+                    rateLimiter(limit = 2, refillPeriod = 60.seconds)
+                }
+            }
+            routing {
+                rateLimit(RateLimitName("oauth-exchange")) {
+                    post("/api/oauth/exchange") {
+                        call.respondText(call.request.origin.remoteHost)
+                    }
+                }
+            }
+        }
+
+        val first = client.post("/api/oauth/exchange") {
+            header(HttpHeaders.XForwardedFor, "203.0.113.1, 198.51.100.42")
+        }
+        assertEquals(HttpStatusCode.OK, first.status)
+        assertEquals("198.51.100.42", first.bodyAsText())
+
+        val second = client.post("/api/oauth/exchange") {
+            header(HttpHeaders.XForwardedFor, "203.0.113.2, 198.51.100.42")
+        }
+        assertEquals(HttpStatusCode.OK, second.status)
+
+        val third = client.post("/api/oauth/exchange") {
+            header(HttpHeaders.XForwardedFor, "203.0.113.3, 198.51.100.42")
+        }
+        assertEquals(HttpStatusCode.TooManyRequests, third.status)
     }
 }

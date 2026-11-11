@@ -126,6 +126,7 @@ internal class FrcStudioSimulationBridge(
         applyDriverStationState(
             enabled = shouldEnableTeleOp || autonomousRequested,
             autonomous = autonomousRequested,
+            isRedAlliance = if (studioControlRequested) latestCommand?.isRedAlliance else null,
         )
 
         gate.copyAcknowledgement(acknowledgement, nowMs)
@@ -171,8 +172,14 @@ internal class FrcStudioSimulationBridge(
         ))
     }
 
-    private fun applyDriverStationState(enabled: Boolean, autonomous: Boolean) {
+    private fun applyDriverStationState(enabled: Boolean, autonomous: Boolean, isRedAlliance: Boolean? = null) {
         DriverStationSim.setDsAttached(true)
+        if (isRedAlliance != null) {
+            DriverStationSim.setAllianceStationId(
+                if (isRedAlliance) edu.wpi.first.hal.AllianceStationID.Red1
+                else edu.wpi.first.hal.AllianceStationID.Blue1
+            )
+        }
         DriverStationSim.setAutonomous(autonomous)
         DriverStationSim.setTest(false)
         DriverStationSim.setEnabled(enabled)

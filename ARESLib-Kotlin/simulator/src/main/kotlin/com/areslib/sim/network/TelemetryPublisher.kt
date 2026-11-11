@@ -102,9 +102,10 @@ object TelemetryPublisher {
         dtSeconds: Double? = null,
     ) {
         statePublisher.set(state)
-        networkStatePublisher?.publish(state, dtSeconds = dtSeconds)
+        networkStatePublisher?.publish(state, dtSeconds = dtSeconds, flush = false)
         nt4Telemetry?.let(hardwareRegistry::publishAll)
         timestampPub.set(com.areslib.util.RobotClock.currentTimeMillis())
+        nt4Telemetry?.update()
     }
 
     /**

@@ -639,7 +639,7 @@ class SubsystemGeneratorViewModel(
                         draft = SubsystemEditorDraft(persisted),
                         dirty = false,
                         projectRevision = persistence.currentRevision(state.projectRevision),
-                        status = "Saved revision ${persisted.revision} (${saved.contentHash.take(12)}â€¦).",
+                        status = "Saved revision ${persisted.revision} (${saved.contentHash.take(12)}…).",
                     ).revalidated()
                 }
                 if (generateAfterSave) projectGenerator?.generateAresProject(current.projectPath, current.league)

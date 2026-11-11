@@ -23,17 +23,20 @@ def create_otos_i2c(machine_name, i2c_type, pin_type):
 
 
 class _MotorAdapter:
-    def __init__(self, motor):
+    def __init__(self, motor, inverted=False):
         self.motor = motor
+        self.sign = -1.0 if inverted else 1.0
 
     def write(self, volts):
+        # GeneratedXrpSubsystem already applies `inverted` to logical actuator outputs;
+        # keep physical effort un-negated here so outputs are not double-inverted.
         self.motor.set_effort(_bounded_output(float(volts) / 12.0, -1.0, 1.0))
 
     def read(self, source):
         if source == "MOTOR_POSITION_NATIVE":
-            return self.motor.get_position()
+            return self.sign * float(self.motor.get_position())
         if source == "MOTOR_VELOCITY_NATIVE_PER_SECOND":
-            return self.motor.get_speed() / 60.0
+            return self.sign * (float(self.motor.get_speed()) / 60.0)
         raise ValueError("XRPLib does not expose motor current")
 
 
@@ -247,7 +250,7 @@ def create_xrp_hardware(device):
         motor = motor_three if channel == 3 else motor_four
         if motor is None:
             raise ValueError("This XRP board does not provide motor channel 4")
-        return _MotorAdapter(motor)
+        return _MotorAdapter(motor, inverted=bool(device.get("inverted", False)))
     if kind == "POSITIONAL_SERVO" and channel in (1, 2, 3, 4):
         servo = {1: servo_one, 2: servo_two, 3: servo_three, 4: servo_four}[channel]
         if servo is None:

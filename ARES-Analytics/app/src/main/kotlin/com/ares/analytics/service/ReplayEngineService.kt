@@ -346,6 +346,16 @@ class ReplayEngineService internal constructor(
         }
     }
 
+    /** Clears any loaded session without disposing the replay service across workspace switches. */
+    fun clearSession() = synchronized(lock) {
+        if (!disposed) {
+            stopLocked(resetToStart = false)
+            generation += 1L
+            resetSessionLocked("")
+            _loadState.value = ReplayLoadState.IDLE
+        }
+    }
+
     fun dispose() = runBlocking { disposeAndJoin() }
 
     suspend fun disposeAndJoin() {

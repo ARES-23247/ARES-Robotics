@@ -138,7 +138,7 @@ class FtcTelemetryManager(
 
         activeBrownoutGuard.update(batteryVoltage)
 
-        publisher.publish(state, gamepad1, gamepad2, dtSeconds, batteryVoltage, activeBrownoutGuard)
+        publisher.publish(state, gamepad1, gamepad2, dtSeconds, batteryVoltage, activeBrownoutGuard, flush = false)
 
         // Global custom hardware telemetry
         hardwareRegistry.publishAll(dataLoggingTelemetry)
@@ -198,7 +198,7 @@ class FtcTelemetryManager(
             // Subclass-specific telemetry (motor powers, currents, custom subsystems)
             onSubclassPublish()
 
-            publisher.publish(state, gamepad1, gamepad2, dtSeconds, batteryVoltage, powerBrownoutGuard)
+            publisher.publish(state, gamepad1, gamepad2, dtSeconds, batteryVoltage, powerBrownoutGuard, flush = false)
 
             // Vision telemetry status
             dataLoggingTelemetry.putString("Vision/Status", visionTracker.lastVisionStatus)

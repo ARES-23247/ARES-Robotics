@@ -92,6 +92,7 @@ object DriveReducer {
                 val zAccelerationG = if (imuMeasurementsValid) action.zAccelerationG else 0.0
 
                 if (!action.isReset && !action.isExternalEstimate) {
+                    if (action.timestampMs <= 0L && !action.motionMeasurementsValid) return state
                     observationDtSeconds(state, action.timestampMs) ?: return state
                 }
 

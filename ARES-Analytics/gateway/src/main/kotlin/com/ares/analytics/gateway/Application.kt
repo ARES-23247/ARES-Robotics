@@ -74,9 +74,12 @@ fun main() {
             allowMethod(HttpMethod.Get)
         }
 
-        // Cloud Run terminates TLS and supplies the original client address in X-Forwarded-For.
-        // Without this plugin every caller would share the proxy's rate-limit bucket.
-        install(XForwardedHeaders)
+        // Cloud Run terminates TLS and appends the actual client address to X-Forwarded-For.
+        // Selecting the last proxy entry prevents spoofed client X-Forwarded-For prefixes from
+        // rotating rate-limit buckets while keeping real callers in distinct buckets.
+        install(XForwardedHeaders) {
+            useLastProxy()
+        }
 
         install(StatusPages) {
             exception<RequestValidationException> { call, cause ->

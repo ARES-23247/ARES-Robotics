@@ -60,6 +60,7 @@ class SrsHubDriver(deviceClient: I2cDeviceSynch) : I2cDeviceSynchDevice<I2cDevic
     private val cachedOdoHeadingVel = DoubleArray(4)
 
     private val activePinpoints = BooleanArray(4)
+    private val pendingPinpointResets = BooleanArray(4)
     private val pendingServoPositions = DoubleArray(4) { Double.NaN }
     private val pingBuffers = Array(4) { byteArrayOf(1) }
     private val servoWriteBuffers = Array(4) { ByteArray(2) }
@@ -91,9 +92,15 @@ class SrsHubDriver(deviceClient: I2cDeviceSynch) : I2cDeviceSynchDevice<I2cDevic
                     }
                 }
 
-                // 2. Trigger updates for active pinpoint sensors
+                // 2. Trigger resets and updates for active pinpoint sensors
                 synchronized(lock) {
                     for (port in 0 until 4) {
+                        if (pendingPinpointResets[port]) {
+                            try {
+                                deviceClient.write(120 + port, pingBuffers[port])
+                                pendingPinpointResets[port] = false
+                            } catch (_: Exception) {}
+                        }
                         if (activePinpoints[port]) {
                             try {
                                 deviceClient.write(124 + port, pingBuffers[port])
@@ -299,11 +306,34 @@ class SrsHubDriver(deviceClient: I2cDeviceSynch) : I2cDeviceSynchDevice<I2cDevic
         }
     }
 
-    /** Sends a reset bit command to Pinpoint odometry computer on port $[0 \dots 3]$. */
+    /** Atomically copies RGBA channels `[r, g, b, a]` for [port] into [destination]. */
+    fun copyI2cColorRgbaInto(port: Int, destination: IntArray): Unit = synchronized(lock) {
+        require(destination.size >= 4) { "RGBA destination must contain at least four elements" }
+        destination[0] = cachedColorsRed.getOrElse(port) { 0 }
+        destination[1] = cachedColorsGreen.getOrElse(port) { 0 }
+        destination[2] = cachedColorsBlue.getOrElse(port) { 0 }
+        destination[3] = cachedColorsAlpha.getOrElse(port) { 0 }
+    }
+
+    /** Atomically copies `[xMm, yMm, headingRad, velXMmS, velYMmS, headingVelRadS]` and returns poll timestamp. */
+    fun copyI2cOdometryInto(port: Int, destination: DoubleArray): Long = synchronized(lock) {
+        require(destination.size >= 6) { "Odometry destination must contain at least six elements" }
+        destination[0] = cachedOdoX.getOrElse(port) { 0.0 }
+        destination[1] = cachedOdoY.getOrElse(port) { 0.0 }
+        destination[2] = cachedOdoHeading.getOrElse(port) { 0.0 }
+        destination[3] = cachedOdoVelX.getOrElse(port) { 0.0 }
+        destination[4] = cachedOdoVelY.getOrElse(port) { 0.0 }
+        destination[5] = cachedOdoHeadingVel.getOrElse(port) { 0.0 }
+        lastSuccessfulPollTimestampMs
+    }
+
+    /** Enqueues a reset bit command to Pinpoint odometry computer on port $[0 \dots 3]$ for background I2C write. */
     fun resetI2cOdometry(port: Int) {
-        try {
-            deviceClient.write(120 + port, byteArrayOf(1))
-        } catch (_: Exception) {}
+        synchronized(lock) {
+            if (port in 0 until 4) {
+                pendingPinpointResets[port] = true
+            }
+        }
     }
 
     /** Terminates background polling thread and releases device client handle. */

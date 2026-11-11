@@ -55,6 +55,7 @@ internal object ProjectVerificationKotlinGenerator {
             package ${request.packageName}
 
             import com.areslib.catalog.CapabilityCatalogCodec
+            import com.areslib.catalog.ResourceAccess
             import com.areslib.controls.ControlSchemeCodec
             import com.areslib.controls.ControlValidationContext
             import com.areslib.controls.ControlValidationSeverity
@@ -67,12 +68,14 @@ internal object ProjectVerificationKotlinGenerator {
             import com.areslib.project.validateAresProjectMetadata
             import com.areslib.routine.AresRoutineCodec
             import com.areslib.routine.AutonomousCatalogCodec
+            import com.areslib.routine.RoutineValidationContext
             import com.areslib.routine.RoutineValidationSeverity
             import com.areslib.routine.validateAutonomousCatalog
             import com.areslib.routine.validateRoutineSet
             import com.areslib.subsystem.SubsystemDocumentCodec
             import com.areslib.superstructure.SuperstructureDocumentCodec
             import com.areslib.superstructure.SuperstructureIssueSeverity
+            import com.areslib.superstructure.TransitionTriggerKind
             import com.areslib.superstructure.validateSuperstructureProject
             ${testImport.substringBefore('\n')}
             ${testImport.substringAfter('\n')}
@@ -117,8 +120,21 @@ internal object ProjectVerificationKotlinGenerator {
 
                 @Test
                 fun `${ProjectGeneratedTestNames.AUTONOMOUS}`() {
+                    val catalog = CapabilityCatalogCodec.decode(CATALOG_JSON)
+                    val actionByKey = catalog.actions.associateBy { it.key }
+                    val conditionKeys = catalog.conditions.mapTo(linkedSetOf()) { it.key }
+                    val routineContext = RoutineValidationContext(
+                        hasAction = actionByKey::containsKey,
+                        hasCondition = conditionKeys::contains,
+                        resourcesForAction = { key ->
+                            actionByKey[key]?.resources
+                                ?.filter { it.access == ResourceAccess.EXCLUSIVE }
+                                ?.mapTo(linkedSetOf()) { it.resourceKey }
+                                .orEmpty()
+                        },
+                    )
                     val routines = ROUTINE_JSON.map(AresRoutineCodec::decode)
-                    val errors = validateRoutineSet(routines)
+                    val errors = validateRoutineSet(routines, routineContext)
                         .filter { it.severity == RoutineValidationSeverity.ERROR }
                         .map { "${'$'}{it.documentId}/${'$'}{it.path}: ${'$'}{it.message}" }
                         .toMutableList()
@@ -139,15 +155,38 @@ internal object ProjectVerificationKotlinGenerator {
                     val parameterlessActionKeys = catalog.actions.filter { it.parameters.isEmpty() }
                         .mapTo(linkedSetOf()) { it.key }
                     val subsystems = SUBSYSTEM_JSON.map(SubsystemDocumentCodec::decode)
-                    val errors = SUPERSTRUCTURE_JSON.flatMap { json ->
+                    val superstructures = SUPERSTRUCTURE_JSON.map(SuperstructureDocumentCodec::decode)
+                    val errors = superstructures.flatMap { document ->
                         validateSuperstructureProject(
-                            SuperstructureDocumentCodec.decode(json),
+                            document,
                             subsystems,
                             actionKeys,
                             parameterlessActionKeys,
                         ).filter { it.severity == SuperstructureIssueSeverity.ERROR }
                             .map { "${'$'}{it.path}: ${'$'}{it.message}" }
-                    }
+                    }.toMutableList()
+                    superstructures
+                        .flatMap { document ->
+                            document.transitions.filter { it.triggerKind == TransitionTriggerKind.ACTION_REQUEST }
+                                .mapNotNull { edge -> edge.actionKey?.let { it to document.superstructureId } }
+                        }
+                        .groupBy({ it.first }, { it.second })
+                        .filterValues { it.distinct().size > 1 }
+                        .forEach { (key, owners) ->
+                            errors += "transitions.actionKey: Action '${'$'}key' is owned by more than one superstructure: ${'$'}{owners.distinct().sorted().joinToString()}"
+                        }
+                    superstructures
+                        .flatMap { document ->
+                            (
+                                document.states.flatMap { preset -> preset.subsystemTargets.map { it.target.subsystemUid to it.target.fieldUid } } +
+                                    document.interlocks.map { it.constrained.subsystemUid to it.constrained.fieldUid }
+                                ).distinct().map { it to document.superstructureId }
+                        }
+                        .groupBy({ it.first }, { it.second })
+                        .filterValues { it.distinct().size > 1 }
+                        .forEach { (target, owners) ->
+                            errors += "states.subsystemTargets: Target '${'$'}{target.first}.${'$'}{target.second}' is owned by more than one superstructure: ${'$'}{owners.distinct().sorted().joinToString()}"
+                        }
                     assertNoErrors(errors)
                 }
 

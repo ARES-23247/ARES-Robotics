@@ -107,7 +107,7 @@ internal class TelemetryRepository(
      * ~10-100x faster than JDBC PreparedStatement batch for bulk imports.
      *
      * IMPORTANT: Must be called under withDbLock or from a single-writer context.
-     * Does not support INSERT OR REPLACE â€” assumes no duplicate keys (safe for imports).
+     * Does not support INSERT OR REPLACE — assumes no duplicate keys (safe for imports).
      */
     private fun insertTelemetryFramesAppender(targetConn: Connection, frames: List<TelemetryFrame>) {
         val duckConn = targetConn.unwrap(DuckDBConnection::class.java)
@@ -126,7 +126,7 @@ internal class TelemetryRepository(
                 appender.endRow()
             }
             appender.flush()
-            // CHECKPOINT intentionally NOT run per batch â€” a per-batch WAL fsync dominated
+            // CHECKPOINT intentionally NOT run per batch — a per-batch WAL fsync dominated
             // import time. Checkpointing is now caller/timer-controlled by
             // [DatabaseTransactionCoordinator.checkpoint]
             // (DatabaseService runs it on a periodic timer; connection close still flushes).

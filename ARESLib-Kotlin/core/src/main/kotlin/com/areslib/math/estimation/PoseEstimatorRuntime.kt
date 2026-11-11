@@ -148,6 +148,7 @@ internal class PoseEstimatorRuntime(initialState: PoseEstimatorSnapshot) {
             return estimator.reduxSnapshot()
         }
 
+        if (action.timestampMs <= 0L && !action.motionMeasurementsValid) return null
         val dtSeconds = observationDtSeconds(action.timestampMs) ?: return null
         val fieldDeltaX = action.xMeters - state.drive.odometryX
         val fieldDeltaY = action.yMeters - state.drive.odometryY

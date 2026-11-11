@@ -330,11 +330,11 @@ abstract class HolonomicDriveFacade @kotlin.jvm.JvmOverloads constructor(
         val joystickForward = -driver.leftStick.shapedY * speedMult
         val joystickLeft = -driver.leftStick.shapedX * speedMult
         val rotate = -driver.rightStick.shapedX * turnScale
-        
-        val isBlueAlliance = store.state.drive.alliance == com.areslib.state.Alliance.BLUE
-        val fieldVx = if (isBlueAlliance) -joystickForward else joystickForward
-        val fieldVy = if (isBlueAlliance) -joystickLeft else joystickLeft
-        
+
+        val invertFieldAxes = store.state.drive.alliance == mirroredAlliance
+        val fieldVx = if (invertFieldAxes) -joystickForward else joystickForward
+        val fieldVy = if (invertFieldAxes) -joystickLeft else joystickLeft
+
         driveFieldRelativeNormalized(
             vx = fieldVx, 
             vy = fieldVy, 
@@ -344,6 +344,10 @@ abstract class HolonomicDriveFacade @kotlin.jvm.JvmOverloads constructor(
             dtSeconds = dtSeconds
         )
     }
+
+    /** Alliance whose driver station faces [-X, -Y] in this robot's canonical field frame. */
+    protected open val mirroredAlliance: com.areslib.state.Alliance
+        get() = com.areslib.state.Alliance.BLUE
 }
 
 /**
@@ -364,7 +368,10 @@ class MecanumDriveFacade @kotlin.jvm.JvmOverloads constructor(
  * Inherits standard coordinate transformations, heading locking, and driving math from [HolonomicDriveFacade],
  * and adds swerve-specific features like active braking configuration.
  */
-class SwerveDriveFacade(store: Store) : HolonomicDriveFacade(store) {
+class SwerveDriveFacade @kotlin.jvm.JvmOverloads constructor(
+    store: Store,
+    override val mirroredAlliance: com.areslib.state.Alliance = com.areslib.state.Alliance.BLUE
+) : HolonomicDriveFacade(store) {
     /**
      * Commands all swerve modules to lock into an "X" configuration (orthogonal angles)
      * with exactly 0.0 speed. This resists pushes from opponent robots.

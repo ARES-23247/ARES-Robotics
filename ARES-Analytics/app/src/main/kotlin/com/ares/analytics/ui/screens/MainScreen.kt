@@ -257,16 +257,15 @@ fun MainScreen(services: ServiceRegistry) {
     LaunchedEffect(isAnyOverlayActive) {
         if (isAnyOverlayActive) services.keyboardDriveState.disarm()
     }
-    val localSimulatorControlAuthorized =
-        !isAnyOverlayActive && dashboardWindowFocused && activeNav == NavigationTarget.DASHBOARD &&
-            targetSelection == TargetSelection.LOCAL_SIM &&
-            isRobotLinkConnected &&
-            (currentConfig.league == League.XRP || isLoopbackDriveControlHost(services.nt4ClientService.serverIp))
+    val localSimLoopbackConnected = targetSelection == TargetSelection.LOCAL_SIM && isRobotLinkConnected &&
+        isLoopbackDriveControlHost(if (currentConfig.league == League.XRP) services.xrpLinkService.serverHost else services.nt4ClientService.serverIp)
+    val localSimulatorControlAuthorized = !isAnyOverlayActive && dashboardWindowFocused &&
+        activeNav == NavigationTarget.DASHBOARD && localSimLoopbackConnected
     DesktopDriveInputPublisher(
         nt4ClientService = services.nt4ClientService,
         keyboardState = services.keyboardDriveState,
         gamepadState = services.gamepadService.gamepad1State,
-        connected = localSimulatorControlAuthorized && currentConfig.league != League.XRP,
+        connected = localSimLoopbackConnected && currentConfig.league != League.XRP,
         controlSurfaceActive = localSimulatorControlAuthorized,
         league = currentConfig.league,
     )
@@ -274,8 +273,8 @@ fun MainScreen(services: ServiceRegistry) {
         xrpLinkService = services.xrpLinkService,
         keyboardState = services.keyboardDriveState,
         gamepadState = services.gamepadService.gamepad1State,
-        connected = localSimulatorControlAuthorized && currentConfig.league == League.XRP,
-        controlSurfaceActive = localSimulatorControlAuthorized && currentConfig.league == League.XRP,
+        connected = localSimLoopbackConnected && currentConfig.league == League.XRP,
+        controlSurfaceActive = localSimulatorControlAuthorized,
     )
     val unmanagedSimulatorOnline = compatibleLocalSimOnline && !isSimRunning
     val simulationProduct = robotStudioShellState.simulationProduct

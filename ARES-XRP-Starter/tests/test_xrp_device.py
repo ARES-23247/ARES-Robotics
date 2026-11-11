@@ -189,6 +189,28 @@ class XrpDeviceTest(unittest.TestCase):
         self.assertIn("main.py", plan["pythonFiles"])
         self.assertIn("ares_micro/robot.py", plan["pythonFiles"])
 
+    def test_activation_script_prunes_superseded_slots_while_retaining_active_and_previous(self):
+        with tempfile.TemporaryDirectory() as directory:
+            vfs = pathlib.Path(directory)
+            slots = vfs / "ares_slots"
+            slots.mkdir()
+            for name in ("slot-old-1", "slot-prev-2", "slot-next-3"):
+                slot_dir = slots / name
+                slot_dir.mkdir()
+                (slot_dir / "main.py").write_text("x = 1\n", encoding="utf-8")
+                sub = slot_dir / "ares_micro"
+                sub.mkdir()
+                (sub / "robot.py").write_text("y = 2\n", encoding="utf-8")
+            (vfs / "ares_active_slot.txt").write_text(f"{slots.as_posix()}/slot-prev-2\n", encoding="utf-8")
+            (vfs / "ares_active_slot.prev").write_text(f"{slots.as_posix()}/slot-old-1\n", encoding="utf-8")
+
+            script = xrp_device._activation_script("/ares_slots/slot-next-3")
+            script_local = script.replace("/ares_slots", slots.as_posix()).replace(
+                "/ares_active_slot", (vfs / "ares_active_slot").as_posix()
+            )
+            exec(compile(script_local, "<activation>", "exec"), {})
+            remaining = sorted(item.name for item in slots.iterdir())
+            self.assertEqual(remaining, ["slot-next-3", "slot-prev-2"])
 
 
 if __name__ == "__main__":

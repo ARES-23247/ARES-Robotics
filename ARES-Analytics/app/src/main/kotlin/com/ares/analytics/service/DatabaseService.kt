@@ -25,6 +25,7 @@ import java.io.File
 import java.sql.Statement
 import java.sql.Connection
 import java.sql.DriverManager
+import java.util.concurrent.atomic.AtomicBoolean
 
 internal data class DuckDbResourceSettings(
     val memoryLimit: String,
@@ -101,6 +102,7 @@ class DatabaseService(
     private val metadataReadMutex = Mutex()
     private val liveReadMutex = Mutex()
     private val liveWriteMutex = Mutex()
+    private val closed = AtomicBoolean(false)
     val metrics = DatabaseMetrics()
 
     private val schemaInitializer: DatabaseSchemaInitializer
@@ -172,6 +174,7 @@ class DatabaseService(
                 metadataReadMutex,
                 liveReadMutex,
                 liveWriteMutex,
+                closed::get,
             )
             sessionMetadataRepo = SessionMetadataRepository(transactionCoordinator)
             telemetryRepo = TelemetryRepository(transactionCoordinator)
@@ -452,6 +455,7 @@ class DatabaseService(
                     lock.lock()
                     acquired++
                 }
+                closed.set(true)
                 if (!conn.isClosed) {
                     runCatching { conn.createStatement().use { it.execute("CHECKPOINT") } }
                         .onFailure { failure ->

@@ -137,13 +137,7 @@ public object RobotProjectAssembler {
                 AresLeague.XRP -> ControllerInputPlatform.XRP
             }
             if (inputPlatform != expected) {
-                issues.error(
-                    ProjectDocumentKind.PROJECT_METADATA,
-                    metadata.projectId,
-                    "league",
-                    "platform_mismatch",
-                    "Project league ${metadata.league} cannot be assembled for $inputPlatform",
-                )
+                issues.error(ProjectDocumentKind.PROJECT_METADATA, metadata.projectId, "league", "platform_mismatch", "Project league ${metadata.league} cannot be assembled for $inputPlatform")
             }
         }
 
@@ -154,13 +148,7 @@ public object RobotProjectAssembler {
         val effectiveCatalog = baseCatalog?.let { catalog ->
             runCatching { mergeSubsystemCapabilities(catalog, snapshot.subsystems) }
                 .onFailure { error ->
-                    issues.error(
-                        ProjectDocumentKind.CAPABILITY_CATALOG,
-                        catalog.projectId,
-                        "actions",
-                        "capability_derivation_failed",
-                        error.message ?: "Subsystem actions could not be derived",
-                    )
+                    issues.error(ProjectDocumentKind.CAPABILITY_CATALOG, catalog.projectId, "actions", "capability_derivation_failed", error.message ?: "Subsystem actions could not be derived")
                 }
                 .getOrNull()
         }
@@ -367,6 +355,21 @@ public object RobotProjectAssembler {
                     issues.error(ProjectDocumentKind.SUPERSTRUCTURE, owner, "transitions.actionKey", "duplicate_action_owner", "Action '$key' is owned by more than one superstructure: ${owners.distinct().sorted().joinToString()}")
                 }
             }
+        snapshot.superstructures
+            .flatMap { document ->
+                val targets = (
+                    document.states.flatMap { preset -> preset.subsystemTargets.map { it.target.subsystemUid to it.target.fieldUid } } +
+                        document.interlocks.map { it.constrained.subsystemUid to it.constrained.fieldUid }
+                    ).distinct()
+                targets.map { it to document.superstructureId }
+            }
+            .groupBy({ it.first }, { it.second })
+            .filterValues { it.distinct().size > 1 }
+            .forEach { (target, owners) ->
+                owners.distinct().forEach { owner ->
+                    issues.error(ProjectDocumentKind.SUPERSTRUCTURE, owner, "states.subsystemTargets", "duplicate_target_owner", "Target '${target.first}.${target.second}' is owned by more than one superstructure: ${owners.distinct().sorted().joinToString()}")
+                }
+            }
     }
 
     private fun validateControls(
@@ -433,7 +436,12 @@ public object RobotProjectAssembler {
         val context = RoutineValidationContext(
             hasAction = actionByKey::containsKey,
             hasCondition = conditionKeys::contains,
-            resourcesForAction = { key -> actionByKey[key]?.resources?.mapTo(linkedSetOf()) { it.resourceKey }.orEmpty() },
+            resourcesForAction = { key ->
+                actionByKey[key]?.resources
+                    ?.filter { it.access == com.areslib.catalog.ResourceAccess.EXCLUSIVE }
+                    ?.mapTo(linkedSetOf()) { it.resourceKey }
+                    .orEmpty()
+            },
         )
         validateRoutineSet(snapshot.routines, context).forEach { issue ->
             issues.add(issue.toProjectIssue(ProjectDocumentKind.ROUTINE))

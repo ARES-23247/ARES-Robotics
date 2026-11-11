@@ -10,12 +10,14 @@ import com.ares.analytics.shared.models.League
 import com.ares.analytics.shared.models.AppWorkspaces
 import com.ares.analytics.shared.models.ControllerBinding
 import com.ares.analytics.service.KeybindingParserService
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.util.concurrent.atomic.AtomicLong
 
 data class MainState(
     val config: WorkspaceConfig? = null,
@@ -68,6 +70,7 @@ class MainViewModel(
 ) {
     private val _state = MutableStateFlow(MainState())
     val state: StateFlow<MainState> = _state.asStateFlow()
+    private val scheduleGeneration = AtomicLong(0L)
 
     init {
         onIntent(MainIntent.LoadConfig)
@@ -157,14 +160,16 @@ class MainViewModel(
                     }
                 }
                 is MainIntent.AddNewWorkspace -> {
+                    scheduleGeneration.incrementAndGet()
                     if (_state.value.config != null) beforeWorkspaceChange()
-                    _state.update { it.copy(config = null) }
+                    _state.update { it.copy(config = null, matches = emptyList()) }
                 }
                 is MainIntent.CancelAddNewWorkspace -> {
                     val app = environmentService.loadWorkspaces()
                     val active = app.workspaces.find { it.id == app.activeWorkspaceId } ?: app.workspaces.firstOrNull()
                     if (active != null) {
                         _state.update { it.copy(config = active) }
+                        loadMatchSchedule(active)
                     }
                 }
             }
@@ -172,17 +177,26 @@ class MainViewModel(
     }
 
     private suspend fun loadMatchSchedule(currentConf: WorkspaceConfig) {
+        val generation = scheduleGeneration.incrementAndGet()
         val eventCode = currentConf.eventCode
-        if (eventCode != null && eventCode.isNotEmpty()) {
-            val list = if (currentConf.league == League.FTC) {
-                val apiKey = currentConf.toaApiKey ?: ""
-                eventApiService.fetchFtcEventSchedule(eventCode, apiKey)
-            } else {
-                val apiKey = currentConf.tbaApiKey ?: ""
-                eventApiService.fetchFrcEventSchedule(eventCode, apiKey)
+        if (!eventCode.isNullOrEmpty()) {
+            val list = try {
+                if (currentConf.league == League.FTC) {
+                    val apiKey = currentConf.toaApiKey ?: ""
+                    eventApiService.fetchFtcEventSchedule(eventCode, apiKey)
+                } else {
+                    val apiKey = currentConf.tbaApiKey ?: ""
+                    eventApiService.fetchFrcEventSchedule(eventCode, apiKey)
+                }
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (_: Exception) {
+                emptyList()
             }
-            _state.update { it.copy(matches = list) }
-        } else {
+            if (scheduleGeneration.get() == generation && _state.value.config?.id == currentConf.id) {
+                _state.update { it.copy(matches = list) }
+            }
+        } else if (scheduleGeneration.get() == generation && _state.value.config?.id == currentConf.id) {
             _state.update { it.copy(matches = emptyList()) }
         }
     }

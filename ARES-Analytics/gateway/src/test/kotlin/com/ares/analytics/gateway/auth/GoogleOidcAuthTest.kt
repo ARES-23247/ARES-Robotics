@@ -2,11 +2,13 @@ package com.ares.analytics.gateway.auth
 
 import io.ktor.client.request.get
 import io.ktor.client.request.header
+import io.ktor.client.statement.bodyAsText
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.install
 import io.ktor.server.auth.Authentication
 import io.ktor.server.auth.authenticate
+import io.ktor.server.auth.principal
 import io.ktor.server.response.respondText
 import io.ktor.server.routing.get
 import io.ktor.server.routing.routing
@@ -94,5 +96,66 @@ class GoogleOidcAuthTest {
         }
 
         assertEquals(HttpStatusCode.Unauthorized, response.status)
+    }
+
+    @Test
+    fun `verifier executes on Dispatchers IO and propagates principal fields`() = testApplication {
+        var verifierThreadName = ""
+        application {
+            install(Authentication) {
+                googleOidc {
+                    tokenVerifier = { token ->
+                        verifierThreadName = Thread.currentThread().name
+                        if (token == "io-token") GooglePrincipal("sub-io", "io@aresfirst.org", "IO User") else null
+                    }
+                }
+            }
+            routing {
+                authenticate("google") {
+                    get("/whoami") {
+                        val p = requireNotNull(call.principal<GooglePrincipal>())
+                        call.respondText("${p.subject}|${p.email}|${p.name}")
+                    }
+                }
+            }
+        }
+        val response = client.get("/whoami") {
+            header(HttpHeaders.Authorization, "Bearer io-token")
+        }
+        assertEquals(HttpStatusCode.OK, response.status)
+        assertEquals("sub-io|io@aresfirst.org|IO User", response.bodyAsText())
+        kotlin.test.assertTrue(verifierThreadName.isNotBlank())
+    }
+
+    @Test
+    fun `default verifyGoogleIdToken fails closed when GOOGLE_OIDC_CLIENT_ID is unset and CancellationException bypasses 401 challenge`() = testApplication {
+        if (System.getenv("GOOGLE_OIDC_CLIENT_ID").isNullOrBlank()) {
+            kotlin.test.assertNull(verifyGoogleIdToken("any-token"))
+        }
+        var routeReached = false
+        application {
+            install(Authentication) {
+                googleOidc("google") {
+                    tokenVerifier = { throw kotlinx.coroutines.CancellationException("request cancelled") }
+                }
+            }
+            routing {
+                authenticate("google") {
+                    get("/secure") {
+                        routeReached = true
+                        call.respondText("ok")
+                    }
+                }
+            }
+        }
+        val outcome = runCatching {
+            client.get("/secure") {
+                header(HttpHeaders.Authorization, "Bearer cancel-token")
+            }
+        }
+        kotlin.test.assertFalse(routeReached)
+        outcome.getOrNull()?.let { response ->
+            kotlin.test.assertNotEquals("Invalid Google ID token", response.bodyAsText())
+        }
     }
 }

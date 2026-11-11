@@ -131,11 +131,13 @@ internal class StarterGeneratedCapabilities(
 
     override fun onDriveCommand(vx: Double, vy: Double, omega: Double, active: Boolean) {
         val permitted = drivePermitted && active && vx.isFinite() && vy.isFinite() && omega.isFinite()
+        val allianceScale = if (robot.store.state.drive.alliance == Alliance.RED) -1.0 else 1.0
         val x = if (permitted) vx.coerceIn(-1.0, 1.0) else 0.0
         val y = if (permitted) vy.coerceIn(-1.0, 1.0) else 0.0
-        val scale = GeneratedAresDrivebaseConfig.MAX_LINEAR_SPEED_METERS_PER_SECOND / hypot(x, y).coerceAtLeast(1.0)
-        driveCommand.targetXVelocity = x * scale
-        driveCommand.targetYVelocity = y * scale
+        val linearScale = (GeneratedAresDrivebaseConfig.MAX_LINEAR_SPEED_METERS_PER_SECOND /
+            hypot(x, y).coerceAtLeast(1.0)) * allianceScale
+        driveCommand.targetXVelocity = if (x == 0.0) 0.0 else x * linearScale
+        driveCommand.targetYVelocity = if (y == 0.0) 0.0 else y * linearScale
         driveCommand.targetAngularVelocity = if (permitted) omega.coerceIn(-1.0, 1.0) *
             GeneratedAresDrivebaseConfig.MAX_ANGULAR_SPEED_RADIANS_PER_SECOND else 0.0
         driveCommand.timestampMs = RobotClock.currentTimeMillis()

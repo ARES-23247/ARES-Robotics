@@ -258,4 +258,27 @@ class StarterRobotLifecycleAuditTest {
             assertEquals(com.areslib.state.Alliance.BLUE, telemetry.runtime.store.state.drive.alliance)
         }
     }
+
+    @Test fun `simulation publishes packed SimulatorPoseFrame and mirrors teleop drive on Red alliance`() = withRobot { robot, telemetry ->
+        robot.robotInit()
+        robot.simulationInit()
+        robot.simulationPeriodic()
+        val packed = telemetry.values["ARES/SimulatorPoseFrame"] as? DoubleArray
+        assertNotNull(packed)
+        assertEquals(10, packed!!.size)
+        assertEquals(0.0, packed[9], 1e-12)
+
+        val capabilities = StarterGeneratedCapabilities(telemetry.runtime, drivePermitted = true)
+        telemetry.runtime.store.dispatch(RobotAction.SetAlliance(com.areslib.state.Alliance.BLUE))
+        capabilities.onDriveCommand(0.5, -0.25, 0.5, active = true)
+        val blueVx = telemetry.runtime.store.state.drive.xVelocityMetersPerSecond
+        val blueVy = telemetry.runtime.store.state.drive.yVelocityMetersPerSecond
+        assertTrue(blueVx > 0.0)
+        assertTrue(blueVy < 0.0)
+
+        telemetry.runtime.store.dispatch(RobotAction.SetAlliance(com.areslib.state.Alliance.RED))
+        capabilities.onDriveCommand(0.5, -0.25, 0.5, active = true)
+        assertEquals(-blueVx, telemetry.runtime.store.state.drive.xVelocityMetersPerSecond, 1e-9)
+        assertEquals(-blueVy, telemetry.runtime.store.state.drive.yVelocityMetersPerSecond, 1e-9)
+    }
 }

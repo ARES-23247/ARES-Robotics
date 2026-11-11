@@ -244,8 +244,17 @@ class PinpointIOTest {
             assertEquals(PinpointIO.HealthStatus.IMPLAUSIBLE, pinpointIO.healthStatus)
             assertFalse(pinpointIO.isHealthy(3_020L))
             assertEquals(0.0, rejected.xMeters, 1e-6)
+            assertFalse(rejected.motionMeasurementsValid)
+            assertEquals(0L, rejected.timestampMs)
+            assertEquals(0.0, rejected.xVelocityMetersPerSecond)
         } finally {
             RobotClock.useSystemTime()
         }
+    }
+
+    @Test
+    fun `nonfinite pinpoint constructor parameters are rejected`() {
+        assertThrows(IllegalArgumentException::class.java) { PinpointIO(GoBildaPinpointDriver(), xOffsetMm = Double.NaN) }
+        assertThrows(IllegalArgumentException::class.java) { PinpointIO(GoBildaPinpointDriver(), encoderResolution = Double.NaN) }
     }
 }

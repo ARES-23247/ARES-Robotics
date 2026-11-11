@@ -92,7 +92,7 @@ class FtcVisionPortalIO(
                 val detection = detections[i]
                 val pose = detection.ftcPose ?: continue
                 val capturedNs = detection.frameAcquisitionNanoTime
-                if (capturedNs <= 0L || capturedNs > nowNs) continue
+                if (capturedNs == 0L) continue
                 val ageNs = nowNs - capturedNs
                 if (ageNs < 0L || ageNs > 500_000_000L) continue
                 val timestampMs = nowMs - ageNs / 1_000_000L

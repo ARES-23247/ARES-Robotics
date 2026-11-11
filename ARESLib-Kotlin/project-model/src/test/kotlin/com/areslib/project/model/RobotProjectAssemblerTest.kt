@@ -136,6 +136,112 @@ class RobotProjectAssemblerTest {
         assertTrue(split.issues.any { it.code == "project_identity_mismatch" && it.path == "projectId" })
     }
 
+    @Test
+    fun `parallel routine allows shared resources and duplicate superstructure target owners fail`() {
+        val sharedCatalog = CapabilityCatalogDocument(
+            projectId = "lightbot",
+            actions = listOf(
+                ActionDescriptor(
+                    key = "lights.cycleForward",
+                    displayName = "Cycle lights forward",
+                    description = "Cycles LED pattern",
+                ),
+                ActionDescriptor(
+                    key = "sensor.sampleA",
+                    displayName = "Sample A",
+                    description = "Reads shared telemetry bus",
+                    resources = listOf(com.areslib.catalog.ResourceClaim("bus.telemetry", com.areslib.catalog.ResourceAccess.READ)),
+                ),
+                ActionDescriptor(
+                    key = "sensor.sampleB",
+                    displayName = "Sample B",
+                    description = "Reads shared telemetry bus",
+                    resources = listOf(com.areslib.catalog.ResourceClaim("bus.telemetry", com.areslib.catalog.ResourceAccess.READ)),
+                ),
+            ),
+        )
+        val routine = com.areslib.routine.RoutineDocument(
+            documentId = "parallel-shared",
+            name = "Parallel shared",
+            steps = listOf(
+                com.areslib.routine.RoutineStep.together(
+                    children = listOf(
+                        com.areslib.routine.RoutineStep.action(key = "sensor.sampleA", stepId = "a"),
+                        com.areslib.routine.RoutineStep.action(key = "sensor.sampleB", stepId = "b"),
+                    ),
+                    stepId = "root",
+                ),
+            ),
+        )
+        val assembledShared = RobotProjectAssembler.assemble(
+            validSnapshot().copy(baseCapabilityCatalog = sharedCatalog, routines = listOf(routine)),
+        )
+        assertTrue(assembledShared.isValid, assembledShared.issues.joinToString { "${it.code}: ${it.message}" })
+
+        val subsystem = com.areslib.subsystem.SubsystemDocument(
+            documentId = "arm",
+            displayName = "Arm",
+            kotlinTypeName = "Arm",
+            platform = com.areslib.subsystem.SubsystemPlatform.FTC,
+            hardware = listOf(
+                com.areslib.subsystem.SubsystemHardwareDocument(
+                    hardwareId = "motor",
+                    displayName = "Motor",
+                    kind = com.areslib.subsystem.SubsystemHardwareKind.MOTOR,
+                    connection = com.areslib.subsystem.SubsystemHardwareConnection(hardwareMapName = "armMotor"),
+                    safeOutput = 0.0,
+                )
+            ),
+            stateFields = listOf(
+                com.areslib.subsystem.SubsystemStateFieldDocument(
+                    fieldId = "targetVolts",
+                    displayName = "Target Volts",
+                    type = com.areslib.subsystem.SubsystemValueType.DOUBLE,
+                    role = com.areslib.subsystem.SubsystemFieldRole.TARGET,
+                    unit = "V",
+                    defaultNumber = 0.0,
+                    minimum = -12.0,
+                    maximum = 12.0,
+                )
+            ),
+            controlLoops = listOf(
+                com.areslib.subsystem.SubsystemControlLoopDocument(
+                    loopId = "openLoop",
+                    displayName = "Open Loop",
+                    strategy = com.areslib.subsystem.SubsystemControlStrategy.DIRECT,
+                    actuatorId = "motor",
+                    targetFieldId = "targetVolts",
+                )
+            ),
+        )
+        fun superDoc(id: String) = com.areslib.superstructure.SuperstructureDocument(
+            superstructureId = id,
+            displayName = id,
+            initialStateId = "home",
+            faultStateId = "home",
+            states = listOf(
+                com.areslib.superstructure.SuperstructureStatePreset(
+                    stateId = "home",
+                    displayName = "Home",
+                    subsystemTargets = listOf(
+                        com.areslib.superstructure.SuperstructureSubsystemTarget(
+                            target = com.areslib.superstructure.SuperstructureFieldReference(subsystem.uid, "targetVolts"),
+                            constantDoubleValue = 0.0,
+                        )
+                    ),
+                )
+            ),
+        )
+        val duplicateTargetOwners = RobotProjectAssembler.assemble(
+            validSnapshot().copy(
+                subsystems = listOf(subsystem),
+                superstructures = listOf(superDoc("super-a"), superDoc("super-b")),
+            ),
+        )
+        assertFalse(duplicateTargetOwners.isValid)
+        assertTrue(duplicateTargetOwners.issues.any { it.code == "duplicate_target_owner" })
+    }
+
     private fun validSnapshot() = RobotProjectSnapshot(
         projectRoot = "C:/robot/lightbot",
         metadata = AresProjectMetadataDocument(
