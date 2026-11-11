@@ -1,3 +1,59 @@
+public final class com/areslib/project/model/AresProjectBuilder {
+	public final fun action (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/util/List;)V
+	public static synthetic fun action$default (Lcom/areslib/project/model/AresProjectBuilder;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/util/List;ILjava/lang/Object;)V
+	public final fun autonomousCatalog (Lcom/areslib/routine/AutonomousCatalogDocument;)Lcom/areslib/routine/AutonomousCatalogDocument;
+	public final fun autonomousCatalog (Ljava/lang/String;Lkotlin/jvm/functions/Function1;)Lcom/areslib/routine/AutonomousCatalogDocument;
+	public static synthetic fun autonomousCatalog$default (Lcom/areslib/project/model/AresProjectBuilder;Ljava/lang/String;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lcom/areslib/routine/AutonomousCatalogDocument;
+	public final fun capabilityCatalog (Lcom/areslib/catalog/CapabilityCatalogDocument;)V
+	public final fun condition (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
+	public static synthetic fun condition$default (Lcom/areslib/project/model/AresProjectBuilder;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)V
+	public final fun controlScheme (Lcom/areslib/controls/ControlSchemeDocument;)Lcom/areslib/controls/ControlSchemeDocument;
+	public final fun controlScheme (Ljava/lang/String;Ljava/lang/String;Lkotlin/jvm/functions/Function1;)Lcom/areslib/controls/ControlSchemeDocument;
+	public static synthetic fun controlScheme$default (Lcom/areslib/project/model/AresProjectBuilder;Ljava/lang/String;Ljava/lang/String;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lcom/areslib/controls/ControlSchemeDocument;
+	public final fun controllerProfile (Lcom/areslib/controls/ControllerProfileDocument;)Lcom/areslib/controls/ControllerProfileDocument;
+	public final fun drivetrain (Lcom/areslib/drivetrain/DrivetrainDocument;)Lcom/areslib/drivetrain/DrivetrainDocument;
+	public final fun field (Lcom/areslib/state/RobotFieldConfig;)V
+	public final fun frcCtreSwerveDrivetrain (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lkotlin/jvm/functions/Function1;)Lcom/areslib/drivetrain/DrivetrainDocument;
+	public static synthetic fun frcCtreSwerveDrivetrain$default (Lcom/areslib/project/model/AresProjectBuilder;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lcom/areslib/drivetrain/DrivetrainDocument;
+	public final fun ftcMecanumDrivetrain (Ljava/lang/String;Ljava/lang/String;Lkotlin/jvm/functions/Function1;)Lcom/areslib/drivetrain/DrivetrainDocument;
+	public static synthetic fun ftcMecanumDrivetrain$default (Lcom/areslib/project/model/AresProjectBuilder;Ljava/lang/String;Ljava/lang/String;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lcom/areslib/drivetrain/DrivetrainDocument;
+	public final fun ftcRuntime (Lcom/areslib/project/AresFtcHubCommandTransport;Z)V
+	public static synthetic fun ftcRuntime$default (Lcom/areslib/project/model/AresProjectBuilder;Lcom/areslib/project/AresFtcHubCommandTransport;ZILjava/lang/Object;)V
+	public final fun geometry (DDDDLcom/areslib/project/AresCoordinateConvention;)V
+	public static synthetic fun geometry$default (Lcom/areslib/project/model/AresProjectBuilder;DDDDLcom/areslib/project/AresCoordinateConvention;ILjava/lang/Object;)V
+	public final fun getAuthoringModel ()Lcom/areslib/project/AresProjectAuthoringModel;
+	public final fun getLeague ()Lcom/areslib/project/AresLeague;
+	public final fun getProjectId ()Ljava/lang/String;
+	public final fun getProjectRoot ()Ljava/lang/String;
+	public final fun identity (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
+	public static synthetic fun identity$default (Lcom/areslib/project/model/AresProjectBuilder;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)V
+	public final fun metadata (Lcom/areslib/project/AresProjectMetadataDocument;)V
+	public final fun routine (Lcom/areslib/routine/RoutineDocument;)Lcom/areslib/routine/RoutineDocument;
+	public final fun routine (Ljava/lang/String;Ljava/lang/String;Lkotlin/jvm/functions/Function1;)Lcom/areslib/routine/RoutineDocument;
+	public static synthetic fun routine$default (Lcom/areslib/project/model/AresProjectBuilder;Ljava/lang/String;Ljava/lang/String;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lcom/areslib/routine/RoutineDocument;
+	public final fun setAuthoringModel (Lcom/areslib/project/AresProjectAuthoringModel;)V
+	public final fun subsystem (Lcom/areslib/subsystem/SubsystemDocument;)Lcom/areslib/subsystem/SubsystemDocument;
+	public final fun subsystem (Ljava/lang/String;Lcom/areslib/subsystem/SubsystemPlatform;Lkotlin/jvm/functions/Function1;)Lcom/areslib/subsystem/SubsystemDocument;
+	public static synthetic fun subsystem$default (Lcom/areslib/project/model/AresProjectBuilder;Ljava/lang/String;Lcom/areslib/subsystem/SubsystemPlatform;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lcom/areslib/subsystem/SubsystemDocument;
+	public final fun superstructure (Lcom/areslib/superstructure/SuperstructureDocument;)Lcom/areslib/superstructure/SuperstructureDocument;
+	public final fun superstructure (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lkotlin/jvm/functions/Function1;)Lcom/areslib/superstructure/SuperstructureDocument;
+	public static synthetic fun superstructure$default (Lcom/areslib/project/model/AresProjectBuilder;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lcom/areslib/superstructure/SuperstructureDocument;
+	public final fun tuningComponent (Lcom/areslib/tuning/TuningComponentDocument;)Lcom/areslib/tuning/TuningComponentDocument;
+	public final fun tuningProfile (Lcom/areslib/tuning/TuningProfileDocument;)Lcom/areslib/tuning/TuningProfileDocument;
+	public final fun xrpRuntime (Lcom/areslib/project/AresXrpControllerModel;Ljava/lang/String;Ljava/lang/String;IID)V
+	public static synthetic fun xrpRuntime$default (Lcom/areslib/project/model/AresProjectBuilder;Lcom/areslib/project/AresXrpControllerModel;Ljava/lang/String;Ljava/lang/String;IIDILjava/lang/Object;)V
+}
+
+public abstract interface annotation class com/areslib/project/model/AresProjectDsl : java/lang/annotation/Annotation {
+}
+
+public final class com/areslib/project/model/AresProjectDslKt {
+	public static final fun aresProject (Ljava/lang/String;Lcom/areslib/project/AresLeague;Ljava/lang/String;Lcom/areslib/controls/ControllerInputPlatform;Lkotlin/jvm/functions/Function1;)Lcom/areslib/project/model/EffectiveRobotProject;
+	public static synthetic fun aresProject$default (Ljava/lang/String;Lcom/areslib/project/AresLeague;Ljava/lang/String;Lcom/areslib/controls/ControllerInputPlatform;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lcom/areslib/project/model/EffectiveRobotProject;
+	public static final fun formatValidationReport (Lcom/areslib/project/model/EffectiveRobotProject;)Ljava/lang/String;
+	public static final fun toKotlinDsl (Lcom/areslib/project/model/EffectiveRobotProject;)Ljava/lang/String;
+}
+
 public final class com/areslib/project/model/EffectiveRobotProject {
 	public synthetic fun <init> (Lcom/areslib/project/model/RobotProjectSnapshot;Ljava/lang/String;Lcom/areslib/project/schema/AresProjectTarget;Lcom/areslib/simulation/SimulationProjectPlan;Lcom/areslib/catalog/CapabilityCatalogDocument;Ljava/util/Map;Ljava/util/Map;Ljava/util/Map;Ljava/util/Map;Ljava/util/Map;Ljava/util/Map;Ljava/util/Map;Ljava/util/List;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Lcom/areslib/project/model/RobotProjectSnapshot;

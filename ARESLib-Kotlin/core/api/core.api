@@ -708,12 +708,15 @@ public final class com/areslib/control/assist/SysIdRoutine : java/lang/Enum {
 }
 
 public final class com/areslib/control/drivetrain/HolonomicDriveController {
-	public fun <init> (Lcom/areslib/control/feedback/PIDController;Lcom/areslib/control/feedback/PIDController;Lcom/areslib/control/feedback/PIDController;Lcom/areslib/telemetry/ITelemetry;DLcom/areslib/control/feedback/LinearADRC;Lcom/areslib/control/feedback/LinearADRC;Lcom/areslib/control/feedback/LinearADRC;)V
-	public synthetic fun <init> (Lcom/areslib/control/feedback/PIDController;Lcom/areslib/control/feedback/PIDController;Lcom/areslib/control/feedback/PIDController;Lcom/areslib/telemetry/ITelemetry;DLcom/areslib/control/feedback/LinearADRC;Lcom/areslib/control/feedback/LinearADRC;Lcom/areslib/control/feedback/LinearADRC;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Lcom/areslib/control/feedback/PIDController;Lcom/areslib/control/feedback/PIDController;Lcom/areslib/control/feedback/PIDController;Lcom/areslib/telemetry/ITelemetry;DLcom/areslib/control/feedback/LinearADRC;Lcom/areslib/control/feedback/LinearADRC;Lcom/areslib/control/feedback/LinearADRC;ZDD)V
+	public synthetic fun <init> (Lcom/areslib/control/feedback/PIDController;Lcom/areslib/control/feedback/PIDController;Lcom/areslib/control/feedback/PIDController;Lcom/areslib/telemetry/ITelemetry;DLcom/areslib/control/feedback/LinearADRC;Lcom/areslib/control/feedback/LinearADRC;Lcom/areslib/control/feedback/LinearADRC;ZDDILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun calculate-_0NefLE (Lcom/areslib/math/geometry/Pose2d;Lcom/areslib/math/geometry/Pose2d;DDDDDDD)Lcom/areslib/math/geometry/ChassisSpeeds;
 	public static synthetic fun calculate-_0NefLE$default (Lcom/areslib/control/drivetrain/HolonomicDriveController;Lcom/areslib/math/geometry/Pose2d;Lcom/areslib/math/geometry/Pose2d;DDDDDDDILjava/lang/Object;)Lcom/areslib/math/geometry/ChassisSpeeds;
 	public final fun calculateDirect (DDDDDDDDDDDD)Lcom/areslib/math/geometry/ChassisSpeeds;
 	public static synthetic fun calculateDirect$default (Lcom/areslib/control/drivetrain/HolonomicDriveController;DDDDDDDDDDDDILjava/lang/Object;)Lcom/areslib/math/geometry/ChassisSpeeds;
+	public final fun getMaxOpposingBrakingMps ()D
+	public final fun getMaxStrafeOutputMps ()D
+	public final fun getPrioritizeCorrectiveEffort ()Z
 }
 
 public final class com/areslib/control/drivetrain/VisionAlignController {
@@ -753,17 +756,22 @@ public final class com/areslib/control/feedback/PIDController {
 	public fun <init> (DDD)V
 	public final fun calculate (DD)D
 	public final fun calculate (DDD)D
+	public final fun configureGainSchedule (DD)V
 	public final fun enableContinuousInput (DD)V
 	public final fun getD ()D
 	public final fun getDeadzone ()D
+	public final fun getGainScheduleThreshold ()D
 	public final fun getI ()D
+	public final fun getLargeErrorKp ()D
 	public final fun getLastCalculationValid ()Z
 	public final fun getP ()D
 	public final fun reset ()V
 	public final fun setD (D)V
 	public final fun setDeadzone (D)V
+	public final fun setGainScheduleThreshold (D)V
 	public final fun setI (D)V
 	public final fun setIntegratorRange (DD)V
+	public final fun setLargeErrorKp (D)V
 	public final fun setOutputLimits (DD)V
 	public final fun setP (D)V
 	public final fun setSetpoint (D)V
@@ -772,6 +780,7 @@ public final class com/areslib/control/feedback/PIDController {
 public final class com/areslib/control/feedback/ProfiledPIDController {
 	public fun <init> (DDDLcom/areslib/control/profile/TrapezoidProfile$Constraints;)V
 	public final fun calculate (DD)D
+	public final fun configureGainSchedule (DD)V
 	public final fun getConstraints ()Lcom/areslib/control/profile/TrapezoidProfile$Constraints;
 	public final fun getCurrentState ()Lcom/areslib/control/profile/TrapezoidProfile$State;
 	public final fun getD ()D
@@ -1011,6 +1020,13 @@ public final class com/areslib/control/tuning/SimpleFeedforwardCoeffs {
 }
 
 public final class com/areslib/controls/AnalogControlBindingBuilder {
+	public final fun curve (D)Lcom/areslib/controls/AnalogControlBindingBuilder;
+	public final fun deadband (D)Lcom/areslib/controls/AnalogControlBindingBuilder;
+	public final fun drive (Ljava/lang/String;)V
+	public final fun inputRange (DDD)Lcom/areslib/controls/AnalogControlBindingBuilder;
+	public static synthetic fun inputRange$default (Lcom/areslib/controls/AnalogControlBindingBuilder;DDDILjava/lang/Object;)Lcom/areslib/controls/AnalogControlBindingBuilder;
+	public final fun invert (Z)Lcom/areslib/controls/AnalogControlBindingBuilder;
+	public static synthetic fun invert$default (Lcom/areslib/controls/AnalogControlBindingBuilder;ZILjava/lang/Object;)Lcom/areslib/controls/AnalogControlBindingBuilder;
 	public final fun named (Ljava/lang/String;Ljava/lang/String;)Lcom/areslib/controls/AnalogControlBindingBuilder;
 	public static synthetic fun named$default (Lcom/areslib/controls/AnalogControlBindingBuilder;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lcom/areslib/controls/AnalogControlBindingBuilder;
 	public final fun onEnter (Lkotlin/jvm/functions/Function1;)V
@@ -1019,9 +1035,13 @@ public final class com/areslib/controls/AnalogControlBindingBuilder {
 	public static synthetic fun onValue$default (Lcom/areslib/controls/AnalogControlBindingBuilder;Ljava/lang/String;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)V
 	public final fun onlyOnChange (D)Lcom/areslib/controls/AnalogControlBindingBuilder;
 	public static synthetic fun onlyOnChange$default (Lcom/areslib/controls/AnalogControlBindingBuilder;DILjava/lang/Object;)Lcom/areslib/controls/AnalogControlBindingBuilder;
+	public final fun outputRange (DD)Lcom/areslib/controls/AnalogControlBindingBuilder;
 	public final fun rearmNearNeutral (D)Lcom/areslib/controls/AnalogControlBindingBuilder;
+	public final fun scale (D)Lcom/areslib/controls/AnalogControlBindingBuilder;
 	public final fun slew (DD)Lcom/areslib/controls/AnalogControlBindingBuilder;
 	public static synthetic fun slew$default (Lcom/areslib/controls/AnalogControlBindingBuilder;DDILjava/lang/Object;)Lcom/areslib/controls/AnalogControlBindingBuilder;
+	public final fun slewRate (DD)Lcom/areslib/controls/AnalogControlBindingBuilder;
+	public static synthetic fun slewRate$default (Lcom/areslib/controls/AnalogControlBindingBuilder;DDILjava/lang/Object;)Lcom/areslib/controls/AnalogControlBindingBuilder;
 	public final fun whileInside (Lkotlin/jvm/functions/Function1;)V
 }
 
@@ -1032,6 +1052,7 @@ public final class com/areslib/controls/BindingTargetBuilder {
 	public final fun action (Ljava/lang/String;Lkotlin/jvm/functions/Function1;)V
 	public static synthetic fun action$default (Lcom/areslib/controls/BindingTargetBuilder;Ljava/lang/String;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)V
 	public final fun cancelRoutine (Ljava/lang/String;)V
+	public final fun drive (Ljava/lang/String;)V
 	public final fun routine (Ljava/lang/String;Lcom/areslib/controls/RoutineInvocationPolicy;)V
 	public static synthetic fun routine$default (Lcom/areslib/controls/BindingTargetBuilder;Ljava/lang/String;Lcom/areslib/controls/RoutineInvocationPolicy;ILjava/lang/Object;)V
 }
@@ -1044,6 +1065,10 @@ public final class com/areslib/controls/ControlSchemeBuilder {
 public final class com/areslib/controls/ControlSchemeDslKt {
 	public static final fun controlScheme (Ljava/lang/String;Ljava/lang/String;ILjava/lang/String;Lkotlin/jvm/functions/Function1;)Lcom/areslib/controls/ControlSchemeDocument;
 	public static synthetic fun controlScheme$default (Ljava/lang/String;Ljava/lang/String;ILjava/lang/String;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lcom/areslib/controls/ControlSchemeDocument;
+}
+
+public final class com/areslib/controls/ControlSchemeDslRendererKt {
+	public static final fun toKotlinDsl (Lcom/areslib/controls/ControlSchemeDocument;)Ljava/lang/String;
 }
 
 public final class com/areslib/controls/ControllerControlsBuilder {
@@ -1060,9 +1085,15 @@ public final class com/areslib/controls/ControllerControlsBuilder {
 public final class com/areslib/controls/DigitalControlBindingBuilder {
 	public final fun chordWindow (D)Lcom/areslib/controls/DigitalControlBindingBuilder;
 	public final fun cooldown (D)Lcom/areslib/controls/DigitalControlBindingBuilder;
+	public final fun curve (D)Lcom/areslib/controls/DigitalControlBindingBuilder;
+	public final fun deadband (D)Lcom/areslib/controls/DigitalControlBindingBuilder;
 	public final fun debounce (DD)Lcom/areslib/controls/DigitalControlBindingBuilder;
 	public static synthetic fun debounce$default (Lcom/areslib/controls/DigitalControlBindingBuilder;DDILjava/lang/Object;)Lcom/areslib/controls/DigitalControlBindingBuilder;
 	public final fun holdAfter (D)Lcom/areslib/controls/DigitalControlBindingBuilder;
+	public final fun inputRange (DDD)Lcom/areslib/controls/DigitalControlBindingBuilder;
+	public static synthetic fun inputRange$default (Lcom/areslib/controls/DigitalControlBindingBuilder;DDDILjava/lang/Object;)Lcom/areslib/controls/DigitalControlBindingBuilder;
+	public final fun invert (Z)Lcom/areslib/controls/DigitalControlBindingBuilder;
+	public static synthetic fun invert$default (Lcom/areslib/controls/DigitalControlBindingBuilder;ZILjava/lang/Object;)Lcom/areslib/controls/DigitalControlBindingBuilder;
 	public final fun maximumActive (D)Lcom/areslib/controls/DigitalControlBindingBuilder;
 	public final fun named (Ljava/lang/String;Ljava/lang/String;)Lcom/areslib/controls/DigitalControlBindingBuilder;
 	public static synthetic fun named$default (Lcom/areslib/controls/DigitalControlBindingBuilder;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lcom/areslib/controls/DigitalControlBindingBuilder;
@@ -1070,10 +1101,13 @@ public final class com/areslib/controls/DigitalControlBindingBuilder {
 	public final fun onPress (Lkotlin/jvm/functions/Function1;)V
 	public final fun onRelease (Lkotlin/jvm/functions/Function1;)V
 	public final fun onRepeat (Lkotlin/jvm/functions/Function1;)V
+	public final fun outputRange (DD)Lcom/areslib/controls/DigitalControlBindingBuilder;
 	public final fun priority (I)Lcom/areslib/controls/DigitalControlBindingBuilder;
 	public final fun repeat (DD)Lcom/areslib/controls/DigitalControlBindingBuilder;
+	public final fun scale (D)Lcom/areslib/controls/DigitalControlBindingBuilder;
 	public final fun suppressSingles ()Lcom/areslib/controls/DigitalControlBindingBuilder;
 	public final fun whileHeld (Lkotlin/jvm/functions/Function1;)V
+	public final fun whilePressed (Lkotlin/jvm/functions/Function1;)V
 }
 
 public final class com/areslib/drivetrain/SwerveModuleConfig {
@@ -2912,8 +2946,8 @@ public final class com/areslib/math/estimation/PoseEstimator {
 	public static synthetic fun addOdometryObservationDirect$default (Lcom/areslib/math/estimation/PoseEstimator;Lcom/areslib/math/estimation/PoseEstimatorState;JDDDDDDDDDZILjava/lang/Object;)Lcom/areslib/math/estimation/PoseEstimatorState;
 	public final fun addVisionMeasurement (Lcom/areslib/math/estimation/PoseEstimatorState;Lcom/areslib/state/VisionMeasurement;Lcom/areslib/math/geometry/Vector3;IZDD)Lcom/areslib/math/estimation/PoseEstimatorState;
 	public static synthetic fun addVisionMeasurement$default (Lcom/areslib/math/estimation/PoseEstimator;Lcom/areslib/math/estimation/PoseEstimatorState;Lcom/areslib/state/VisionMeasurement;Lcom/areslib/math/geometry/Vector3;IZDDILjava/lang/Object;)Lcom/areslib/math/estimation/PoseEstimatorState;
-	public final fun addVisionMeasurementDirect (Lcom/areslib/math/estimation/PoseEstimatorState;Lcom/areslib/state/VisionMeasurement;DDDIZDDZZZ)Lcom/areslib/math/estimation/PoseEstimatorState;
-	public static synthetic fun addVisionMeasurementDirect$default (Lcom/areslib/math/estimation/PoseEstimator;Lcom/areslib/math/estimation/PoseEstimatorState;Lcom/areslib/state/VisionMeasurement;DDDIZDDZZZILjava/lang/Object;)Lcom/areslib/math/estimation/PoseEstimatorState;
+	public final fun addVisionMeasurementDirect (Lcom/areslib/math/estimation/PoseEstimatorState;Lcom/areslib/state/VisionMeasurement;DDDIZDDZZZZ)Lcom/areslib/math/estimation/PoseEstimatorState;
+	public static synthetic fun addVisionMeasurementDirect$default (Lcom/areslib/math/estimation/PoseEstimator;Lcom/areslib/math/estimation/PoseEstimatorState;Lcom/areslib/state/VisionMeasurement;DDDIZDDZZZZILjava/lang/Object;)Lcom/areslib/math/estimation/PoseEstimatorState;
 	public final fun getQTheta ()D
 	public final fun getQX ()D
 	public final fun getQY ()D
@@ -3149,8 +3183,8 @@ public final class com/areslib/math/estimation/StationaryCalibrationGate {
 
 public final class com/areslib/math/estimation/VisionMahalanobisFilter {
 	public static final field INSTANCE Lcom/areslib/math/estimation/VisionMahalanobisFilter;
-	public final fun processVisionMeasurement (Lcom/areslib/math/estimation/PoseEstimatorState;Lcom/areslib/state/VisionMeasurement;DDDIZDDLjava/util/Map;Lcom/areslib/math/geometry/Matrix3x3;Lcom/areslib/math/geometry/Matrix3x3;Lcom/areslib/math/geometry/Matrix3x3;Lcom/areslib/math/geometry/Matrix3x3;Lcom/areslib/math/geometry/Matrix3x3;Lcom/areslib/math/geometry/Matrix3x3;Lcom/areslib/math/estimation/HistoryBuffer;Lcom/areslib/math/geometry/Matrix3x3;Lcom/areslib/math/estimation/PoseHistoryEntry;ZZZ)Lcom/areslib/math/estimation/PoseEstimatorState;
-	public static synthetic fun processVisionMeasurement$default (Lcom/areslib/math/estimation/VisionMahalanobisFilter;Lcom/areslib/math/estimation/PoseEstimatorState;Lcom/areslib/state/VisionMeasurement;DDDIZDDLjava/util/Map;Lcom/areslib/math/geometry/Matrix3x3;Lcom/areslib/math/geometry/Matrix3x3;Lcom/areslib/math/geometry/Matrix3x3;Lcom/areslib/math/geometry/Matrix3x3;Lcom/areslib/math/geometry/Matrix3x3;Lcom/areslib/math/geometry/Matrix3x3;Lcom/areslib/math/estimation/HistoryBuffer;Lcom/areslib/math/geometry/Matrix3x3;Lcom/areslib/math/estimation/PoseHistoryEntry;ZZZILjava/lang/Object;)Lcom/areslib/math/estimation/PoseEstimatorState;
+	public final fun processVisionMeasurement (Lcom/areslib/math/estimation/PoseEstimatorState;Lcom/areslib/state/VisionMeasurement;DDDIZDDLjava/util/Map;Lcom/areslib/math/geometry/Matrix3x3;Lcom/areslib/math/geometry/Matrix3x3;Lcom/areslib/math/geometry/Matrix3x3;Lcom/areslib/math/geometry/Matrix3x3;Lcom/areslib/math/geometry/Matrix3x3;Lcom/areslib/math/geometry/Matrix3x3;Lcom/areslib/math/estimation/HistoryBuffer;Lcom/areslib/math/geometry/Matrix3x3;Lcom/areslib/math/estimation/PoseHistoryEntry;ZZZZ)Lcom/areslib/math/estimation/PoseEstimatorState;
+	public static synthetic fun processVisionMeasurement$default (Lcom/areslib/math/estimation/VisionMahalanobisFilter;Lcom/areslib/math/estimation/PoseEstimatorState;Lcom/areslib/state/VisionMeasurement;DDDIZDDLjava/util/Map;Lcom/areslib/math/geometry/Matrix3x3;Lcom/areslib/math/geometry/Matrix3x3;Lcom/areslib/math/geometry/Matrix3x3;Lcom/areslib/math/geometry/Matrix3x3;Lcom/areslib/math/geometry/Matrix3x3;Lcom/areslib/math/geometry/Matrix3x3;Lcom/areslib/math/estimation/HistoryBuffer;Lcom/areslib/math/geometry/Matrix3x3;Lcom/areslib/math/estimation/PoseHistoryEntry;ZZZZILjava/lang/Object;)Lcom/areslib/math/estimation/PoseEstimatorState;
 }
 
 public final class com/areslib/math/estimation/VisionNoiseCalibrationFit {
@@ -4050,15 +4084,72 @@ public final class com/areslib/pathing/FieldWaypointLoader {
 	public final fun loadAllWaypoints ()Ljava/util/Map;
 }
 
+public final class com/areslib/pathing/ForesightConfig {
+	public static final field Companion Lcom/areslib/pathing/ForesightConfig$Companion;
+	public fun <init> ()V
+	public fun <init> (ZDDD)V
+	public synthetic fun <init> (ZDDDILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Z
+	public final fun component2 ()D
+	public final fun component3 ()D
+	public final fun component4 ()D
+	public final fun copy (ZDDD)Lcom/areslib/pathing/ForesightConfig;
+	public static synthetic fun copy$default (Lcom/areslib/pathing/ForesightConfig;ZDDDILjava/lang/Object;)Lcom/areslib/pathing/ForesightConfig;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getAngularDecelRateRadPerSec2 ()D
+	public final fun getDecelRateMps2 ()D
+	public final fun getEnabled ()Z
+	public final fun getScalar ()D
+	public fun hashCode ()I
+	public final fun isValid ()Z
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/areslib/pathing/ForesightConfig$Companion {
+	public final fun forPreset (Lcom/areslib/pathing/TrajectoryPreset;DDD)Lcom/areslib/pathing/ForesightConfig;
+	public static synthetic fun forPreset$default (Lcom/areslib/pathing/ForesightConfig$Companion;Lcom/areslib/pathing/TrajectoryPreset;DDDILjava/lang/Object;)Lcom/areslib/pathing/ForesightConfig;
+	public final fun getDISABLED ()Lcom/areslib/pathing/ForesightConfig;
+}
+
+public final class com/areslib/pathing/ForesightLookaheadEstimator {
+	public fun <init> ()V
+	public fun <init> (Lcom/areslib/pathing/ForesightConfig;)V
+	public synthetic fun <init> (Lcom/areslib/pathing/ForesightConfig;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun getConfig ()Lcom/areslib/pathing/ForesightConfig;
+	public final fun getLastEstimateValid ()Z
+	public final fun getPredictedStopHeadingRad ()D
+	public final fun getPredictedStopX ()D
+	public final fun getPredictedStopY ()D
+	public final fun getStoppingDistanceMeters ()D
+	public final fun projectStoppingArcLength (Lcom/areslib/pathing/Path;D)D
+	public final fun setConfig (Lcom/areslib/pathing/ForesightConfig;)V
+	public final fun shouldTriggerPathSkip (DDLcom/areslib/math/geometry/Pose2d;D)Z
+	public final fun updateFieldRelative (DDDDDD)Z
+	public final fun updateRobotRelative (DDDDDD)Z
+}
+
 public final class com/areslib/pathing/HolonomicPathFollower {
+	public static final field Companion Lcom/areslib/pathing/HolonomicPathFollower$Companion;
 	public fun <init> (Lcom/areslib/subsystem/DrivetrainSubsystem;)V
 	public fun <init> (Lcom/areslib/subsystem/DrivetrainSubsystem;Lcom/areslib/control/feedback/PIDController;)V
 	public fun <init> (Lcom/areslib/subsystem/DrivetrainSubsystem;Lcom/areslib/control/feedback/PIDController;Lcom/areslib/control/feedback/PIDController;)V
 	public fun <init> (Lcom/areslib/subsystem/DrivetrainSubsystem;Lcom/areslib/control/feedback/PIDController;Lcom/areslib/control/feedback/PIDController;Lcom/areslib/control/feedback/PIDController;)V
-	public synthetic fun <init> (Lcom/areslib/subsystem/DrivetrainSubsystem;Lcom/areslib/control/feedback/PIDController;Lcom/areslib/control/feedback/PIDController;Lcom/areslib/control/feedback/PIDController;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Lcom/areslib/subsystem/DrivetrainSubsystem;Lcom/areslib/control/feedback/PIDController;Lcom/areslib/control/feedback/PIDController;Lcom/areslib/control/feedback/PIDController;Z)V
+	public fun <init> (Lcom/areslib/subsystem/DrivetrainSubsystem;Lcom/areslib/control/feedback/PIDController;Lcom/areslib/control/feedback/PIDController;Lcom/areslib/control/feedback/PIDController;ZD)V
+	public fun <init> (Lcom/areslib/subsystem/DrivetrainSubsystem;Lcom/areslib/control/feedback/PIDController;Lcom/areslib/control/feedback/PIDController;Lcom/areslib/control/feedback/PIDController;ZDD)V
+	public fun <init> (Lcom/areslib/subsystem/DrivetrainSubsystem;Lcom/areslib/control/feedback/PIDController;Lcom/areslib/control/feedback/PIDController;Lcom/areslib/control/feedback/PIDController;ZDDLcom/areslib/pathing/ForesightConfig;)V
+	public synthetic fun <init> (Lcom/areslib/subsystem/DrivetrainSubsystem;Lcom/areslib/control/feedback/PIDController;Lcom/areslib/control/feedback/PIDController;Lcom/areslib/control/feedback/PIDController;ZDDLcom/areslib/pathing/ForesightConfig;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public static final fun forPreset (Lcom/areslib/subsystem/DrivetrainSubsystem;Lcom/areslib/pathing/TrajectoryPreset;)Lcom/areslib/pathing/HolonomicPathFollower;
+	public static final fun forPreset (Lcom/areslib/subsystem/DrivetrainSubsystem;Lcom/areslib/pathing/TrajectoryPreset;D)Lcom/areslib/pathing/HolonomicPathFollower;
+	public static final fun forPreset (Lcom/areslib/subsystem/DrivetrainSubsystem;Lcom/areslib/pathing/TrajectoryPreset;DD)Lcom/areslib/pathing/HolonomicPathFollower;
+	public static final fun forPreset (Lcom/areslib/subsystem/DrivetrainSubsystem;Lcom/areslib/pathing/TrajectoryPreset;DDD)Lcom/areslib/pathing/HolonomicPathFollower;
 	public final fun getDriveController ()Lcom/areslib/control/drivetrain/HolonomicDriveController;
 	public final fun getDrivetrain ()Lcom/areslib/subsystem/DrivetrainSubsystem;
+	public final fun getForesightEstimator ()Lcom/areslib/pathing/ForesightLookaheadEstimator;
+	public final fun getMaxOpposingBrakingMps ()D
+	public final fun getMaxStrafeOutputMps ()D
 	public final fun getOnEventTriggered ()Lkotlin/jvm/functions/Function1;
+	public final fun getPrioritizeCorrectiveEffort ()Z
 	public final fun getThetaController ()Lcom/areslib/control/feedback/PIDController;
 	public final fun getXController ()Lcom/areslib/control/feedback/PIDController;
 	public final fun getYController ()Lcom/areslib/control/feedback/PIDController;
@@ -4066,6 +4157,14 @@ public final class com/areslib/pathing/HolonomicPathFollower {
 	public final fun startPath (Lcom/areslib/pathing/Path;)V
 	public final fun stop ()V
 	public final fun update (Lcom/areslib/pathing/PathPoint;D)V
+}
+
+public final class com/areslib/pathing/HolonomicPathFollower$Companion {
+	public final fun forPreset (Lcom/areslib/subsystem/DrivetrainSubsystem;Lcom/areslib/pathing/TrajectoryPreset;)Lcom/areslib/pathing/HolonomicPathFollower;
+	public final fun forPreset (Lcom/areslib/subsystem/DrivetrainSubsystem;Lcom/areslib/pathing/TrajectoryPreset;D)Lcom/areslib/pathing/HolonomicPathFollower;
+	public final fun forPreset (Lcom/areslib/subsystem/DrivetrainSubsystem;Lcom/areslib/pathing/TrajectoryPreset;DD)Lcom/areslib/pathing/HolonomicPathFollower;
+	public final fun forPreset (Lcom/areslib/subsystem/DrivetrainSubsystem;Lcom/areslib/pathing/TrajectoryPreset;DDD)Lcom/areslib/pathing/HolonomicPathFollower;
+	public static synthetic fun forPreset$default (Lcom/areslib/pathing/HolonomicPathFollower$Companion;Lcom/areslib/subsystem/DrivetrainSubsystem;Lcom/areslib/pathing/TrajectoryPreset;DDDILjava/lang/Object;)Lcom/areslib/pathing/HolonomicPathFollower;
 }
 
 public final class com/areslib/pathing/JerkLimitedTrajectoryProvider : com/areslib/pathing/TrajectoryProvider {
@@ -4527,9 +4626,10 @@ public abstract interface class com/areslib/pathing/TrajectoryProvider {
 }
 
 public final class com/areslib/pathing/TrajectoryRequest {
-	public fun <init> (Ljava/util/List;Lcom/areslib/pathing/DriveModel;Lcom/areslib/pathing/TrajectoryPreset;Lcom/areslib/pathing/TrajectoryLimits;DDLcom/areslib/pathing/TrajectoryEngine;D)V
-	public synthetic fun <init> (Ljava/util/List;Lcom/areslib/pathing/DriveModel;Lcom/areslib/pathing/TrajectoryPreset;Lcom/areslib/pathing/TrajectoryLimits;DDLcom/areslib/pathing/TrajectoryEngine;DILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Ljava/util/List;Lcom/areslib/pathing/DriveModel;Lcom/areslib/pathing/TrajectoryPreset;Lcom/areslib/pathing/TrajectoryLimits;DDLcom/areslib/pathing/TrajectoryEngine;DLcom/areslib/routine/RoutineHeadingMode;Lcom/areslib/math/geometry/Translation2d;)V
+	public synthetic fun <init> (Ljava/util/List;Lcom/areslib/pathing/DriveModel;Lcom/areslib/pathing/TrajectoryPreset;Lcom/areslib/pathing/TrajectoryLimits;DDLcom/areslib/pathing/TrajectoryEngine;DLcom/areslib/routine/RoutineHeadingMode;Lcom/areslib/math/geometry/Translation2d;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Ljava/util/List;
+	public final fun component10 ()Lcom/areslib/math/geometry/Translation2d;
 	public final fun component2 ()Lcom/areslib/pathing/DriveModel;
 	public final fun component3 ()Lcom/areslib/pathing/TrajectoryPreset;
 	public final fun component4 ()Lcom/areslib/pathing/TrajectoryLimits;
@@ -4537,12 +4637,15 @@ public final class com/areslib/pathing/TrajectoryRequest {
 	public final fun component6 ()D
 	public final fun component7 ()Lcom/areslib/pathing/TrajectoryEngine;
 	public final fun component8 ()D
-	public final fun copy (Ljava/util/List;Lcom/areslib/pathing/DriveModel;Lcom/areslib/pathing/TrajectoryPreset;Lcom/areslib/pathing/TrajectoryLimits;DDLcom/areslib/pathing/TrajectoryEngine;D)Lcom/areslib/pathing/TrajectoryRequest;
-	public static synthetic fun copy$default (Lcom/areslib/pathing/TrajectoryRequest;Ljava/util/List;Lcom/areslib/pathing/DriveModel;Lcom/areslib/pathing/TrajectoryPreset;Lcom/areslib/pathing/TrajectoryLimits;DDLcom/areslib/pathing/TrajectoryEngine;DILjava/lang/Object;)Lcom/areslib/pathing/TrajectoryRequest;
+	public final fun component9 ()Lcom/areslib/routine/RoutineHeadingMode;
+	public final fun copy (Ljava/util/List;Lcom/areslib/pathing/DriveModel;Lcom/areslib/pathing/TrajectoryPreset;Lcom/areslib/pathing/TrajectoryLimits;DDLcom/areslib/pathing/TrajectoryEngine;DLcom/areslib/routine/RoutineHeadingMode;Lcom/areslib/math/geometry/Translation2d;)Lcom/areslib/pathing/TrajectoryRequest;
+	public static synthetic fun copy$default (Lcom/areslib/pathing/TrajectoryRequest;Ljava/util/List;Lcom/areslib/pathing/DriveModel;Lcom/areslib/pathing/TrajectoryPreset;Lcom/areslib/pathing/TrajectoryLimits;DDLcom/areslib/pathing/TrajectoryEngine;DLcom/areslib/routine/RoutineHeadingMode;Lcom/areslib/math/geometry/Translation2d;ILjava/lang/Object;)Lcom/areslib/pathing/TrajectoryRequest;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getDriveModel ()Lcom/areslib/pathing/DriveModel;
 	public final fun getEndVelocityMps ()D
+	public final fun getHeadingMode ()Lcom/areslib/routine/RoutineHeadingMode;
 	public final fun getLimits ()Lcom/areslib/pathing/TrajectoryLimits;
+	public final fun getLookAtPoint ()Lcom/areslib/math/geometry/Translation2d;
 	public final fun getPreferredEngine ()Lcom/areslib/pathing/TrajectoryEngine;
 	public final fun getPreset ()Lcom/areslib/pathing/TrajectoryPreset;
 	public final fun getSampleSpacingMeters ()D
@@ -4646,8 +4749,14 @@ public final class com/areslib/routine/CapabilityArgumentReader {
 
 public final class com/areslib/routine/DriveStepBuilder {
 	public final fun atProgress (DLjava/lang/String;)V
+	public final fun blendHandoff (Z)V
+	public static synthetic fun blendHandoff$default (Lcom/areslib/routine/DriveStepBuilder;ZILjava/lang/Object;)V
+	public final fun blendIntoNext (Z)V
+	public static synthetic fun blendIntoNext$default (Lcom/areslib/routine/DriveStepBuilder;ZILjava/lang/Object;)V
+	public final fun headingMode (Lcom/areslib/routine/RoutineHeadingMode;)V
 	public final fun motionPreset (Ljava/lang/String;)V
 	public final fun onArrival (Ljava/lang/String;)V
+	public final fun pointTowards (DD)V
 	public final fun preferEngine (Ljava/lang/String;)V
 	public final fun whileDriving (Ljava/lang/String;)V
 }
@@ -4677,11 +4786,20 @@ public final class com/areslib/routine/RoutineBuilder {
 	public static synthetic fun driveTo$default (Lcom/areslib/routine/RoutineBuilder;DDDLkotlin/jvm/functions/Function1;ILjava/lang/Object;)V
 	public final fun firstToFinish (Lkotlin/jvm/functions/Function1;)V
 	public final fun identified (Ljava/lang/String;Lkotlin/jvm/functions/Function1;)V
+	public final fun namedCommand (Ljava/lang/String;Lkotlin/jvm/functions/Function1;)V
+	public static synthetic fun namedCommand$default (Lcom/areslib/routine/RoutineBuilder;Ljava/lang/String;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)V
+	public final fun parallel (Lkotlin/jvm/functions/Function1;)V
+	public final fun race (Lkotlin/jvm/functions/Function1;)V
 	public final fun repeatTimes (ILkotlin/jvm/functions/Function1;)V
+	public final fun step (Ljava/lang/String;Lkotlin/jvm/functions/Function1;)V
+	public static synthetic fun step$default (Lcom/areslib/routine/RoutineBuilder;Ljava/lang/String;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)V
 	public final fun together (Lkotlin/jvm/functions/Function1;)V
+	public final fun waitFor-LRDsOJo (J)V
 	public final fun waitSeconds (D)V
 	public final fun waitUntil (Ljava/lang/String;DLkotlin/jvm/functions/Function1;)V
 	public static synthetic fun waitUntil$default (Lcom/areslib/routine/RoutineBuilder;Ljava/lang/String;DLkotlin/jvm/functions/Function1;ILjava/lang/Object;)V
+	public final fun waitUntil-8Mi8wO0 (Ljava/lang/String;JLkotlin/jvm/functions/Function1;)V
+	public static synthetic fun waitUntil-8Mi8wO0$default (Lcom/areslib/routine/RoutineBuilder;Ljava/lang/String;JLkotlin/jvm/functions/Function1;ILjava/lang/Object;)V
 }
 
 public final class com/areslib/routine/RoutineCompilationResult {
@@ -4706,8 +4824,13 @@ public final class com/areslib/routine/RoutineCompiler {
 }
 
 public final class com/areslib/routine/RoutineDslKt {
+	public static final fun formatRoutineValidationReport (Ljava/util/List;)Ljava/lang/String;
 	public static final fun routine (Ljava/lang/String;Ljava/lang/String;ILjava/lang/String;Lkotlin/jvm/functions/Function1;)Lcom/areslib/routine/RoutineDocument;
 	public static synthetic fun routine$default (Ljava/lang/String;Ljava/lang/String;ILjava/lang/String;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lcom/areslib/routine/RoutineDocument;
+}
+
+public final class com/areslib/routine/RoutineDslRendererKt {
+	public static final fun toKotlinDsl (Lcom/areslib/routine/RoutineDocument;)Ljava/lang/String;
 }
 
 public final class com/areslib/routine/RoutineManager {
@@ -4720,6 +4843,7 @@ public final class com/areslib/routine/RoutineManager {
 	public static synthetic fun cancelRoutine$default (Lcom/areslib/routine/RoutineManager;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)I
 	public final fun getActiveCount ()I
 	public final fun getQueuedCount ()I
+	public final fun getSuspendedCount ()I
 	public final fun register (Lcom/areslib/routine/RoutineDocument;)V
 	public final fun replaceDocuments (Ljava/util/Collection;)V
 	public final fun request (Ljava/lang/String;Lcom/areslib/routine/RoutineStartPolicy;)Lcom/areslib/routine/RoutineRequestResult;
@@ -4793,6 +4917,7 @@ public final class com/areslib/routine/RoutineRuntimeBindings {
 public final class com/areslib/routine/RoutineStartPolicy : java/lang/Enum {
 	public static final field IGNORE_IF_RUNNING Lcom/areslib/routine/RoutineStartPolicy;
 	public static final field PARALLEL Lcom/areslib/routine/RoutineStartPolicy;
+	public static final field PREEMPT_AND_SUSPEND Lcom/areslib/routine/RoutineStartPolicy;
 	public static final field QUEUE Lcom/areslib/routine/RoutineStartPolicy;
 	public static final field RESTART_EXISTING Lcom/areslib/routine/RoutineStartPolicy;
 	public static fun getEntries ()Lkotlin/enums/EnumEntries;
@@ -4874,7 +4999,9 @@ public final class com/areslib/sequencer/FollowPathTask : com/areslib/sequencer/
 	public fun <init> (Lcom/areslib/pathing/HolonomicPathFollower;Lcom/areslib/pathing/Path;Lcom/areslib/math/coordinate/FieldSymmetry;DD)V
 	public fun <init> (Lcom/areslib/pathing/HolonomicPathFollower;Lcom/areslib/pathing/Path;Lcom/areslib/math/coordinate/FieldSymmetry;DDZ)V
 	public fun <init> (Lcom/areslib/pathing/HolonomicPathFollower;Lcom/areslib/pathing/Path;Lcom/areslib/math/coordinate/FieldSymmetry;DDZZ)V
-	public synthetic fun <init> (Lcom/areslib/pathing/HolonomicPathFollower;Lcom/areslib/pathing/Path;Lcom/areslib/math/coordinate/FieldSymmetry;DDZZILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Lcom/areslib/pathing/HolonomicPathFollower;Lcom/areslib/pathing/Path;Lcom/areslib/math/coordinate/FieldSymmetry;DDZZZ)V
+	public fun <init> (Lcom/areslib/pathing/HolonomicPathFollower;Lcom/areslib/pathing/Path;Lcom/areslib/math/coordinate/FieldSymmetry;DDZZZD)V
+	public synthetic fun <init> (Lcom/areslib/pathing/HolonomicPathFollower;Lcom/areslib/pathing/Path;Lcom/areslib/math/coordinate/FieldSymmetry;DDZZZDILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public fun cancel ()V
 	public fun end (Lcom/areslib/state/RobotState;Z)Ljava/util/List;
 	public fun execute (Lcom/areslib/state/RobotState;J)Ljava/util/List;
@@ -4998,20 +5125,30 @@ public final class com/areslib/sequencer/RobotSequence {
 	public final fun blinkIndicator-J7AnP2E (Ljava/lang/String;Lcom/areslib/hardware/actuator/IndicatorLightColor;Lcom/areslib/hardware/actuator/IndicatorLightColor;JJ)V
 	public static synthetic fun blinkIndicator-J7AnP2E$default (Lcom/areslib/sequencer/RobotSequence;Ljava/lang/String;Lcom/areslib/hardware/actuator/IndicatorLightColor;Lcom/areslib/hardware/actuator/IndicatorLightColor;JJILjava/lang/Object;)V
 	public final fun deadline (Lcom/areslib/sequencer/Task;Lkotlin/jvm/functions/Function1;)V
+	public final fun deadline (Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function1;)V
 	public final fun dispatch (Lcom/areslib/action/RobotAction;J)V
+	public final fun dispatch (Ljava/lang/String;JLkotlin/jvm/functions/Function1;)V
 	public static synthetic fun dispatch$default (Lcom/areslib/sequencer/RobotSequence;Lcom/areslib/action/RobotAction;JILjava/lang/Object;)V
+	public static synthetic fun dispatch$default (Lcom/areslib/sequencer/RobotSequence;Ljava/lang/String;JLkotlin/jvm/functions/Function1;ILjava/lang/Object;)V
+	public final fun firstToFinish (Lkotlin/jvm/functions/Function1;)V
 	public final fun followPath (Lcom/areslib/pathing/Path;Lcom/areslib/pathing/HolonomicPathFollower;Lcom/areslib/math/coordinate/FieldSymmetry;)V
 	public static synthetic fun followPath$default (Lcom/areslib/sequencer/RobotSequence;Lcom/areslib/pathing/Path;Lcom/areslib/pathing/HolonomicPathFollower;Lcom/areslib/math/coordinate/FieldSymmetry;ILjava/lang/Object;)V
+	public final fun namedCommand (Ljava/lang/String;J)V
+	public static synthetic fun namedCommand$default (Lcom/areslib/sequencer/RobotSequence;Ljava/lang/String;JILjava/lang/Object;)V
 	public final fun namedCommand-B16Sg2w (Ljava/lang/String;J)V
 	public static synthetic fun namedCommand-B16Sg2w$default (Lcom/areslib/sequencer/RobotSequence;Ljava/lang/String;JILjava/lang/Object;)V
 	public final fun parallel (Lkotlin/jvm/functions/Function1;)V
 	public final fun race (Lkotlin/jvm/functions/Function1;)V
 	public final fun sequence (Lkotlin/jvm/functions/Function1;)V
 	public final fun setIndicator (Ljava/lang/String;Lcom/areslib/hardware/actuator/IndicatorLightColor;)V
+	public final fun step (Ljava/lang/String;J)V
+	public static synthetic fun step$default (Lcom/areslib/sequencer/RobotSequence;Ljava/lang/String;JILjava/lang/Object;)V
 	public final fun task (Lcom/areslib/sequencer/Task;)V
+	public final fun together (Lkotlin/jvm/functions/Function1;)V
 	public final fun waitFor-LRDsOJo (J)V
 	public final fun waitForDistance-HG0u8IE (DJ)V
 	public static synthetic fun waitForDistance-HG0u8IE$default (Lcom/areslib/sequencer/RobotSequence;DJILjava/lang/Object;)V
+	public final fun waitSeconds (D)V
 	public final fun waitUntil (Lkotlin/jvm/functions/Function1;)V
 	public final fun waitUntil-VtjQ1oo (JLkotlin/jvm/functions/Function1;)V
 }
@@ -5110,7 +5247,9 @@ public final class com/areslib/sequencer/TaskExecutor {
 	public final fun getSize ()I
 	public final fun preempt (Lcom/areslib/sequencer/Task;Lcom/areslib/state/RobotState;J)Ljava/util/List;
 	public final fun resume ()V
+	public final fun resumeWithActions (Lcom/areslib/state/RobotState;)Ljava/util/List;
 	public final fun suspend ()V
+	public final fun suspendWithActions (Lcom/areslib/state/RobotState;)Ljava/util/List;
 	public final fun update (Lcom/areslib/state/RobotState;J)Ljava/util/List;
 }
 
@@ -6484,6 +6623,8 @@ public abstract interface annotation class com/areslib/subsystem/AresSubsystemDs
 }
 
 public final class com/areslib/subsystem/ControlLoopBuilder {
+	public final fun feedforward (Lcom/areslib/subsystem/SubsystemFeedforwardKind;Lkotlin/jvm/functions/Function1;)V
+	public static synthetic fun feedforward$default (Lcom/areslib/subsystem/ControlLoopBuilder;Lcom/areslib/subsystem/SubsystemFeedforwardKind;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)V
 	public final fun getContinuousInputEnabled ()Z
 	public final fun getContinuousInputMaximum ()D
 	public final fun getContinuousInputMinimum ()D
@@ -6552,6 +6693,8 @@ public final class com/areslib/subsystem/GeneratedSubsystemRegistrySupport {
 public final class com/areslib/subsystem/HardwareDeviceBuilder {
 	public final fun follow (Lcom/areslib/subsystem/SubsystemHardwareRef;Lcom/areslib/subsystem/SubsystemFollowerTransform;)V
 	public static synthetic fun follow$default (Lcom/areslib/subsystem/HardwareDeviceBuilder;Lcom/areslib/subsystem/SubsystemHardwareRef;Lcom/areslib/subsystem/SubsystemFollowerTransform;ILjava/lang/Object;)V
+	public final fun follows (Lcom/areslib/subsystem/SubsystemHardwareRef;Z)V
+	public static synthetic fun follows$default (Lcom/areslib/subsystem/HardwareDeviceBuilder;Lcom/areslib/subsystem/SubsystemHardwareRef;ZILjava/lang/Object;)V
 	public final fun getCanBus ()Ljava/lang/String;
 	public final fun getCanId ()Ljava/lang/Integer;
 	public final fun getChannel ()Ljava/lang/Integer;
@@ -6566,6 +6709,7 @@ public final class com/areslib/subsystem/HardwareDeviceBuilder {
 	public final fun getRequired ()Z
 	public final fun getSafeOutput ()Ljava/lang/Double;
 	public final fun getSecondaryChannel ()Ljava/lang/Integer;
+	public final fun getVisualPlacement ()Lcom/areslib/subsystem/SubsystemVisualPlacementDocument;
 	public final fun measurement (Lcom/areslib/subsystem/SubsystemFieldRef;Lcom/areslib/subsystem/SubsystemMeasurementSource;DDLjava/lang/Long;Ljava/lang/Double;Ljava/lang/Double;)V
 	public static synthetic fun measurement$default (Lcom/areslib/subsystem/HardwareDeviceBuilder;Lcom/areslib/subsystem/SubsystemFieldRef;Lcom/areslib/subsystem/SubsystemMeasurementSource;DDLjava/lang/Long;Ljava/lang/Double;Ljava/lang/Double;ILjava/lang/Object;)V
 	public final fun setCanBus (Ljava/lang/String;)V
@@ -6582,6 +6726,9 @@ public final class com/areslib/subsystem/HardwareDeviceBuilder {
 	public final fun setRequired (Z)V
 	public final fun setSafeOutput (Ljava/lang/Double;)V
 	public final fun setSecondaryChannel (Ljava/lang/Integer;)V
+	public final fun setVisualPlacement (Lcom/areslib/subsystem/SubsystemVisualPlacementDocument;)V
+	public final fun visualPlacement (Lcom/areslib/subsystem/SubsystemVisualAnchor;DD)V
+	public static synthetic fun visualPlacement$default (Lcom/areslib/subsystem/HardwareDeviceBuilder;Lcom/areslib/subsystem/SubsystemVisualAnchor;DDILjava/lang/Object;)V
 }
 
 public abstract class com/areslib/subsystem/HolonomicDriveFacade {
@@ -6654,10 +6801,16 @@ public final class com/areslib/subsystem/SubsystemBuilder {
 	public final fun getGenerateTest ()Z
 	public final fun getHardware ()Lcom/areslib/subsystem/SubsystemHardwareBuilder;
 	public final fun getImplementation ()Lcom/areslib/subsystem/SubsystemImplementationBuilder;
+	public final fun getLinkage ()Lcom/areslib/subsystem/SubsystemLinkageBuilder;
 	public final fun getRequiredAtStartup ()Z
 	public final fun getSafety ()Lcom/areslib/subsystem/SubsystemSafetyBuilder;
 	public final fun getState ()Lcom/areslib/subsystem/SubsystemStateBuilder;
 	public final fun getTemplate ()Lcom/areslib/subsystem/SubsystemTemplate;
+	public final fun implementation (Lkotlin/jvm/functions/Function1;)V
+	public final fun interlock (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lcom/areslib/subsystem/InterlockComparison;DLkotlin/jvm/functions/Function1;)V
+	public static synthetic fun interlock$default (Lcom/areslib/subsystem/SubsystemBuilder;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lcom/areslib/subsystem/InterlockComparison;DLkotlin/jvm/functions/Function1;ILjava/lang/Object;)V
+	public final fun linkage (Lkotlin/jvm/functions/Function1;)V
+	public final fun safety (Lkotlin/jvm/functions/Function1;)V
 	public final fun setAutonomousResourceKey (Ljava/lang/String;)V
 	public final fun setDescription (Ljava/lang/String;)V
 	public final fun setDisplayName (Ljava/lang/String;)V
@@ -6665,6 +6818,10 @@ public final class com/areslib/subsystem/SubsystemBuilder {
 	public final fun setGenerateTest (Z)V
 	public final fun setRequiredAtStartup (Z)V
 	public final fun setTemplate (Lcom/areslib/subsystem/SubsystemTemplate;)V
+	public final fun tuningDouble (Ljava/lang/String;DLjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Double;Ljava/lang/Double;Lcom/areslib/tuning/TuningApplyPolicy;)V
+	public static synthetic fun tuningDouble$default (Lcom/areslib/subsystem/SubsystemBuilder;Ljava/lang/String;DLjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Double;Ljava/lang/Double;Lcom/areslib/tuning/TuningApplyPolicy;ILjava/lang/Object;)V
+	public final fun tuningParam (Lcom/areslib/tuning/TuningParameterDeclaration;)V
+	public final fun tuningParameter (Lcom/areslib/tuning/TuningParameterDeclaration;)V
 }
 
 public final class com/areslib/subsystem/SubsystemCapabilitiesKt {
@@ -6690,18 +6847,46 @@ public final class com/areslib/subsystem/SubsystemCapabilityOperation : java/lan
 }
 
 public final class com/areslib/subsystem/SubsystemControlBuilder {
-	public final fun bangBang (Ljava/lang/String;Ljava/lang/String;Lcom/areslib/subsystem/SubsystemHardwareRef;Lcom/areslib/subsystem/SubsystemFieldRef;Lcom/areslib/subsystem/SubsystemFieldRef;Lkotlin/jvm/functions/Function1;)V
-	public static synthetic fun bangBang$default (Lcom/areslib/subsystem/SubsystemControlBuilder;Ljava/lang/String;Ljava/lang/String;Lcom/areslib/subsystem/SubsystemHardwareRef;Lcom/areslib/subsystem/SubsystemFieldRef;Lcom/areslib/subsystem/SubsystemFieldRef;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)V
-	public final fun direct (Ljava/lang/String;Ljava/lang/String;Lcom/areslib/subsystem/SubsystemHardwareRef;Lcom/areslib/subsystem/SubsystemFieldRef;Lkotlin/jvm/functions/Function1;)V
-	public static synthetic fun direct$default (Lcom/areslib/subsystem/SubsystemControlBuilder;Ljava/lang/String;Ljava/lang/String;Lcom/areslib/subsystem/SubsystemHardwareRef;Lcom/areslib/subsystem/SubsystemFieldRef;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)V
-	public final fun positionPid (Ljava/lang/String;Ljava/lang/String;Lcom/areslib/subsystem/SubsystemHardwareRef;Lcom/areslib/subsystem/SubsystemFieldRef;Lcom/areslib/subsystem/SubsystemFieldRef;Lkotlin/jvm/functions/Function1;)V
-	public static synthetic fun positionPid$default (Lcom/areslib/subsystem/SubsystemControlBuilder;Ljava/lang/String;Ljava/lang/String;Lcom/areslib/subsystem/SubsystemHardwareRef;Lcom/areslib/subsystem/SubsystemFieldRef;Lcom/areslib/subsystem/SubsystemFieldRef;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)V
-	public final fun profiledPositionPid (Ljava/lang/String;Ljava/lang/String;Lcom/areslib/subsystem/SubsystemHardwareRef;Lcom/areslib/subsystem/SubsystemFieldRef;Lcom/areslib/subsystem/SubsystemFieldRef;Lkotlin/jvm/functions/Function1;)V
-	public static synthetic fun profiledPositionPid$default (Lcom/areslib/subsystem/SubsystemControlBuilder;Ljava/lang/String;Ljava/lang/String;Lcom/areslib/subsystem/SubsystemHardwareRef;Lcom/areslib/subsystem/SubsystemFieldRef;Lcom/areslib/subsystem/SubsystemFieldRef;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)V
-	public final fun servoPosition (Ljava/lang/String;Ljava/lang/String;Lcom/areslib/subsystem/SubsystemHardwareRef;Lcom/areslib/subsystem/SubsystemFieldRef;Lkotlin/jvm/functions/Function1;)V
-	public static synthetic fun servoPosition$default (Lcom/areslib/subsystem/SubsystemControlBuilder;Ljava/lang/String;Ljava/lang/String;Lcom/areslib/subsystem/SubsystemHardwareRef;Lcom/areslib/subsystem/SubsystemFieldRef;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)V
-	public final fun velocityPid (Ljava/lang/String;Ljava/lang/String;Lcom/areslib/subsystem/SubsystemHardwareRef;Lcom/areslib/subsystem/SubsystemFieldRef;Lcom/areslib/subsystem/SubsystemFieldRef;Lkotlin/jvm/functions/Function1;)V
-	public static synthetic fun velocityPid$default (Lcom/areslib/subsystem/SubsystemControlBuilder;Ljava/lang/String;Ljava/lang/String;Lcom/areslib/subsystem/SubsystemHardwareRef;Lcom/areslib/subsystem/SubsystemFieldRef;Lcom/areslib/subsystem/SubsystemFieldRef;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)V
+	public final fun bangBang (Ljava/lang/String;Lcom/areslib/subsystem/SubsystemHardwareRef;Lcom/areslib/subsystem/SubsystemFieldRef;Lcom/areslib/subsystem/SubsystemFieldRef;Lkotlin/jvm/functions/Function1;)Lcom/areslib/subsystem/SubsystemControlLoopRef;
+	public final fun bangBang (Ljava/lang/String;Ljava/lang/String;Lcom/areslib/subsystem/SubsystemHardwareRef;Lcom/areslib/subsystem/SubsystemFieldRef;Lcom/areslib/subsystem/SubsystemFieldRef;Lkotlin/jvm/functions/Function1;)Lcom/areslib/subsystem/SubsystemControlLoopRef;
+	public static synthetic fun bangBang$default (Lcom/areslib/subsystem/SubsystemControlBuilder;Ljava/lang/String;Lcom/areslib/subsystem/SubsystemHardwareRef;Lcom/areslib/subsystem/SubsystemFieldRef;Lcom/areslib/subsystem/SubsystemFieldRef;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lcom/areslib/subsystem/SubsystemControlLoopRef;
+	public static synthetic fun bangBang$default (Lcom/areslib/subsystem/SubsystemControlBuilder;Ljava/lang/String;Ljava/lang/String;Lcom/areslib/subsystem/SubsystemHardwareRef;Lcom/areslib/subsystem/SubsystemFieldRef;Lcom/areslib/subsystem/SubsystemFieldRef;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lcom/areslib/subsystem/SubsystemControlLoopRef;
+	public final fun direct (Ljava/lang/String;Lcom/areslib/subsystem/SubsystemHardwareRef;Lcom/areslib/subsystem/SubsystemFieldRef;Lkotlin/jvm/functions/Function1;)Lcom/areslib/subsystem/SubsystemControlLoopRef;
+	public final fun direct (Ljava/lang/String;Ljava/lang/String;Lcom/areslib/subsystem/SubsystemHardwareRef;Lcom/areslib/subsystem/SubsystemFieldRef;Lkotlin/jvm/functions/Function1;)Lcom/areslib/subsystem/SubsystemControlLoopRef;
+	public static synthetic fun direct$default (Lcom/areslib/subsystem/SubsystemControlBuilder;Ljava/lang/String;Lcom/areslib/subsystem/SubsystemHardwareRef;Lcom/areslib/subsystem/SubsystemFieldRef;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lcom/areslib/subsystem/SubsystemControlLoopRef;
+	public static synthetic fun direct$default (Lcom/areslib/subsystem/SubsystemControlBuilder;Ljava/lang/String;Ljava/lang/String;Lcom/areslib/subsystem/SubsystemHardwareRef;Lcom/areslib/subsystem/SubsystemFieldRef;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lcom/areslib/subsystem/SubsystemControlLoopRef;
+	public final fun openLoop (Ljava/lang/String;Lcom/areslib/subsystem/SubsystemHardwareRef;Lcom/areslib/subsystem/SubsystemFieldRef;Ljava/lang/String;Lkotlin/jvm/functions/Function1;)Lcom/areslib/subsystem/SubsystemControlLoopRef;
+	public static synthetic fun openLoop$default (Lcom/areslib/subsystem/SubsystemControlBuilder;Ljava/lang/String;Lcom/areslib/subsystem/SubsystemHardwareRef;Lcom/areslib/subsystem/SubsystemFieldRef;Ljava/lang/String;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lcom/areslib/subsystem/SubsystemControlLoopRef;
+	public final fun positionPid (Ljava/lang/String;Lcom/areslib/subsystem/SubsystemHardwareRef;Lcom/areslib/subsystem/SubsystemFieldRef;Lcom/areslib/subsystem/SubsystemFieldRef;Lkotlin/jvm/functions/Function1;)Lcom/areslib/subsystem/SubsystemControlLoopRef;
+	public final fun positionPid (Ljava/lang/String;Ljava/lang/String;Lcom/areslib/subsystem/SubsystemHardwareRef;Lcom/areslib/subsystem/SubsystemFieldRef;Lcom/areslib/subsystem/SubsystemFieldRef;Lkotlin/jvm/functions/Function1;)Lcom/areslib/subsystem/SubsystemControlLoopRef;
+	public static synthetic fun positionPid$default (Lcom/areslib/subsystem/SubsystemControlBuilder;Ljava/lang/String;Lcom/areslib/subsystem/SubsystemHardwareRef;Lcom/areslib/subsystem/SubsystemFieldRef;Lcom/areslib/subsystem/SubsystemFieldRef;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lcom/areslib/subsystem/SubsystemControlLoopRef;
+	public static synthetic fun positionPid$default (Lcom/areslib/subsystem/SubsystemControlBuilder;Ljava/lang/String;Ljava/lang/String;Lcom/areslib/subsystem/SubsystemHardwareRef;Lcom/areslib/subsystem/SubsystemFieldRef;Lcom/areslib/subsystem/SubsystemFieldRef;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lcom/areslib/subsystem/SubsystemControlLoopRef;
+	public final fun profiledPositionPid (Ljava/lang/String;Lcom/areslib/subsystem/SubsystemHardwareRef;Lcom/areslib/subsystem/SubsystemFieldRef;Lcom/areslib/subsystem/SubsystemFieldRef;Lkotlin/jvm/functions/Function1;)Lcom/areslib/subsystem/SubsystemControlLoopRef;
+	public final fun profiledPositionPid (Ljava/lang/String;Ljava/lang/String;Lcom/areslib/subsystem/SubsystemHardwareRef;Lcom/areslib/subsystem/SubsystemFieldRef;Lcom/areslib/subsystem/SubsystemFieldRef;Lkotlin/jvm/functions/Function1;)Lcom/areslib/subsystem/SubsystemControlLoopRef;
+	public static synthetic fun profiledPositionPid$default (Lcom/areslib/subsystem/SubsystemControlBuilder;Ljava/lang/String;Lcom/areslib/subsystem/SubsystemHardwareRef;Lcom/areslib/subsystem/SubsystemFieldRef;Lcom/areslib/subsystem/SubsystemFieldRef;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lcom/areslib/subsystem/SubsystemControlLoopRef;
+	public static synthetic fun profiledPositionPid$default (Lcom/areslib/subsystem/SubsystemControlBuilder;Ljava/lang/String;Ljava/lang/String;Lcom/areslib/subsystem/SubsystemHardwareRef;Lcom/areslib/subsystem/SubsystemFieldRef;Lcom/areslib/subsystem/SubsystemFieldRef;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lcom/areslib/subsystem/SubsystemControlLoopRef;
+	public final fun servoPosition (Ljava/lang/String;Lcom/areslib/subsystem/SubsystemHardwareRef;Lcom/areslib/subsystem/SubsystemFieldRef;Lkotlin/jvm/functions/Function1;)Lcom/areslib/subsystem/SubsystemControlLoopRef;
+	public final fun servoPosition (Ljava/lang/String;Ljava/lang/String;Lcom/areslib/subsystem/SubsystemHardwareRef;Lcom/areslib/subsystem/SubsystemFieldRef;Lkotlin/jvm/functions/Function1;)Lcom/areslib/subsystem/SubsystemControlLoopRef;
+	public static synthetic fun servoPosition$default (Lcom/areslib/subsystem/SubsystemControlBuilder;Ljava/lang/String;Lcom/areslib/subsystem/SubsystemHardwareRef;Lcom/areslib/subsystem/SubsystemFieldRef;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lcom/areslib/subsystem/SubsystemControlLoopRef;
+	public static synthetic fun servoPosition$default (Lcom/areslib/subsystem/SubsystemControlBuilder;Ljava/lang/String;Ljava/lang/String;Lcom/areslib/subsystem/SubsystemHardwareRef;Lcom/areslib/subsystem/SubsystemFieldRef;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lcom/areslib/subsystem/SubsystemControlLoopRef;
+	public final fun velocityPid (Ljava/lang/String;Lcom/areslib/subsystem/SubsystemHardwareRef;Lcom/areslib/subsystem/SubsystemFieldRef;Lcom/areslib/subsystem/SubsystemFieldRef;Lkotlin/jvm/functions/Function1;)Lcom/areslib/subsystem/SubsystemControlLoopRef;
+	public final fun velocityPid (Ljava/lang/String;Ljava/lang/String;Lcom/areslib/subsystem/SubsystemHardwareRef;Lcom/areslib/subsystem/SubsystemFieldRef;Lcom/areslib/subsystem/SubsystemFieldRef;Lkotlin/jvm/functions/Function1;)Lcom/areslib/subsystem/SubsystemControlLoopRef;
+	public static synthetic fun velocityPid$default (Lcom/areslib/subsystem/SubsystemControlBuilder;Ljava/lang/String;Lcom/areslib/subsystem/SubsystemHardwareRef;Lcom/areslib/subsystem/SubsystemFieldRef;Lcom/areslib/subsystem/SubsystemFieldRef;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lcom/areslib/subsystem/SubsystemControlLoopRef;
+	public static synthetic fun velocityPid$default (Lcom/areslib/subsystem/SubsystemControlBuilder;Ljava/lang/String;Ljava/lang/String;Lcom/areslib/subsystem/SubsystemHardwareRef;Lcom/areslib/subsystem/SubsystemFieldRef;Lcom/areslib/subsystem/SubsystemFieldRef;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lcom/areslib/subsystem/SubsystemControlLoopRef;
+}
+
+public final class com/areslib/subsystem/SubsystemControlLoopRef {
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;)Lcom/areslib/subsystem/SubsystemControlLoopRef;
+	public static synthetic fun copy$default (Lcom/areslib/subsystem/SubsystemControlLoopRef;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lcom/areslib/subsystem/SubsystemControlLoopRef;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getId ()Ljava/lang/String;
+	public final fun getUid ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
 }
 
 public abstract class com/areslib/subsystem/SubsystemControllerBase {
@@ -6712,10 +6897,48 @@ public abstract class com/areslib/subsystem/SubsystemControllerBase {
 }
 
 public final class com/areslib/subsystem/SubsystemDslKt {
+	public static final fun subsystem (Ljava/lang/String;Lcom/areslib/subsystem/SubsystemPlatform;Ljava/lang/String;Lkotlin/jvm/functions/Function1;)Lcom/areslib/subsystem/SubsystemDocument;
 	public static final fun subsystem (Ljava/lang/String;Ljava/lang/String;Lcom/areslib/subsystem/SubsystemPlatform;Lkotlin/jvm/functions/Function1;)Lcom/areslib/subsystem/SubsystemDocument;
+	public static synthetic fun subsystem$default (Ljava/lang/String;Lcom/areslib/subsystem/SubsystemPlatform;Ljava/lang/String;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lcom/areslib/subsystem/SubsystemDocument;
+}
+
+public final class com/areslib/subsystem/SubsystemDslRendererKt {
+	public static final fun toKotlinDsl (Lcom/areslib/subsystem/SubsystemDocument;)Ljava/lang/String;
+}
+
+public final class com/areslib/subsystem/SubsystemFaultRecoveryBuilder {
+	public final fun getActuator ()Lcom/areslib/subsystem/SubsystemHardwareRef;
+	public final fun getCurrentDurationMs ()J
+	public final fun getCurrentField ()Lcom/areslib/subsystem/SubsystemFieldRef;
+	public final fun getCurrentThresholdAmps ()D
+	public final fun getEnabled ()Z
+	public final fun getMaxRetries ()I
+	public final fun getRecoveryAction ()Lcom/areslib/subsystem/FaultRecoveryActionKind;
+	public final fun getReverseDurationMs ()J
+	public final fun getReverseDutyCycle ()D
+	public final fun holdPosition (Lcom/areslib/subsystem/SubsystemHardwareRef;Lcom/areslib/subsystem/SubsystemFieldRef;DJI)V
+	public static synthetic fun holdPosition$default (Lcom/areslib/subsystem/SubsystemFaultRecoveryBuilder;Lcom/areslib/subsystem/SubsystemHardwareRef;Lcom/areslib/subsystem/SubsystemFieldRef;DJIILjava/lang/Object;)V
+	public final fun neutralStop (Lcom/areslib/subsystem/SubsystemHardwareRef;Lcom/areslib/subsystem/SubsystemFieldRef;DJI)V
+	public static synthetic fun neutralStop$default (Lcom/areslib/subsystem/SubsystemFaultRecoveryBuilder;Lcom/areslib/subsystem/SubsystemHardwareRef;Lcom/areslib/subsystem/SubsystemFieldRef;DJIILjava/lang/Object;)V
+	public final fun none ()V
+	public final fun reverseBriefly (Lcom/areslib/subsystem/SubsystemHardwareRef;Lcom/areslib/subsystem/SubsystemFieldRef;DJJDI)V
+	public static synthetic fun reverseBriefly$default (Lcom/areslib/subsystem/SubsystemFaultRecoveryBuilder;Lcom/areslib/subsystem/SubsystemHardwareRef;Lcom/areslib/subsystem/SubsystemFieldRef;DJJDIILjava/lang/Object;)V
+	public final fun setActuator (Lcom/areslib/subsystem/SubsystemHardwareRef;)V
+	public final fun setCurrentDurationMs (J)V
+	public final fun setCurrentField (Lcom/areslib/subsystem/SubsystemFieldRef;)V
+	public final fun setCurrentThresholdAmps (D)V
+	public final fun setEnabled (Z)V
+	public final fun setMaxRetries (I)V
+	public final fun setRecoveryAction (Lcom/areslib/subsystem/FaultRecoveryActionKind;)V
+	public final fun setReverseDurationMs (J)V
+	public final fun setReverseDutyCycle (D)V
 }
 
 public final class com/areslib/subsystem/SubsystemFeedforwardBuilder {
+	public final fun arm (DDDDLcom/areslib/subsystem/SubsystemFieldRef;Lcom/areslib/subsystem/SubsystemFieldRef;Lcom/areslib/subsystem/SubsystemFieldRef;Ljava/lang/Integer;)V
+	public static synthetic fun arm$default (Lcom/areslib/subsystem/SubsystemFeedforwardBuilder;DDDDLcom/areslib/subsystem/SubsystemFieldRef;Lcom/areslib/subsystem/SubsystemFieldRef;Lcom/areslib/subsystem/SubsystemFieldRef;Ljava/lang/Integer;ILjava/lang/Object;)V
+	public final fun elevator (DDDDLcom/areslib/subsystem/SubsystemFieldRef;Lcom/areslib/subsystem/SubsystemFieldRef;)V
+	public static synthetic fun elevator$default (Lcom/areslib/subsystem/SubsystemFeedforwardBuilder;DDDDLcom/areslib/subsystem/SubsystemFieldRef;Lcom/areslib/subsystem/SubsystemFieldRef;ILjava/lang/Object;)V
 	public final fun getAccelerationField ()Lcom/areslib/subsystem/SubsystemFieldRef;
 	public final fun getGravityAngleField ()Lcom/areslib/subsystem/SubsystemFieldRef;
 	public final fun getKA ()D
@@ -6734,6 +6957,8 @@ public final class com/areslib/subsystem/SubsystemFeedforwardBuilder {
 	public final fun setKind (Lcom/areslib/subsystem/SubsystemFeedforwardKind;)V
 	public final fun setLinkageJoint (Ljava/lang/Integer;)V
 	public final fun setVelocityField (Lcom/areslib/subsystem/SubsystemFieldRef;)V
+	public final fun simpleMotor (DDDLcom/areslib/subsystem/SubsystemFieldRef;Lcom/areslib/subsystem/SubsystemFieldRef;)V
+	public static synthetic fun simpleMotor$default (Lcom/areslib/subsystem/SubsystemFeedforwardBuilder;DDDLcom/areslib/subsystem/SubsystemFieldRef;Lcom/areslib/subsystem/SubsystemFieldRef;ILjava/lang/Object;)V
 }
 
 public final class com/areslib/subsystem/SubsystemFieldRef {
@@ -6763,18 +6988,37 @@ public final class com/areslib/subsystem/SubsystemGeneratedTestNames {
 
 public final class com/areslib/subsystem/SubsystemHardwareBuilder {
 	public final fun absoluteEncoder (Ljava/lang/String;Ljava/lang/String;Lkotlin/jvm/functions/Function1;)Lcom/areslib/subsystem/SubsystemHardwareRef;
+	public static synthetic fun absoluteEncoder$default (Lcom/areslib/subsystem/SubsystemHardwareBuilder;Ljava/lang/String;Ljava/lang/String;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lcom/areslib/subsystem/SubsystemHardwareRef;
 	public final fun analogInput (Ljava/lang/String;Ljava/lang/String;Lkotlin/jvm/functions/Function1;)Lcom/areslib/subsystem/SubsystemHardwareRef;
+	public static synthetic fun analogInput$default (Lcom/areslib/subsystem/SubsystemHardwareBuilder;Ljava/lang/String;Ljava/lang/String;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lcom/areslib/subsystem/SubsystemHardwareRef;
+	public final fun buzzer (Ljava/lang/String;Ljava/lang/String;Lkotlin/jvm/functions/Function1;)Lcom/areslib/subsystem/SubsystemHardwareRef;
+	public static synthetic fun buzzer$default (Lcom/areslib/subsystem/SubsystemHardwareBuilder;Ljava/lang/String;Ljava/lang/String;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lcom/areslib/subsystem/SubsystemHardwareRef;
 	public final fun colorSensor (Ljava/lang/String;Ljava/lang/String;Lkotlin/jvm/functions/Function1;)Lcom/areslib/subsystem/SubsystemHardwareRef;
+	public static synthetic fun colorSensor$default (Lcom/areslib/subsystem/SubsystemHardwareBuilder;Ljava/lang/String;Ljava/lang/String;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lcom/areslib/subsystem/SubsystemHardwareRef;
 	public final fun continuousServo (Ljava/lang/String;Ljava/lang/String;Lkotlin/jvm/functions/Function1;)Lcom/areslib/subsystem/SubsystemHardwareRef;
+	public static synthetic fun continuousServo$default (Lcom/areslib/subsystem/SubsystemHardwareBuilder;Ljava/lang/String;Ljava/lang/String;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lcom/areslib/subsystem/SubsystemHardwareRef;
 	public final fun digitalInput (Ljava/lang/String;Ljava/lang/String;Lkotlin/jvm/functions/Function1;)Lcom/areslib/subsystem/SubsystemHardwareRef;
+	public static synthetic fun digitalInput$default (Lcom/areslib/subsystem/SubsystemHardwareBuilder;Ljava/lang/String;Ljava/lang/String;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lcom/areslib/subsystem/SubsystemHardwareRef;
+	public final fun digitalOutput (Ljava/lang/String;Ljava/lang/String;Lkotlin/jvm/functions/Function1;)Lcom/areslib/subsystem/SubsystemHardwareRef;
+	public static synthetic fun digitalOutput$default (Lcom/areslib/subsystem/SubsystemHardwareBuilder;Ljava/lang/String;Ljava/lang/String;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lcom/areslib/subsystem/SubsystemHardwareRef;
 	public final fun distanceSensor (Ljava/lang/String;Ljava/lang/String;Lkotlin/jvm/functions/Function1;)Lcom/areslib/subsystem/SubsystemHardwareRef;
+	public static synthetic fun distanceSensor$default (Lcom/areslib/subsystem/SubsystemHardwareBuilder;Ljava/lang/String;Ljava/lang/String;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lcom/areslib/subsystem/SubsystemHardwareRef;
 	public final fun imu (Ljava/lang/String;Ljava/lang/String;Lkotlin/jvm/functions/Function1;)Lcom/areslib/subsystem/SubsystemHardwareRef;
+	public static synthetic fun imu$default (Lcom/areslib/subsystem/SubsystemHardwareBuilder;Ljava/lang/String;Ljava/lang/String;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lcom/areslib/subsystem/SubsystemHardwareRef;
 	public final fun indicatorLight (Ljava/lang/String;Ljava/lang/String;Lkotlin/jvm/functions/Function1;)Lcom/areslib/subsystem/SubsystemHardwareRef;
+	public static synthetic fun indicatorLight$default (Lcom/areslib/subsystem/SubsystemHardwareBuilder;Ljava/lang/String;Ljava/lang/String;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lcom/areslib/subsystem/SubsystemHardwareRef;
 	public final fun motor (Ljava/lang/String;Ljava/lang/String;Lkotlin/jvm/functions/Function1;)Lcom/areslib/subsystem/SubsystemHardwareRef;
+	public static synthetic fun motor$default (Lcom/areslib/subsystem/SubsystemHardwareBuilder;Ljava/lang/String;Ljava/lang/String;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lcom/areslib/subsystem/SubsystemHardwareRef;
 	public final fun positionalServo (Ljava/lang/String;Ljava/lang/String;Lkotlin/jvm/functions/Function1;)Lcom/areslib/subsystem/SubsystemHardwareRef;
+	public static synthetic fun positionalServo$default (Lcom/areslib/subsystem/SubsystemHardwareBuilder;Ljava/lang/String;Ljava/lang/String;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lcom/areslib/subsystem/SubsystemHardwareRef;
 	public final fun prismDriver (Ljava/lang/String;Ljava/lang/String;Lkotlin/jvm/functions/Function1;)Lcom/areslib/subsystem/SubsystemHardwareRef;
+	public static synthetic fun prismDriver$default (Lcom/areslib/subsystem/SubsystemHardwareBuilder;Ljava/lang/String;Ljava/lang/String;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lcom/areslib/subsystem/SubsystemHardwareRef;
+	public final fun pwmOutput (Ljava/lang/String;Ljava/lang/String;Lkotlin/jvm/functions/Function1;)Lcom/areslib/subsystem/SubsystemHardwareRef;
+	public static synthetic fun pwmOutput$default (Lcom/areslib/subsystem/SubsystemHardwareBuilder;Ljava/lang/String;Ljava/lang/String;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lcom/areslib/subsystem/SubsystemHardwareRef;
 	public final fun quadratureEncoder (Ljava/lang/String;Ljava/lang/String;Lkotlin/jvm/functions/Function1;)Lcom/areslib/subsystem/SubsystemHardwareRef;
+	public static synthetic fun quadratureEncoder$default (Lcom/areslib/subsystem/SubsystemHardwareBuilder;Ljava/lang/String;Ljava/lang/String;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lcom/areslib/subsystem/SubsystemHardwareRef;
 	public final fun solenoid (Ljava/lang/String;Ljava/lang/String;Lkotlin/jvm/functions/Function1;)Lcom/areslib/subsystem/SubsystemHardwareRef;
+	public static synthetic fun solenoid$default (Lcom/areslib/subsystem/SubsystemHardwareBuilder;Ljava/lang/String;Ljava/lang/String;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lcom/areslib/subsystem/SubsystemHardwareRef;
 }
 
 public final class com/areslib/subsystem/SubsystemHardwareRef {
@@ -6829,6 +7073,9 @@ public final class com/areslib/subsystem/SubsystemImplementationBuilder {
 	public final fun getKind ()Lcom/areslib/subsystem/SubsystemImplementationKind;
 	public final fun getModulePath ()Ljava/lang/String;
 	public final fun getOwnership ()Lcom/areslib/subsystem/SubsystemSourceOwnership;
+	public final fun getPythonFactoryName ()Ljava/lang/String;
+	public final fun getPythonModuleName ()Ljava/lang/String;
+	public final fun getPythonSimulationFactoryName ()Ljava/lang/String;
 	public final fun getSimulationAdapterClassName ()Ljava/lang/String;
 	public final fun getSimulationSupport ()Lcom/areslib/subsystem/SubsystemSimulationSupport;
 	public final fun getSubsystemClassName ()Ljava/lang/String;
@@ -6840,16 +7087,83 @@ public final class com/areslib/subsystem/SubsystemImplementationBuilder {
 	public final fun setKind (Lcom/areslib/subsystem/SubsystemImplementationKind;)V
 	public final fun setModulePath (Ljava/lang/String;)V
 	public final fun setOwnership (Lcom/areslib/subsystem/SubsystemSourceOwnership;)V
+	public final fun setPythonFactoryName (Ljava/lang/String;)V
+	public final fun setPythonModuleName (Ljava/lang/String;)V
+	public final fun setPythonSimulationFactoryName (Ljava/lang/String;)V
 	public final fun setSimulationAdapterClassName (Ljava/lang/String;)V
 	public final fun setSimulationSupport (Lcom/areslib/subsystem/SubsystemSimulationSupport;)V
 	public final fun setSubsystemClassName (Ljava/lang/String;)V
 	public final fun setTeachingLevel (Lcom/areslib/subsystem/SubsystemTeachingLevel;)V
 	public final fun setTeachingSummary (Ljava/lang/String;)V
+	public final fun simulationInteraction (Lcom/areslib/subsystem/SimInteractionRole;Lcom/areslib/subsystem/SubsystemHardwareRef;Lkotlin/jvm/functions/Function1;)V
+	public static synthetic fun simulationInteraction$default (Lcom/areslib/subsystem/SubsystemImplementationBuilder;Lcom/areslib/subsystem/SimInteractionRole;Lcom/areslib/subsystem/SubsystemHardwareRef;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)V
 	public final fun sourceFile (Ljava/lang/String;)V
 	public final fun teaches (Ljava/lang/String;)V
 }
 
+public final class com/areslib/subsystem/SubsystemInterlockBuilder {
+	public final fun getComparison ()Lcom/areslib/subsystem/InterlockComparison;
+	public final fun getForbiddenZoneDescription ()Ljava/lang/String;
+	public final fun getInterlockId ()Ljava/lang/String;
+	public final fun getSafeFallbackValue ()Ljava/lang/Double;
+	public final fun getTargetFieldId ()Ljava/lang/String;
+	public final fun getTargetStateName ()Ljava/lang/String;
+	public final fun getTargetSubsystemUid ()Ljava/lang/String;
+	public final fun getThresholdValue ()D
+	public final fun setComparison (Lcom/areslib/subsystem/InterlockComparison;)V
+	public final fun setForbiddenZoneDescription (Ljava/lang/String;)V
+	public final fun setInterlockId (Ljava/lang/String;)V
+	public final fun setSafeFallbackValue (Ljava/lang/Double;)V
+	public final fun setTargetFieldId (Ljava/lang/String;)V
+	public final fun setTargetStateName (Ljava/lang/String;)V
+	public final fun setTargetSubsystemUid (Ljava/lang/String;)V
+	public final fun setThresholdValue (D)V
+}
+
+public final class com/areslib/subsystem/SubsystemLinkageBuilder {
+	public final fun getEnabled ()Z
+	public final fun getJoint1Actuator ()Lcom/areslib/subsystem/SubsystemHardwareRef;
+	public final fun getJoint1AngleField ()Lcom/areslib/subsystem/SubsystemFieldRef;
+	public final fun getJoint1DampingNmPerRadPerSec ()D
+	public final fun getJoint1MaxRad ()D
+	public final fun getJoint1MinRad ()D
+	public final fun getJoint1TorquePerVoltNm ()D
+	public final fun getJoint2Actuator ()Lcom/areslib/subsystem/SubsystemHardwareRef;
+	public final fun getJoint2AngleField ()Lcom/areslib/subsystem/SubsystemFieldRef;
+	public final fun getJoint2DampingNmPerRadPerSec ()D
+	public final fun getJoint2MaxRad ()D
+	public final fun getJoint2MinRad ()D
+	public final fun getJoint2TorquePerVoltNm ()D
+	public final fun getLink1CenterOfMassMeters ()Ljava/lang/Double;
+	public final fun getLink1LengthMeters ()D
+	public final fun getLink1MassKg ()D
+	public final fun getLink2CenterOfMassMeters ()Ljava/lang/Double;
+	public final fun getLink2LengthMeters ()D
+	public final fun getLink2MassKg ()D
+	public final fun setEnabled (Z)V
+	public final fun setJoint1Actuator (Lcom/areslib/subsystem/SubsystemHardwareRef;)V
+	public final fun setJoint1AngleField (Lcom/areslib/subsystem/SubsystemFieldRef;)V
+	public final fun setJoint1DampingNmPerRadPerSec (D)V
+	public final fun setJoint1MaxRad (D)V
+	public final fun setJoint1MinRad (D)V
+	public final fun setJoint1TorquePerVoltNm (D)V
+	public final fun setJoint2Actuator (Lcom/areslib/subsystem/SubsystemHardwareRef;)V
+	public final fun setJoint2AngleField (Lcom/areslib/subsystem/SubsystemFieldRef;)V
+	public final fun setJoint2DampingNmPerRadPerSec (D)V
+	public final fun setJoint2MaxRad (D)V
+	public final fun setJoint2MinRad (D)V
+	public final fun setJoint2TorquePerVoltNm (D)V
+	public final fun setLink1CenterOfMassMeters (Ljava/lang/Double;)V
+	public final fun setLink1LengthMeters (D)V
+	public final fun setLink1MassKg (D)V
+	public final fun setLink2CenterOfMassMeters (Ljava/lang/Double;)V
+	public final fun setLink2LengthMeters (D)V
+	public final fun setLink2MassKg (D)V
+}
+
 public final class com/areslib/subsystem/SubsystemSafetyBuilder {
+	public final fun faultRecovery (Lkotlin/jvm/functions/Function1;)V
+	public final fun getFaultRecovery ()Lcom/areslib/subsystem/SubsystemFaultRecoveryBuilder;
 	public final fun getFeedbackTimeoutMs ()Ljava/lang/Long;
 	public final fun getHoming ()Lcom/areslib/subsystem/SubsystemHomingBuilder;
 	public final fun getLatchOutputFaults ()Z
@@ -6859,6 +7173,7 @@ public final class com/areslib/subsystem/SubsystemSafetyBuilder {
 	public final fun getRequiresExplicitNeutralRecovery ()Z
 	public final fun getTelemetryEnabled ()Z
 	public final fun getZeroAllocationPeriodic ()Z
+	public final fun homing (Lkotlin/jvm/functions/Function1;)V
 	public final fun setFeedbackTimeoutMs (Ljava/lang/Long;)V
 	public final fun setLatchOutputFaults (Z)V
 	public final fun setRequiresCalibration (Z)V
@@ -6869,14 +7184,73 @@ public final class com/areslib/subsystem/SubsystemSafetyBuilder {
 	public final fun setZeroAllocationPeriodic (Z)V
 }
 
+public final class com/areslib/subsystem/SubsystemSimInteractionBuilder {
+	public final fun getBeamBreakField ()Lcom/areslib/subsystem/SubsystemFieldRef;
+	public final fun getCaptureRadiusMeters ()D
+	public final fun getIntakeDistanceMeters ()D
+	public final fun getLaunchElevationDeg ()D
+	public final fun getLaunchSpeedMps ()D
+	public final fun getRole ()Lcom/areslib/subsystem/SimInteractionRole;
+	public final fun getStorageCapacity ()I
+	public final fun getTriggerActuatorId ()Ljava/lang/String;
+	public final fun getTriggerThreshold ()D
+	public final fun setBeamBreakField (Lcom/areslib/subsystem/SubsystemFieldRef;)V
+	public final fun setCaptureRadiusMeters (D)V
+	public final fun setIntakeDistanceMeters (D)V
+	public final fun setLaunchElevationDeg (D)V
+	public final fun setLaunchSpeedMps (D)V
+	public final fun setRole (Lcom/areslib/subsystem/SimInteractionRole;)V
+	public final fun setStorageCapacity (I)V
+	public final fun setTriggerActuatorId (Ljava/lang/String;)V
+	public final fun setTriggerThreshold (D)V
+}
+
 public final class com/areslib/subsystem/SubsystemStateBuilder {
+	public final fun boolean (Ljava/lang/String;Lcom/areslib/subsystem/SubsystemFieldRole;Z)Lcom/areslib/subsystem/SubsystemFieldRef;
 	public final fun boolean (Ljava/lang/String;Ljava/lang/String;Lcom/areslib/subsystem/SubsystemFieldRole;Z)Lcom/areslib/subsystem/SubsystemFieldRef;
+	public static synthetic fun boolean$default (Lcom/areslib/subsystem/SubsystemStateBuilder;Ljava/lang/String;Lcom/areslib/subsystem/SubsystemFieldRole;ZILjava/lang/Object;)Lcom/areslib/subsystem/SubsystemFieldRef;
 	public static synthetic fun boolean$default (Lcom/areslib/subsystem/SubsystemStateBuilder;Ljava/lang/String;Ljava/lang/String;Lcom/areslib/subsystem/SubsystemFieldRole;ZILjava/lang/Object;)Lcom/areslib/subsystem/SubsystemFieldRef;
+	public final fun configBoolean (Ljava/lang/String;ZLjava/lang/String;)Lcom/areslib/subsystem/SubsystemFieldRef;
+	public static synthetic fun configBoolean$default (Lcom/areslib/subsystem/SubsystemStateBuilder;Ljava/lang/String;ZLjava/lang/String;ILjava/lang/Object;)Lcom/areslib/subsystem/SubsystemFieldRef;
+	public final fun configDouble (Ljava/lang/String;DLjava/lang/String;Ljava/lang/Double;Ljava/lang/Double;Ljava/lang/String;)Lcom/areslib/subsystem/SubsystemFieldRef;
+	public static synthetic fun configDouble$default (Lcom/areslib/subsystem/SubsystemStateBuilder;Ljava/lang/String;DLjava/lang/String;Ljava/lang/Double;Ljava/lang/Double;Ljava/lang/String;ILjava/lang/Object;)Lcom/areslib/subsystem/SubsystemFieldRef;
+	public final fun configInt (Ljava/lang/String;ILjava/lang/String;Ljava/lang/Double;Ljava/lang/Double;Ljava/lang/String;)Lcom/areslib/subsystem/SubsystemFieldRef;
+	public static synthetic fun configInt$default (Lcom/areslib/subsystem/SubsystemStateBuilder;Ljava/lang/String;ILjava/lang/String;Ljava/lang/Double;Ljava/lang/Double;Ljava/lang/String;ILjava/lang/Object;)Lcom/areslib/subsystem/SubsystemFieldRef;
+	public final fun configText (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Lcom/areslib/subsystem/SubsystemFieldRef;
+	public static synthetic fun configText$default (Lcom/areslib/subsystem/SubsystemStateBuilder;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lcom/areslib/subsystem/SubsystemFieldRef;
+	public final fun double (Ljava/lang/String;Lcom/areslib/subsystem/SubsystemFieldRole;DLjava/lang/String;Ljava/lang/Double;Ljava/lang/Double;)Lcom/areslib/subsystem/SubsystemFieldRef;
 	public final fun double (Ljava/lang/String;Ljava/lang/String;Lcom/areslib/subsystem/SubsystemFieldRole;DLjava/lang/String;Ljava/lang/Double;Ljava/lang/Double;)Lcom/areslib/subsystem/SubsystemFieldRef;
+	public static synthetic fun double$default (Lcom/areslib/subsystem/SubsystemStateBuilder;Ljava/lang/String;Lcom/areslib/subsystem/SubsystemFieldRole;DLjava/lang/String;Ljava/lang/Double;Ljava/lang/Double;ILjava/lang/Object;)Lcom/areslib/subsystem/SubsystemFieldRef;
 	public static synthetic fun double$default (Lcom/areslib/subsystem/SubsystemStateBuilder;Ljava/lang/String;Ljava/lang/String;Lcom/areslib/subsystem/SubsystemFieldRole;DLjava/lang/String;Ljava/lang/Double;Ljava/lang/Double;ILjava/lang/Object;)Lcom/areslib/subsystem/SubsystemFieldRef;
+	public final fun int (Ljava/lang/String;Lcom/areslib/subsystem/SubsystemFieldRole;ILjava/lang/String;Ljava/lang/Double;Ljava/lang/Double;)Lcom/areslib/subsystem/SubsystemFieldRef;
 	public final fun int (Ljava/lang/String;Ljava/lang/String;Lcom/areslib/subsystem/SubsystemFieldRole;ILjava/lang/String;Ljava/lang/Double;Ljava/lang/Double;)Lcom/areslib/subsystem/SubsystemFieldRef;
+	public static synthetic fun int$default (Lcom/areslib/subsystem/SubsystemStateBuilder;Ljava/lang/String;Lcom/areslib/subsystem/SubsystemFieldRole;ILjava/lang/String;Ljava/lang/Double;Ljava/lang/Double;ILjava/lang/Object;)Lcom/areslib/subsystem/SubsystemFieldRef;
 	public static synthetic fun int$default (Lcom/areslib/subsystem/SubsystemStateBuilder;Ljava/lang/String;Ljava/lang/String;Lcom/areslib/subsystem/SubsystemFieldRole;ILjava/lang/String;Ljava/lang/Double;Ljava/lang/Double;ILjava/lang/Object;)Lcom/areslib/subsystem/SubsystemFieldRef;
+	public final fun measurementBoolean (Ljava/lang/String;ZLjava/lang/String;)Lcom/areslib/subsystem/SubsystemFieldRef;
+	public static synthetic fun measurementBoolean$default (Lcom/areslib/subsystem/SubsystemStateBuilder;Ljava/lang/String;ZLjava/lang/String;ILjava/lang/Object;)Lcom/areslib/subsystem/SubsystemFieldRef;
+	public final fun measurementDouble (Ljava/lang/String;DLjava/lang/String;Ljava/lang/Double;Ljava/lang/Double;Ljava/lang/String;)Lcom/areslib/subsystem/SubsystemFieldRef;
+	public static synthetic fun measurementDouble$default (Lcom/areslib/subsystem/SubsystemStateBuilder;Ljava/lang/String;DLjava/lang/String;Ljava/lang/Double;Ljava/lang/Double;Ljava/lang/String;ILjava/lang/Object;)Lcom/areslib/subsystem/SubsystemFieldRef;
+	public final fun measurementInt (Ljava/lang/String;ILjava/lang/String;Ljava/lang/Double;Ljava/lang/Double;Ljava/lang/String;)Lcom/areslib/subsystem/SubsystemFieldRef;
+	public static synthetic fun measurementInt$default (Lcom/areslib/subsystem/SubsystemStateBuilder;Ljava/lang/String;ILjava/lang/String;Ljava/lang/Double;Ljava/lang/Double;Ljava/lang/String;ILjava/lang/Object;)Lcom/areslib/subsystem/SubsystemFieldRef;
+	public final fun statusBoolean (Ljava/lang/String;ZLjava/lang/String;)Lcom/areslib/subsystem/SubsystemFieldRef;
+	public static synthetic fun statusBoolean$default (Lcom/areslib/subsystem/SubsystemStateBuilder;Ljava/lang/String;ZLjava/lang/String;ILjava/lang/Object;)Lcom/areslib/subsystem/SubsystemFieldRef;
+	public final fun statusDouble (Ljava/lang/String;DLjava/lang/String;Ljava/lang/Double;Ljava/lang/Double;Ljava/lang/String;)Lcom/areslib/subsystem/SubsystemFieldRef;
+	public static synthetic fun statusDouble$default (Lcom/areslib/subsystem/SubsystemStateBuilder;Ljava/lang/String;DLjava/lang/String;Ljava/lang/Double;Ljava/lang/Double;Ljava/lang/String;ILjava/lang/Object;)Lcom/areslib/subsystem/SubsystemFieldRef;
+	public final fun statusInt (Ljava/lang/String;ILjava/lang/String;Ljava/lang/Double;Ljava/lang/Double;Ljava/lang/String;)Lcom/areslib/subsystem/SubsystemFieldRef;
+	public static synthetic fun statusInt$default (Lcom/areslib/subsystem/SubsystemStateBuilder;Ljava/lang/String;ILjava/lang/String;Ljava/lang/Double;Ljava/lang/Double;Ljava/lang/String;ILjava/lang/Object;)Lcom/areslib/subsystem/SubsystemFieldRef;
+	public final fun statusText (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Lcom/areslib/subsystem/SubsystemFieldRef;
+	public static synthetic fun statusText$default (Lcom/areslib/subsystem/SubsystemStateBuilder;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lcom/areslib/subsystem/SubsystemFieldRef;
+	public final fun targetBoolean (Ljava/lang/String;ZLjava/lang/String;)Lcom/areslib/subsystem/SubsystemFieldRef;
+	public static synthetic fun targetBoolean$default (Lcom/areslib/subsystem/SubsystemStateBuilder;Ljava/lang/String;ZLjava/lang/String;ILjava/lang/Object;)Lcom/areslib/subsystem/SubsystemFieldRef;
+	public final fun targetDouble (Ljava/lang/String;DLjava/lang/String;Ljava/lang/Double;Ljava/lang/Double;Ljava/lang/String;)Lcom/areslib/subsystem/SubsystemFieldRef;
+	public static synthetic fun targetDouble$default (Lcom/areslib/subsystem/SubsystemStateBuilder;Ljava/lang/String;DLjava/lang/String;Ljava/lang/Double;Ljava/lang/Double;Ljava/lang/String;ILjava/lang/Object;)Lcom/areslib/subsystem/SubsystemFieldRef;
+	public final fun targetInt (Ljava/lang/String;ILjava/lang/String;Ljava/lang/Double;Ljava/lang/Double;Ljava/lang/String;)Lcom/areslib/subsystem/SubsystemFieldRef;
+	public static synthetic fun targetInt$default (Lcom/areslib/subsystem/SubsystemStateBuilder;Ljava/lang/String;ILjava/lang/String;Ljava/lang/Double;Ljava/lang/Double;Ljava/lang/String;ILjava/lang/Object;)Lcom/areslib/subsystem/SubsystemFieldRef;
+	public final fun targetText (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Lcom/areslib/subsystem/SubsystemFieldRef;
+	public static synthetic fun targetText$default (Lcom/areslib/subsystem/SubsystemStateBuilder;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lcom/areslib/subsystem/SubsystemFieldRef;
+	public final fun text (Ljava/lang/String;Lcom/areslib/subsystem/SubsystemFieldRole;Ljava/lang/String;)Lcom/areslib/subsystem/SubsystemFieldRef;
 	public final fun text (Ljava/lang/String;Ljava/lang/String;Lcom/areslib/subsystem/SubsystemFieldRole;Ljava/lang/String;)Lcom/areslib/subsystem/SubsystemFieldRef;
+	public static synthetic fun text$default (Lcom/areslib/subsystem/SubsystemStateBuilder;Ljava/lang/String;Lcom/areslib/subsystem/SubsystemFieldRole;Ljava/lang/String;ILjava/lang/Object;)Lcom/areslib/subsystem/SubsystemFieldRef;
 	public static synthetic fun text$default (Lcom/areslib/subsystem/SubsystemStateBuilder;Ljava/lang/String;Ljava/lang/String;Lcom/areslib/subsystem/SubsystemFieldRole;Ljava/lang/String;ILjava/lang/Object;)Lcom/areslib/subsystem/SubsystemFieldRef;
 }
 
@@ -7133,9 +7507,20 @@ public final class com/areslib/telemetry/AresGamepad$BindableAxis {
 	public final fun bindAxis (Lcom/areslib/telemetry/AresGamepad$AxisConsumer;)Lcom/areslib/telemetry/AresGamepad$BindableAxis;
 	public final fun getShapedValue ()D
 	public final fun getValue ()F
+	public final fun isPressed ()Z
 	public final fun label (Ljava/lang/String;)V
+	public final fun onPress (Ljava/lang/String;DLkotlin/jvm/functions/Function0;)Lcom/areslib/telemetry/AresGamepad$BindableAxis;
+	public static synthetic fun onPress$default (Lcom/areslib/telemetry/AresGamepad$BindableAxis;Ljava/lang/String;DLkotlin/jvm/functions/Function0;ILjava/lang/Object;)Lcom/areslib/telemetry/AresGamepad$BindableAxis;
+	public final fun onRelease (Ljava/lang/String;DLkotlin/jvm/functions/Function0;)Lcom/areslib/telemetry/AresGamepad$BindableAxis;
+	public static synthetic fun onRelease$default (Lcom/areslib/telemetry/AresGamepad$BindableAxis;Ljava/lang/String;DLkotlin/jvm/functions/Function0;ILjava/lang/Object;)Lcom/areslib/telemetry/AresGamepad$BindableAxis;
+	public final fun whileHeld (Ljava/lang/String;DLkotlin/jvm/functions/Function0;)Lcom/areslib/telemetry/AresGamepad$BindableAxis;
+	public static synthetic fun whileHeld$default (Lcom/areslib/telemetry/AresGamepad$BindableAxis;Ljava/lang/String;DLkotlin/jvm/functions/Function0;ILjava/lang/Object;)Lcom/areslib/telemetry/AresGamepad$BindableAxis;
+	public final fun whilePressed (Ljava/lang/String;DLkotlin/jvm/functions/Function0;)Lcom/areslib/telemetry/AresGamepad$BindableAxis;
+	public static synthetic fun whilePressed$default (Lcom/areslib/telemetry/AresGamepad$BindableAxis;Ljava/lang/String;DLkotlin/jvm/functions/Function0;ILjava/lang/Object;)Lcom/areslib/telemetry/AresGamepad$BindableAxis;
 	public final fun withDeadband (D)Lcom/areslib/telemetry/AresGamepad$BindableAxis;
 	public final fun withExponentialCurve (D)Lcom/areslib/telemetry/AresGamepad$BindableAxis;
+	public final fun withInversion (Z)Lcom/areslib/telemetry/AresGamepad$BindableAxis;
+	public static synthetic fun withInversion$default (Lcom/areslib/telemetry/AresGamepad$BindableAxis;ZILjava/lang/Object;)Lcom/areslib/telemetry/AresGamepad$BindableAxis;
 	public final fun withSlewRateLimit (D)Lcom/areslib/telemetry/AresGamepad$BindableAxis;
 }
 
@@ -7150,6 +7535,8 @@ public final class com/areslib/telemetry/AresGamepad$BindableButton {
 	public static synthetic fun onRelease$default (Lcom/areslib/telemetry/AresGamepad$BindableButton;Ljava/lang/String;Lkotlin/jvm/functions/Function0;ILjava/lang/Object;)V
 	public final fun toggle (Ljava/lang/String;Lkotlin/jvm/functions/Function0;Lkotlin/jvm/functions/Function1;)V
 	public static synthetic fun toggle$default (Lcom/areslib/telemetry/AresGamepad$BindableButton;Ljava/lang/String;Lkotlin/jvm/functions/Function0;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)V
+	public final fun whileHeld (Ljava/lang/String;Lkotlin/jvm/functions/Function0;)V
+	public static synthetic fun whileHeld$default (Lcom/areslib/telemetry/AresGamepad$BindableButton;Ljava/lang/String;Lkotlin/jvm/functions/Function0;ILjava/lang/Object;)V
 	public final fun whilePressed (Ljava/lang/String;Lkotlin/jvm/functions/Function0;)V
 	public static synthetic fun whilePressed$default (Lcom/areslib/telemetry/AresGamepad$BindableButton;Ljava/lang/String;Lkotlin/jvm/functions/Function0;ILjava/lang/Object;)V
 }

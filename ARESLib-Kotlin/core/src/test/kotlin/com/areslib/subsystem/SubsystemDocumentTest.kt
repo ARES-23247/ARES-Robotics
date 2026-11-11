@@ -680,6 +680,139 @@ class SubsystemDocumentTest {
         assertEquals("Updated Loop", copiedLoop.displayName)
         assertEquals("", copiedLoop.description)
     }
+
+    @Test
+    fun `text-first DSL supports XRP outputs role-specific state helpers and schema v11 blocks`() {
+        val xrpAux = subsystem("xrp-aux", SubsystemPlatform.XRP) {
+            val ledTarget = state.targetDouble("ledState", default = 0.0, minimum = 0.0, maximum = 1.0)
+            val pwmTarget = state.targetDouble("pwmDuty", default = 0.0, minimum = 0.0, maximum = 1.0)
+            val toneTarget = state.targetDouble("midiNote", default = 0.0, minimum = 0.0, maximum = 127.0)
+            val readyFlag = state.statusBoolean("ready", default = true)
+            val led = hardware.digitalOutput("statusLed") { channel = 1 }
+            val auxPwm = hardware.pwmOutput("auxPwm") { channel = 2 }
+            val piezo = hardware.buzzer("piezo")
+            control.openLoop("ledLoop", led, ledTarget) {
+                minimumOutput = 0.0
+                maximumOutput = 1.0
+            }
+            control.openLoop("pwmLoop", auxPwm, pwmTarget) {
+                minimumOutput = 0.0
+                maximumOutput = 1.0
+            }
+            control.openLoop("toneLoop", piezo, toneTarget) {
+                minimumOutput = 0.0
+                maximumOutput = 127.0
+            }
+            safety.feedbackTimeoutMs = null
+            safety.requiresCurrentMonitoring = false
+            check(readyFlag.id == "ready")
+        }
+        assertEquals("Xrp Aux", xrpAux.displayName)
+        assertEquals("XrpAux", xrpAux.kotlinTypeName)
+        assertTrue(SubsystemSchema.validate(xrpAux).isEmpty()) { SubsystemSchema.validate(xrpAux).toString() }
+
+        val shooter = subsystem("dual-flywheel", SubsystemPlatform.FTC) {
+            val targetVel = state.targetDouble("targetRadPerSec", unit = "rad/s", minimum = 0.0, maximum = 550.0)
+            val measuredVel = state.measurementDouble("velocityRadPerSec", unit = "rad/s")
+            val currentAmps = state.measurementDouble("currentAmps", unit = "A", minimum = 0.0)
+            val pieceDetected = state.measurementBoolean("pieceDetected")
+            val atSpeed = state.statusBoolean("atSpeed")
+            val idleVel = state.configDouble("idleRadPerSec", default = 80.0, unit = "rad/s")
+
+            val leader = hardware.motor("flywheelLeft") {
+                measurement(measuredVel, SubsystemMeasurementSource.MOTOR_VELOCITY_NATIVE_PER_SECOND, scale = 0.10472)
+                measurement(currentAmps, SubsystemMeasurementSource.MOTOR_CURRENT_AMPS, validMinimum = 0.0)
+            }
+            hardware.motor("flywheelRight") {
+                follows(leader, inverted = true)
+            }
+            hardware.digitalInput("beamBreak") {
+                measurement(pieceDetected, SubsystemMeasurementSource.DIGITAL_STATE)
+            }
+            val readyLight = hardware.indicatorLight("readyLed") {
+                visualPlacement(SubsystemVisualAnchor.FRONT, forwardFraction = 0.4, leftFraction = 0.3)
+            }
+            val lightColor = state.targetDouble("lightColor", default = 0.0, minimum = 0.0, maximum = 1.0)
+            control.openLoop("lightControl", readyLight, lightColor) {
+                minimumOutput = 0.0
+                maximumOutput = 1.0
+            }
+
+            val loop = control.velocityPid("velocity", leader, targetVel, measuredVel) {
+                kP = 0.04
+                feedforward.simpleMotor(kS = 0.18, kV = 0.019, kA = 0.002, velocityField = targetVel)
+            }
+
+            tuningDouble(
+                key = "subsystem.dualFlywheel.velocity.kp",
+                defaultValue = 0.04,
+                minimum = 0.0,
+                maximum = 1.0,
+                unit = "V/(rad/s)",
+                componentUid = loop.uid,
+            )
+
+            safety.requiresCurrentMonitoring = true
+            safety.faultRecovery.reverseBriefly(
+                actuator = leader,
+                current = currentAmps,
+                currentThresholdAmps = 22.0,
+            )
+            interlock(
+                id = "readyGate",
+                targetSubsystemUid = "hopper",
+                targetFieldId = "positionMeters",
+                comparison = InterlockComparison.GREATER_THAN,
+                thresholdValue = 0.05,
+            ) {
+                forbiddenZoneDescription = "Hopper must clear before firing"
+            }
+            implementation.simulationInteraction(
+                role = SimInteractionRole.PROJECTILE_LAUNCHER,
+                triggerActuator = leader,
+            ) {
+                launchSpeedMps = 9.5
+                beamBreakField = pieceDetected
+            }
+            check(atSpeed.id == "atSpeed" && idleVel.id == "idleRadPerSec")
+        }
+
+        assertEquals("Dual Flywheel", shooter.displayName)
+        assertEquals("DualFlywheel", shooter.kotlinTypeName)
+        assertEquals("flywheelLeft", shooter.hardware.first().connection.hardwareMapName)
+        assertEquals("flywheelRight", shooter.hardware[1].connection.hardwareMapName)
+        assertEquals(SubsystemFeedforwardKind.SIMPLE_MOTOR, shooter.controlLoops.last().feedforward.kind)
+        assertTrue(shooter.safety.faultRecovery.enabled)
+        assertEquals(1, shooter.interlocks.size)
+        assertEquals(SimInteractionRole.PROJECTILE_LAUNCHER, shooter.implementation.simulation.interaction.role)
+        assertEquals(1, shooter.tuningParameters.size)
+        assertTrue(SubsystemSchema.validate(shooter).isEmpty()) { SubsystemSchema.validate(shooter).toString() }
+
+        val twoDof = subsystem("two-joint-arm", SubsystemPlatform.FTC) {
+            val j1Target = state.targetDouble("j1Target", unit = "rad", minimum = -3.14, maximum = 3.14)
+            val j1Angle = state.measurementDouble("j1Angle", unit = "rad", minimum = -3.2, maximum = 3.2)
+            val j2Target = state.targetDouble("j2Target", unit = "rad", minimum = -3.14, maximum = 3.14)
+            val j2Angle = state.measurementDouble("j2Angle", unit = "rad", minimum = -3.2, maximum = 3.2)
+            val shoulder = hardware.motor("shoulder") {
+                measurement(j1Angle, SubsystemMeasurementSource.MOTOR_POSITION_NATIVE)
+            }
+            val elbow = hardware.motor("elbow") {
+                measurement(j2Angle, SubsystemMeasurementSource.MOTOR_POSITION_NATIVE)
+            }
+            control.positionPid("shoulderPid", shoulder, j1Target, j1Angle) { kP = 5.0 }
+            control.positionPid("elbowPid", elbow, j2Target, j2Angle) { kP = 4.0 }
+            linkage {
+                link1LengthMeters = 0.35
+                link2LengthMeters = 0.25
+                joint1Actuator = shoulder
+                joint2Actuator = elbow
+                joint1AngleField = j1Angle
+                joint2AngleField = j2Angle
+            }
+        }
+        assertTrue(twoDof.linkage.enabled)
+        assertTrue(SubsystemSchema.validate(twoDof).isEmpty()) { SubsystemSchema.validate(twoDof).toString() }
+    }
 }
 
 private fun String.toTypeName(): String = lowercase().split('_').joinToString("") { token ->

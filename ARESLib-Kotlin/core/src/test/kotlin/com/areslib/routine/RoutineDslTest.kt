@@ -46,4 +46,35 @@ class RoutineDslTest {
             }
         }
     }
+
+    @Test
+    fun `text-first aliases and default display name produce canonical routine steps`() {
+        val document = routine("auto_three_piece") {
+            parallel {
+                namedCommand("intake.deploy")
+                waitFor(kotlin.time.Duration.parse("250ms"))
+            }
+            race {
+                waitUntil("intake.hasPiece", timeout = kotlin.time.Duration.parse("1.5s"))
+                waitSeconds(1.5)
+            }
+            deadline(
+                main = { driveTo(1.2, 0.4, 45.0) },
+                companions = {
+                    action("intake.collect")
+                    action("shooter.spin") { number("rpm", 3600.0) }
+                },
+            )
+        }
+
+        assertEquals("Auto Three Piece", document.name)
+        assertEquals(RoutineStepKind.TOGETHER, document.steps[0].kind)
+        assertEquals(0.25, document.steps[0].children[1].durationSeconds!!, 1e-9)
+        assertEquals(RoutineStepKind.FIRST_TO_FINISH, document.steps[1].kind)
+        assertEquals(1.5, document.steps[1].children[0].timeoutSeconds!!, 1e-9)
+        assertEquals(RoutineStepKind.DEADLINE, document.steps[2].kind)
+        assertEquals(RoutineStepKind.DRIVE_TO, document.steps[2].deadline?.kind)
+        assertEquals(2, document.steps[2].children.size)
+        assertTrue(validateRoutine(document).none { it.severity == RoutineValidationSeverity.ERROR })
+    }
 }

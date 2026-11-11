@@ -57,15 +57,7 @@ class TaskExecutor {
         queue.offer(task)
     }
 
-    private fun admit(task: Task) {
-        val ownership = RoutineTaskOwnership(allowTerminalReuse = true)
-        try { ownership.acquire(task); ownership.prepareQueuedInvocation() }
-        catch (failure: Throwable) {
-            ownership.abandonClaims()
-            throw failure
-        }
-        admissions[task] = ownership
-    }
+    private fun admit(task: Task) = admitExecutorTask(task, admissions)
 
     private fun canInitialize(task: Task): Boolean {
         val ownership = checkNotNull(admissions[task])
@@ -130,6 +122,22 @@ class TaskExecutor {
                 isSuspended = false
             } catch (failure: Throwable) { latchControlFailure(failure); throw failure }
         }
+    }
+
+    /** Suspends execution and invokes [Task.pause] on the active running task. */
+    @Synchronized
+    fun suspendWithActions(state: RobotState): List<RobotAction> {
+        if (isSuspended) { suspend(); return emptyList() }
+        suspend()
+        return activeTask?.takeIf { TaskStateMachine.getStatus(it) == TaskStatus.RUNNING }?.pause(state) ?: emptyList()
+    }
+
+    /** Resumes execution and invokes [Task.resume] on the active running task. */
+    @Synchronized
+    fun resumeWithActions(state: RobotState): List<RobotAction> {
+        if (!isSuspended) { resume(); return emptyList() }
+        resume()
+        return activeTask?.takeIf { TaskStateMachine.getStatus(it) == TaskStatus.RUNNING }?.resume(state) ?: emptyList()
     }
 
     private fun latchControlFailure(failure: Throwable) {
@@ -474,17 +482,7 @@ class TaskExecutor {
         cancelAllInternal(state)
     }
 
-    private fun releaseMetadata(task: Task): Boolean = cleanup {
-        try {
-            val ownership = admissions.remove(task)
-            if (ownership != null) ownership.releaseAll() else TaskRuntimeOwnership.release(task)
-            true
-        } catch (failure: Throwable) {
-            TaskStateMachine.markFailed(task)
-            TaskExecutorFailures.report(task, "metadata release", failure)
-            false
-        }
-    }
+    private fun releaseMetadata(task: Task): Boolean = cleanup { releaseExecutorTaskMetadata(task, admissions) }
 
     /**
      * Returns the name of the currently active task, if any.

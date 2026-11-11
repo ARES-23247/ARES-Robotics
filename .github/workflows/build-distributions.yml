@@ -10,7 +10,7 @@ permissions:
   contents: read
 
 env:
-  ARES_VERSION: 20.0.4
+  ARES_VERSION: 20.0.5
   STUDIO_VERSION: 7.0.72
   FTC_STARTER_URL: https://github.com/ARES-23247/ARES-Robotics/releases/download/v7.0.72/ARES-FTC-Starter-20.0.5.zip
   FTC_STARTER_SHA256: ebdc49f220cbc20f842ed4052763347ce1882b83c6c89f0f4ee678c09811bf77

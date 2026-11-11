@@ -30,11 +30,65 @@ class HolonomicPathFollower @kotlin.jvm.JvmOverloads constructor(
     val yController: PIDController = PIDController(p = 2.0, i = 0.0, d = 0.02),
     val thetaController: PIDController = PIDController(p = 2.5, i = 0.0, d = 0.05).apply {
         enableContinuousInput(-Math.PI, Math.PI)
-    }
+    },
+    val prioritizeCorrectiveEffort: Boolean = false,
+    val maxStrafeOutputMps: Double = Double.NaN,
+    val maxOpposingBrakingMps: Double = Double.NaN,
+    foresightConfig: ForesightConfig = ForesightConfig.DISABLED
 ) {
 
+    companion object {
+        /**
+         * Creates a [HolonomicPathFollower] configured for [preset].
+         * Enables prioritized vector allocation, Foresight stopping-pose lookahead, and dual-bandwidth
+         * PID gain scheduling automatically for [TrajectoryPreset.FAST] and [TrajectoryPreset.ADAPTIVE],
+         * leaving [TrajectoryPreset.SAFE] and [TrajectoryPreset.BALANCED] identical to legacy behavior.
+         */
+        @JvmStatic
+        @JvmOverloads
+        fun forPreset(
+            drivetrain: DrivetrainSubsystem,
+            preset: TrajectoryPreset,
+            decelRateMps2: Double = 2.5,
+            maxStrafeOutputMps: Double = Double.NaN,
+            maxOpposingBrakingMps: Double = Double.NaN
+        ): HolonomicPathFollower {
+            val highSpeed = preset == TrajectoryPreset.FAST || preset == TrajectoryPreset.ADAPTIVE
+            val xPid = PIDController(p = 2.0, i = 0.0, d = 0.02)
+            val yPid = PIDController(p = 2.0, i = 0.0, d = 0.02)
+            val thetaPid = PIDController(p = 2.5, i = 0.0, d = 0.05).apply {
+                enableContinuousInput(-Math.PI, Math.PI)
+            }
+            if (highSpeed) {
+                xPid.configureGainSchedule(largeKp = 3.2, threshold = 0.12)
+                yPid.configureGainSchedule(largeKp = 3.2, threshold = 0.12)
+                thetaPid.configureGainSchedule(largeKp = 3.8, threshold = Math.toRadians(12.0))
+            }
+            return HolonomicPathFollower(
+                drivetrain = drivetrain,
+                xController = xPid,
+                yController = yPid,
+                thetaController = thetaPid,
+                prioritizeCorrectiveEffort = highSpeed,
+                maxStrafeOutputMps = maxStrafeOutputMps,
+                maxOpposingBrakingMps = maxOpposingBrakingMps,
+                foresightConfig = ForesightConfig.forPreset(preset, decelRateMps2 = decelRateMps2)
+            )
+        }
+    }
+
+    /** Zero-GC Foresight stopping-pose lookahead estimator. */
+    val foresightEstimator = ForesightLookaheadEstimator(foresightConfig)
+
     /** Holonomic controller calculating corrective translational and angular velocities */
-    val driveController = HolonomicDriveController(xController, yController, thetaController)
+    val driveController = HolonomicDriveController(
+        xController = xController,
+        yController = yController,
+        thetaController = thetaController,
+        prioritizeCorrectiveEffort = prioritizeCorrectiveEffort,
+        maxStrafeOutputMps = maxStrafeOutputMps,
+        maxOpposingBrakingMps = maxOpposingBrakingMps
+    )
 
     private var events = emptyArray<PathEvent>()
     private var nextEvent = 0

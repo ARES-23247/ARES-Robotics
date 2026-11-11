@@ -661,7 +661,8 @@ object PoseEstimator {
         maxAmbiguity: Double = 0.2,
         scaleStdDevX: Boolean = true,
         scaleStdDevY: Boolean = true,
-        scaleStdDevHeading: Boolean = true
+        scaleStdDevHeading: Boolean = true,
+        observeHeading: Boolean = true
     ): PoseEstimatorState {
         val scratch = threadScratchpad.get()
         return VisionMahalanobisFilter.processVisionMeasurement(
@@ -669,8 +670,7 @@ object PoseEstimator {
             useMahalanobisRejection, mahalanobisThreshold, maxAmbiguity,
             activeTags, Q, scratch.scratchR, scratch.scratchS, scratch.scratchSInv, scratch.scratchK,
             scratch.scratchCov, scratch.scratchHistory, scratch.scratchCov2,
-            scratch.scratchInterpolatedEntry, scaleStdDevX, scaleStdDevY, scaleStdDevHeading
+            scratch.scratchInterpolatedEntry, scaleStdDevX, scaleStdDevY, scaleStdDevHeading, observeHeading
         )
     }
 }
-

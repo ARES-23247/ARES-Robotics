@@ -2,7 +2,6 @@ package com.areslib.frc
 
 import com.areslib.telemetry.GamepadState
 import edu.wpi.first.wpilibj.XboxController
-
 /**
  * Converts a WPILib [XboxController] into a platform-agnostic [GamepadState] data snapshot.
  *
@@ -71,3 +70,73 @@ fun XboxController.updateState(state: GamepadState) {
     state.start = startButton
     state.back = backButton
 }
+
+/**
+ * Zero-allocation FRC controller session binding one or two WPILib [XboxController] instances
+ * to [ com.areslib.telemetry.AresGamepad ] edge-triggered and continuous bindings (`onPress`,
+ * `onRelease`, `whilePressed`, `whileHeld`, `.withDeadband()`, `.withExponentialCurve()`,
+ * `.withInversion()`).
+ *
+ * Call [update] once per 50 Hz `teleopPeriodic()` tick to sample the controllers into
+ * pre-allocated [GamepadState] buffers and evaluate all bindings without heap allocation.
+ *
+ * ### Example
+ * ```kotlin
+ * val controls = frcControls(driverXbox, operatorXbox) {
+ *     driver.leftStick.withDeadband(0.08).withExponentialCurve(2.0)
+ *     driver.rightStickX.withDeadband(0.08).withExponentialCurve(2.0)
+ *     driver.y.onPress("Zero Heading") { robot.swerveDrive.zeroHeading() }
+ *     driver.rightTrigger.whileHeld("Spin Flywheel", threshold = 0.5) {
+ *         robot.store.dispatch(ShooterAction.SetTargetRpm(4200.0))
+ *     }
+ * }
+ * ```
+ */
+class FrcGamepadSession(
+    private val driverController: XboxController,
+    private val operatorController: XboxController? = null,
+    private val driverSampler: (GamepadState) -> Unit = { driverController.updateState(it) },
+    private val operatorSampler: (GamepadState) -> Unit = {
+        operatorController?.updateState(it) ?: it.reset()
+    },
+) {
+    private val driverState = GamepadState()
+    private val operatorState = GamepadState()
+
+    /** Primary driver gamepad with declarative button, trigger, and stick bindings. */
+    val driver: com.areslib.telemetry.AresGamepad = com.areslib.telemetry.AresGamepad()
+
+    /** Secondary operator gamepad with declarative button, trigger, and stick bindings. */
+    val operator: com.areslib.telemetry.AresGamepad = com.areslib.telemetry.AresGamepad()
+
+    /**
+     * Samples the underlying controllers in-place without firing bindings and quarantines any
+     * buttons/triggers held during initialization until released.
+     */
+    fun prime() {
+        driverSampler(driverState)
+        operatorSampler(operatorState)
+        driver.prime(driverState)
+        operator.prime(operatorState)
+    }
+
+    /**
+     * Samples the underlying controllers in-place and evaluates all registered button and trigger
+     * bindings for the current 50 Hz loop tick without allocating.
+     */
+    fun update() {
+        driverSampler(driverState)
+        operatorSampler(operatorState)
+        driver.update(driverState)
+        operator.update(operatorState)
+    }
+}
+
+/**
+ * Declares zero-allocation FRC gamepad bindings over one or two WPILib [XboxController] instances.
+ */
+fun frcControls(
+    driverController: XboxController,
+    operatorController: XboxController? = null,
+    block: FrcGamepadSession.() -> Unit,
+): FrcGamepadSession = FrcGamepadSession(driverController, operatorController).apply(block)

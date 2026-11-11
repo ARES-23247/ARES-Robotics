@@ -18,7 +18,13 @@ enum class RoutineStartPolicy {
     /** Wait until all currently running routines finish. */
     QUEUE,
     /** Run concurrently when declared subsystem resources do not overlap. */
-    PARALLEL
+    PARALLEL,
+    /**
+     * Safely pauses conflicting active routines via [TaskExecutor.suspendWithActions], runs the new
+     * routine immediately, and resumes suspended routines in LIFO order once their required
+     * subsystem resources become free.
+     */
+    PREEMPT_AND_SUSPEND
 }
 
 /** Synchronous outcome returned to controller, auto-selector, or test code. */
@@ -47,7 +53,7 @@ class RoutineManager(
         val resourceKeys: Set<String>
     )
 
-    private data class ActiveExecution(
+    internal data class ActiveExecution(
         val executionId: Long,
         val routineId: String,
         val task: Task,
@@ -55,7 +61,7 @@ class RoutineManager(
         val executor: TaskExecutor
     )
 
-    private data class DetachedExecution(
+    internal data class DetachedExecution(
         val executionId: Long,
         val routineId: String,
         val task: Task,
@@ -64,6 +70,7 @@ class RoutineManager(
 
     private val documents = LinkedHashMap<String, RoutineDocument>()
     private val pending = ArrayDeque<PendingExecution>()
+    private val suspended = ArrayDeque<ActiveExecution>()
     private val active = LinkedHashMap<Long, ActiveExecution>()
     private val activeInStartOrder = ArrayList<ActiveExecution>()
     private val dispatchQueue = ArrayDeque<RobotAction>()
@@ -72,6 +79,7 @@ class RoutineManager(
     private val updateActionBatches = ArrayList<List<RobotAction>>()
     private val updateTerminalStatuses = ArrayList<TaskStatus?>()
     private val updateEmissions = ArrayList<RobotAction>()
+    private val updateResumed = ArrayList<ActiveExecution>()
     private var dispatching = false
     private var nextExecutionId = 1L
 
@@ -120,6 +128,7 @@ class RoutineManager(
     ): RoutineRequestResult {
         val now = RobotClock.currentTimeMillis()
         val detached = mutableListOf<DetachedExecution>()
+        val preemptedToSuspend = mutableListOf<ActiveExecution>()
         val tailActions = mutableListOf<RobotAction>()
         lateinit var requestedAction: RobotAction.RoutineRequested
         lateinit var result: RoutineRequestResult
@@ -160,19 +169,32 @@ class RoutineManager(
                 return@synchronized
             }
 
-            val conflict = findResourceConflict(pendingExecution.resourceKeys)
-            if (conflict != null) {
-                val issue = compileConflict(routineId, conflict)
-                pendingExecution.task.releaseRuntimeState()
-                tailActions.add(RobotAction.RoutineFailed(executionId, routineId, issue.message, now))
-                result = RoutineRequestResult.Rejected(listOf(issue))
-                return@synchronized
+            if (policy == RoutineStartPolicy.PREEMPT_AND_SUSPEND) {
+                suspendConflictingRoutineExecutions(
+                    pendingExecution.routineId, pendingExecution.resourceKeys,
+                    activeInStartOrder, active, suspended, preemptedToSuspend
+                )
+            } else {
+                val conflict = findResourceConflict(pendingExecution.resourceKeys)
+                if (conflict != null) {
+                    val issue = compileConflict(routineId, conflict)
+                    pendingExecution.task.releaseRuntimeState()
+                    tailActions.add(RobotAction.RoutineFailed(executionId, routineId, issue.message, now))
+                    result = RoutineRequestResult.Rejected(listOf(issue))
+                    return@synchronized
+                }
             }
             tailActions.add(startLocked(pendingExecution, now))
             result = RoutineRequestResult.Accepted(executionId, queued = false)
         }
 
         val actions = mutableListOf<RobotAction>(requestedAction)
+        if (preemptedToSuspend.isNotEmpty()) {
+            val state = stateProvider()
+            for (suspendedExec in preemptedToSuspend) {
+                actions.addAll(suspendedExec.executor.suspendWithActions(state))
+            }
+        }
         appendCancellationActions(detached, "Restarted by a new request", now, actions)
         actions.addAll(tailActions)
         emit(actions)
@@ -219,20 +241,26 @@ class RoutineManager(
                     }
                     index++
                 }
+                if (suspended.isNotEmpty()) {
+                    resumeNonConflictingExecutions(suspended, active, activeInStartOrder, updateResumed) { findResourceConflict(it) }
+                }
                 if (active.isEmpty() && pending.isNotEmpty()) {
                     updateEmissions.add(startLocked(pending.removeFirst(), now))
                 }
             }
+            index = 0
+            while (index < updateResumed.size) {
+                updateEmissions.addAll(updateResumed[index].executor.resumeWithActions(state))
+                index++
+            }
             emit(updateEmissions)
         } finally {
-            updateSnapshot.clear()
-            updateActionBatches.clear()
-            updateTerminalStatuses.clear()
-            updateEmissions.clear()
+            updateSnapshot.clear(); updateActionBatches.clear()
+            updateTerminalStatuses.clear(); updateEmissions.clear(); updateResumed.clear()
         }
     }
 
-    /** Cancels one running or queued invocation and dispatches safe task cleanup first. */
+    /** Cancels one running, suspended, or queued invocation and dispatches safe task cleanup first. */
     fun cancel(executionId: Long, reason: String = "Cancelled by operator"): Boolean {
         val detached = synchronized(this) { detachExecutionLocked(executionId) } ?: return false
         val actions = mutableListOf<RobotAction>()
@@ -253,7 +281,7 @@ class RoutineManager(
         return detached.size
     }
 
-    /** Disable/disconnect safety hook. No queued routine survives this call. */
+    /** Disable/disconnect safety hook. No queued or suspended routine survives this call. */
     fun cancelAll(reason: String = "Robot disabled"): Int {
         val detached = mutableListOf<DetachedExecution>()
         synchronized(this) {
@@ -267,6 +295,9 @@ class RoutineManager(
 
     val activeCount: Int
         @Synchronized get() = active.size
+
+    val suspendedCount: Int
+        @Synchronized get() = suspended.size
 
     val queuedCount: Int
         @Synchronized get() = pending.size
@@ -332,6 +363,7 @@ class RoutineManager(
                 activeIndex++
             }
         }
+        detachMatchingSuspended(suspended, matchesRoutineId, destination)
         val pendingIterator = pending.iterator()
         while (pendingIterator.hasNext()) {
             val execution = pendingIterator.next()
@@ -353,6 +385,7 @@ class RoutineManager(
                 execution.executor
             )
         }
+        detachSuspendedByExecutionId(suspended, executionId)?.let { return it }
         val iterator = pending.iterator()
         while (iterator.hasNext()) {
             val execution = iterator.next()
@@ -443,6 +476,7 @@ class RoutineManager(
 
     private fun findExecution(routineId: String): Long? =
         active.values.firstOrNull { it.routineId == routineId }?.executionId
+            ?: suspended.firstOrNull { it.routineId == routineId }?.executionId
             ?: pending.firstOrNull { it.routineId == routineId }?.executionId
 
     private fun findResourceConflict(requested: Set<String>): String? {

@@ -213,6 +213,7 @@ public final class com/areslib/ftc/FtcMecanumRobotBuilder {
 
 public final class com/areslib/ftc/FtcMecanumRobotBuilderKt {
 	public static final fun ftcMecanumRobot (Lcom/qualcomm/robotcore/hardware/HardwareMap;Lkotlin/jvm/functions/Function1;)Lcom/areslib/ftc/FtcMecanumRobot;
+	public static synthetic fun ftcMecanumRobot$default (Lcom/qualcomm/robotcore/hardware/HardwareMap;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lcom/areslib/ftc/FtcMecanumRobot;
 }
 
 public final class com/areslib/ftc/FtcTeleopDriveFrame : java/lang/Enum {
@@ -637,6 +638,7 @@ public final class com/areslib/ftc/dsl/FtcTeleOpBuilder {
 	public final fun duringInit (Lkotlin/jvm/functions/Function1;)V
 	public final fun everyLoop (Lkotlin/jvm/functions/Function1;)V
 	public final fun onStart (Lkotlin/jvm/functions/Function1;)V
+	public final fun onStop (Lkotlin/jvm/functions/Function1;)V
 	public final fun setup (Lkotlin/jvm/functions/Function1;)V
 }
 

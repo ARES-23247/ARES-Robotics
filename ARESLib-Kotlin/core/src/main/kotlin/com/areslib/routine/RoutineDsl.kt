@@ -1,13 +1,50 @@
 package com.areslib.routine
 
+import kotlin.time.Duration
+import kotlin.time.DurationUnit
+
 /** Prevents nested routine receivers from accidentally calling the wrong builder. */
 @DslMarker
 annotation class AresRoutineDsl
 
-/** Creates the same trigger-neutral document used by the visual Routine Builder. */
+internal fun defaultRoutineDisplayName(id: String): String {
+    val spaced = id
+        .replace(Regex("(?<=[a-z0-9])(?=[A-Z])"), " ")
+        .replace('_', ' ')
+        .replace('-', ' ')
+        .trim()
+    if (spaced.isEmpty()) return id
+    return spaced.split(Regex("\\s+")).joinToString(" ") { token ->
+        token.replaceFirstChar { it.uppercase() }
+    }
+}
+
+/**
+ * Creates a validated, trigger-neutral [RoutineDocument] used by both the visual Routine Builder
+ * and text-first autonomous/macro authoring.
+ *
+ * When [name] is omitted, a human-readable display name is derived from [id]
+ * (for example, `"score-preload"` -> `"Score Preload"`).
+ *
+ * ### Example
+ * ```kotlin
+ * val scorePreload = routine("score-preload") {
+ *     driveTo(xMeters = 1.25, yMeters = 0.45, headingDegrees = 90.0) {
+ *         whileDriving("intake.collect")
+ *         onArrival("arm.scoreHeight")
+ *     }
+ *     waitUntil(condition = "arm.atTarget", timeoutSeconds = 1.5)
+ *     together {
+ *         action("outtake.release")
+ *         waitSeconds(0.4)
+ *     }
+ *     action("arm.stow")
+ * }
+ * ```
+ */
 fun routine(
     id: String,
-    name: String,
+    name: String = defaultRoutineDisplayName(id),
     revision: Int = 1,
     description: String? = null,
     block: RoutineBuilder.() -> Unit
@@ -29,6 +66,20 @@ class RoutineBuilder internal constructor() {
         steps += RoutineStep.action(key, RoutineArgumentsBuilder().apply(block).build())
     }
 
+    /**
+     * Runs one project action by [key]. Alias for [action] that aligns with step-oriented sequence authoring.
+     */
+    fun step(key: String, block: RoutineArgumentsBuilder.() -> Unit = {}) {
+        action(key, block)
+    }
+
+    /**
+     * Runs one project action by [key]. Alias for [action] that matches [com.areslib.sequencer.RobotSequence.namedCommand].
+     */
+    fun namedCommand(key: String, block: RoutineArgumentsBuilder.() -> Unit = {}) {
+        action(key, block)
+    }
+
     /** Drives to an exact CCW-positive field pose. Degrees are accepted only at this UI boundary. */
     fun driveTo(
         xMeters: Double,
@@ -40,12 +91,21 @@ class RoutineBuilder internal constructor() {
         steps += RoutineStep.driveTo(builder.build())
     }
 
-    /** Non-blocking deterministic delay. */
+    /** Non-blocking deterministic delay in seconds. */
     fun waitSeconds(seconds: Double) {
         steps += RoutineStep.wait(seconds)
     }
 
-    /** Waits for a named Redux condition, with a mandatory fail-safe timeout. */
+    /**
+     * Non-blocking deterministic delay using a Kotlin [Duration].
+     * Aligns with [com.areslib.sequencer.RobotSequence.waitFor].
+     */
+    fun waitFor(duration: Duration) {
+        require(duration.isFinite() && !duration.isNegative()) { "Wait duration must be finite and non-negative" }
+        waitSeconds(duration.toDouble(DurationUnit.SECONDS))
+    }
+
+    /** Waits for a named Redux condition, with a mandatory fail-safe timeout in seconds. */
     fun waitUntil(
         condition: String,
         timeoutSeconds: Double,
@@ -58,14 +118,40 @@ class RoutineBuilder internal constructor() {
         )
     }
 
+    /** Waits for a named Redux condition, with a mandatory fail-safe [timeout] [Duration]. */
+    fun waitUntil(
+        condition: String,
+        timeout: Duration,
+        arguments: RoutineArgumentsBuilder.() -> Unit = {}
+    ) {
+        require(timeout.isFinite() && timeout.isPositive()) { "Wait timeout must be finite and positive" }
+        waitUntil(condition, timeout.toDouble(DurationUnit.SECONDS), arguments)
+    }
+
     /** Runs all children and completes only after every child completes. */
     fun together(block: RoutineBuilder.() -> Unit) {
         steps += RoutineStep.together(RoutineBuilder().apply(block).snapshot())
     }
 
+    /**
+     * Runs all children concurrently and completes only after every child completes.
+     * Alias for [together] that matches [com.areslib.sequencer.RobotSequence.parallel].
+     */
+    fun parallel(block: RoutineBuilder.() -> Unit) {
+        together(block)
+    }
+
     /** Runs all children and safely interrupts the remainder when the first child completes. */
     fun firstToFinish(block: RoutineBuilder.() -> Unit) {
         steps += RoutineStep.firstToFinish(RoutineBuilder().apply(block).snapshot())
+    }
+
+    /**
+     * Runs all children concurrently and safely interrupts the remainder when the first child completes.
+     * Alias for [firstToFinish] that matches [com.areslib.sequencer.RobotSequence.race].
+     */
+    fun race(block: RoutineBuilder.() -> Unit) {
+        firstToFinish(block)
     }
 
     /** Runs companions until [main] completes, then safely interrupts them. */
@@ -152,6 +238,9 @@ class DriveStepBuilder internal constructor(private val target: RoutinePose) {
     private val markers = mutableListOf<RoutineDriveMarker>()
     private val duringActions = mutableListOf<String>()
     private val arrivalActions = mutableListOf<String>()
+    private var headingMode: RoutineHeadingMode = RoutineHeadingMode.LINEAR
+    private var lookAtPoint: RoutinePose? = null
+    private var blendHandoff: Boolean = false
 
     fun motionPreset(key: String) {
         preset = key
@@ -177,13 +266,35 @@ class DriveStepBuilder internal constructor(private val target: RoutinePose) {
         arrivalActions += action
     }
 
+    /** Configures the heading interpolation law along this drive segment. */
+    fun headingMode(mode: RoutineHeadingMode) {
+        headingMode = mode
+    }
+
+    /** Continuously rotates the robot to face `(xMeters, yMeters)` on the field during this drive segment. */
+    fun pointTowards(xMeters: Double, yMeters: Double) {
+        headingMode = RoutineHeadingMode.POINT_TOWARDS
+        lookAtPoint = RoutinePose(xMeters = xMeters, yMeters = yMeters, headingRadians = 0.0)
+    }
+
+    /** Enables momentum-preserving Foresight stopping-pose handoff (`pathSkip`) into the next drive step. */
+    /** Alias for [blendIntoNext] matching [RoutineDriveStep.blendHandoff]. */
+    fun blendHandoff(enabled: Boolean = true) = blendIntoNext(enabled)
+
+    fun blendIntoNext(enabled: Boolean = true) {
+        blendHandoff = enabled
+    }
+
     internal fun build() = RoutineDriveStep(
         target = target,
         motionPresetKey = preset,
         preferredEngineKey = preferredEngine,
         markers = markers.toList(),
         duringActionKeys = duringActions.toList(),
-        arrivalActionKeys = arrivalActions.toList()
+        arrivalActionKeys = arrivalActions.toList(),
+        headingMode = headingMode,
+        lookAtPoint = lookAtPoint,
+        blendHandoff = blendHandoff
     )
 }
 
@@ -204,4 +315,20 @@ class RoutineBranchBuilder internal constructor() {
 
     internal fun trueSteps(): List<RoutineStep> = requireNotNull(whenTrue) { "branch requires then { }" }
     internal fun falseSteps(): List<RoutineStep> = whenFalse.orEmpty()
+}
+
+/** Formats [RoutineValidationIssue] entries into an actionable multi-line diagnostic report. */
+fun formatRoutineValidationReport(issues: List<RoutineValidationIssue>): String {
+    if (issues.isEmpty()) return "Routine document is valid."
+    val errors = issues.filter { it.severity == RoutineValidationSeverity.ERROR }
+    val warnings = issues.filter { it.severity == RoutineValidationSeverity.WARNING }
+    return buildString {
+        appendLine("Routine validation found ${errors.size} error(s) and ${warnings.size} warning(s):")
+        errors.forEach { issue ->
+            appendLine("  [ERROR] ${issue.documentId}.${issue.path} (${issue.code}): ${issue.message}")
+        }
+        warnings.forEach { issue ->
+            appendLine("  [WARN]  ${issue.documentId}.${issue.path} (${issue.code}): ${issue.message}")
+        }
+    }.trimEnd()
 }

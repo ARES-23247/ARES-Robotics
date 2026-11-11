@@ -697,6 +697,7 @@ public final class com/areslib/controls/DriveAxisKeys {
 public final class com/areslib/controls/RoutineInvocationPolicy : java/lang/Enum {
 	public static final field IGNORE_IF_RUNNING Lcom/areslib/controls/RoutineInvocationPolicy;
 	public static final field PARALLEL Lcom/areslib/controls/RoutineInvocationPolicy;
+	public static final field PREEMPT_AND_SUSPEND Lcom/areslib/controls/RoutineInvocationPolicy;
 	public static final field QUEUE Lcom/areslib/controls/RoutineInvocationPolicy;
 	public static final field RESTART_EXISTING Lcom/areslib/controls/RoutineInvocationPolicy;
 	public static final field TOGGLE_CANCEL Lcom/areslib/controls/RoutineInvocationPolicy;
@@ -767,6 +768,45 @@ public final class com/areslib/drivetrain/DisabledDrivePolicy : java/lang/Enum {
 	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public static fun valueOf (Ljava/lang/String;)Lcom/areslib/drivetrain/DisabledDrivePolicy;
 	public static fun values ()[Lcom/areslib/drivetrain/DisabledDrivePolicy;
+}
+
+public final class com/areslib/drivetrain/DrivetrainBuilder {
+	public final fun absoluteEncoder (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Lcom/areslib/drivetrain/DrivetrainComponentDocument;
+	public static synthetic fun absoluteEncoder$default (Lcom/areslib/drivetrain/DrivetrainBuilder;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lcom/areslib/drivetrain/DrivetrainComponentDocument;
+	public final fun clearComponents ()V
+	public final fun control (Lcom/areslib/drivetrain/DrivetrainControlKind;Ljava/util/List;Z)V
+	public static synthetic fun control$default (Lcom/areslib/drivetrain/DrivetrainBuilder;Lcom/areslib/drivetrain/DrivetrainControlKind;Ljava/util/List;ZILjava/lang/Object;)V
+	public final fun ctreImport (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
+	public static synthetic fun ctreImport$default (Lcom/areslib/drivetrain/DrivetrainBuilder;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)V
+	public final fun driveMotor (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ZZLjava/lang/Double;ZZLjava/lang/String;Ljava/lang/String;)Lcom/areslib/drivetrain/DrivetrainComponentDocument;
+	public static synthetic fun driveMotor$default (Lcom/areslib/drivetrain/DrivetrainBuilder;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ZZLjava/lang/Double;ZZLjava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lcom/areslib/drivetrain/DrivetrainComponentDocument;
+	public final fun geometry (DDDDLjava/lang/Double;DD)V
+	public static synthetic fun geometry$default (Lcom/areslib/drivetrain/DrivetrainBuilder;DDDDLjava/lang/Double;DDILjava/lang/Object;)V
+	public final fun getCanonicalProfileUid ()Ljava/lang/String;
+	public final fun getDescription ()Ljava/lang/String;
+	public final fun getDisplayName ()Ljava/lang/String;
+	public final fun getDrivebaseId ()Ljava/lang/String;
+	public final fun getKind ()Lcom/areslib/drivetrain/DrivetrainKind;
+	public final fun getPlatform ()Lcom/areslib/drivetrain/DrivetrainPlatform;
+	public final fun getUid ()Ljava/lang/String;
+	public final fun gyro (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Lcom/areslib/drivetrain/DrivetrainComponentDocument;
+	public static synthetic fun gyro$default (Lcom/areslib/drivetrain/DrivetrainBuilder;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lcom/areslib/drivetrain/DrivetrainComponentDocument;
+	public final fun localization (Lcom/areslib/drivetrain/LocalizationSourceKind;Ljava/util/List;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;)V
+	public static synthetic fun localization$default (Lcom/areslib/drivetrain/DrivetrainBuilder;Lcom/areslib/drivetrain/LocalizationSourceKind;Ljava/util/List;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;ILjava/lang/Object;)V
+	public final fun odometrySensor (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Lcom/areslib/drivetrain/DrivetrainComponentDocument;
+	public static synthetic fun odometrySensor$default (Lcom/areslib/drivetrain/DrivetrainBuilder;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lcom/areslib/drivetrain/DrivetrainComponentDocument;
+	public final fun safety (JZLcom/areslib/drivetrain/DrivetrainNeutralMode;Lcom/areslib/drivetrain/DisabledDrivePolicy;)V
+	public static synthetic fun safety$default (Lcom/areslib/drivetrain/DrivetrainBuilder;JZLcom/areslib/drivetrain/DrivetrainNeutralMode;Lcom/areslib/drivetrain/DisabledDrivePolicy;ILjava/lang/Object;)V
+	public final fun setCanonicalProfileUid (Ljava/lang/String;)V
+	public final fun setDescription (Ljava/lang/String;)V
+	public final fun setDisplayName (Ljava/lang/String;)V
+	public final fun simulation (Ljava/lang/String;Ljava/lang/String;)V
+	public final fun steerMotor (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Lcom/areslib/drivetrain/DrivetrainComponentDocument;
+	public static synthetic fun steerMotor$default (Lcom/areslib/drivetrain/DrivetrainBuilder;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lcom/areslib/drivetrain/DrivetrainComponentDocument;
+	public final fun swerveModule (Ljava/lang/String;DDLjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Lcom/areslib/drivetrain/DrivetrainModuleDocument;
+	public static synthetic fun swerveModule$default (Lcom/areslib/drivetrain/DrivetrainBuilder;Ljava/lang/String;DDLjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lcom/areslib/drivetrain/DrivetrainModuleDocument;
+	public final fun tuningDouble (Ljava/lang/String;DLjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Double;Ljava/lang/Double;Lcom/areslib/tuning/TuningApplyPolicy;)V
+	public static synthetic fun tuningDouble$default (Lcom/areslib/drivetrain/DrivetrainBuilder;Ljava/lang/String;DLjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Double;Ljava/lang/Double;Lcom/areslib/tuning/TuningApplyPolicy;ILjava/lang/Object;)V
 }
 
 public final class com/areslib/drivetrain/DrivetrainComponentDocument {
@@ -912,6 +952,23 @@ public final class com/areslib/drivetrain/DrivetrainDocumentCodec {
 public final class com/areslib/drivetrain/DrivetrainDocumentKt {
 	public static final field ARES_DRIVETRAIN_SCHEMA_VERSION I
 	public static final fun validateDrivetrainDocument (Lcom/areslib/drivetrain/DrivetrainDocument;)Ljava/util/List;
+}
+
+public abstract interface annotation class com/areslib/drivetrain/DrivetrainDsl : java/lang/annotation/Annotation {
+}
+
+public final class com/areslib/drivetrain/DrivetrainDslKt {
+	public static final fun drivetrain (Ljava/lang/String;Lcom/areslib/drivetrain/DrivetrainKind;Lcom/areslib/drivetrain/DrivetrainPlatform;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lkotlin/jvm/functions/Function1;)Lcom/areslib/drivetrain/DrivetrainDocument;
+	public static synthetic fun drivetrain$default (Ljava/lang/String;Lcom/areslib/drivetrain/DrivetrainKind;Lcom/areslib/drivetrain/DrivetrainPlatform;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lcom/areslib/drivetrain/DrivetrainDocument;
+	public static final fun formatDrivetrainValidationReport (Ljava/util/List;)Ljava/lang/String;
+	public static final fun frcCtreSwerveDrivetrain (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;DDLkotlin/jvm/functions/Function1;)Lcom/areslib/drivetrain/DrivetrainDocument;
+	public static synthetic fun frcCtreSwerveDrivetrain$default (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;DDLkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lcom/areslib/drivetrain/DrivetrainDocument;
+	public static final fun ftcMecanumDrivetrain (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lkotlin/jvm/functions/Function1;)Lcom/areslib/drivetrain/DrivetrainDocument;
+	public static synthetic fun ftcMecanumDrivetrain$default (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lcom/areslib/drivetrain/DrivetrainDocument;
+}
+
+public final class com/areslib/drivetrain/DrivetrainDslRendererKt {
+	public static final fun toKotlinDsl (Lcom/areslib/drivetrain/DrivetrainDocument;)Ljava/lang/String;
 }
 
 public final class com/areslib/drivetrain/DrivetrainGeometryDocument {
@@ -1401,6 +1458,15 @@ public final class com/areslib/routine/AresRoutineCodec {
 	public final fun encode (Lcom/areslib/routine/RoutineDocument;)Ljava/lang/String;
 }
 
+public final class com/areslib/routine/AutonomousCatalogBuilder {
+	public final fun entry (Ljava/lang/String;Ljava/lang/String;DDDLjava/lang/String;Ljava/lang/String;Lcom/areslib/routine/RoutineAlliance;ZIZZ)Lcom/areslib/routine/AutonomousCatalogEntry;
+	public static synthetic fun entry$default (Lcom/areslib/routine/AutonomousCatalogBuilder;Ljava/lang/String;Ljava/lang/String;DDDLjava/lang/String;Ljava/lang/String;Lcom/areslib/routine/RoutineAlliance;ZIZZILjava/lang/Object;)Lcom/areslib/routine/AutonomousCatalogEntry;
+	public final fun getDefaultEntryId ()Ljava/lang/String;
+	public final fun getRevision ()I
+	public final fun setDefaultEntryId (Ljava/lang/String;)V
+	public final fun setRevision (I)V
+}
+
 public final class com/areslib/routine/AutonomousCatalogCodec {
 	public static final field INSTANCE Lcom/areslib/routine/AutonomousCatalogCodec;
 	public final fun contentHash (Lcom/areslib/routine/AutonomousCatalogDocument;)Ljava/lang/String;
@@ -1426,6 +1492,15 @@ public final class com/areslib/routine/AutonomousCatalogDocument {
 	public final fun getSchemaVersion ()I
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
+}
+
+public abstract interface annotation class com/areslib/routine/AutonomousCatalogDsl : java/lang/annotation/Annotation {
+}
+
+public final class com/areslib/routine/AutonomousCatalogDslKt {
+	public static final fun autonomousCatalog (Ljava/lang/String;ILjava/lang/String;Lkotlin/jvm/functions/Function1;)Lcom/areslib/routine/AutonomousCatalogDocument;
+	public static synthetic fun autonomousCatalog$default (Ljava/lang/String;ILjava/lang/String;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lcom/areslib/routine/AutonomousCatalogDocument;
+	public static final fun toKotlinDsl (Lcom/areslib/routine/AutonomousCatalogDocument;)Ljava/lang/String;
 }
 
 public final class com/areslib/routine/AutonomousCatalogEntry {
@@ -1536,25 +1611,42 @@ public final class com/areslib/routine/RoutineDriveMarker {
 }
 
 public final class com/areslib/routine/RoutineDriveStep {
-	public fun <init> (Lcom/areslib/routine/RoutinePose;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/util/List;Ljava/util/List;)V
-	public synthetic fun <init> (Lcom/areslib/routine/RoutinePose;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/util/List;Ljava/util/List;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Lcom/areslib/routine/RoutinePose;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/util/List;Ljava/util/List;Lcom/areslib/routine/RoutineHeadingMode;Lcom/areslib/routine/RoutinePose;Z)V
+	public synthetic fun <init> (Lcom/areslib/routine/RoutinePose;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/util/List;Ljava/util/List;Lcom/areslib/routine/RoutineHeadingMode;Lcom/areslib/routine/RoutinePose;ZILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Lcom/areslib/routine/RoutinePose;
 	public final fun component2 ()Ljava/lang/String;
 	public final fun component3 ()Ljava/lang/String;
 	public final fun component4 ()Ljava/util/List;
 	public final fun component5 ()Ljava/util/List;
 	public final fun component6 ()Ljava/util/List;
-	public final fun copy (Lcom/areslib/routine/RoutinePose;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/util/List;Ljava/util/List;)Lcom/areslib/routine/RoutineDriveStep;
-	public static synthetic fun copy$default (Lcom/areslib/routine/RoutineDriveStep;Lcom/areslib/routine/RoutinePose;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/util/List;Ljava/util/List;ILjava/lang/Object;)Lcom/areslib/routine/RoutineDriveStep;
+	public final fun component7 ()Lcom/areslib/routine/RoutineHeadingMode;
+	public final fun component8 ()Lcom/areslib/routine/RoutinePose;
+	public final fun component9 ()Z
+	public final fun copy (Lcom/areslib/routine/RoutinePose;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/util/List;Ljava/util/List;Lcom/areslib/routine/RoutineHeadingMode;Lcom/areslib/routine/RoutinePose;Z)Lcom/areslib/routine/RoutineDriveStep;
+	public static synthetic fun copy$default (Lcom/areslib/routine/RoutineDriveStep;Lcom/areslib/routine/RoutinePose;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/util/List;Ljava/util/List;Lcom/areslib/routine/RoutineHeadingMode;Lcom/areslib/routine/RoutinePose;ZILjava/lang/Object;)Lcom/areslib/routine/RoutineDriveStep;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getArrivalActionKeys ()Ljava/util/List;
+	public final fun getBlendHandoff ()Z
 	public final fun getDuringActionKeys ()Ljava/util/List;
+	public final fun getHeadingMode ()Lcom/areslib/routine/RoutineHeadingMode;
+	public final fun getLookAtPoint ()Lcom/areslib/routine/RoutinePose;
 	public final fun getMarkers ()Ljava/util/List;
 	public final fun getMotionPresetKey ()Ljava/lang/String;
 	public final fun getPreferredEngineKey ()Ljava/lang/String;
 	public final fun getTarget ()Lcom/areslib/routine/RoutinePose;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/areslib/routine/RoutineHeadingMode : java/lang/Enum {
+	public static final field CONSTANT Lcom/areslib/routine/RoutineHeadingMode;
+	public static final field LINEAR Lcom/areslib/routine/RoutineHeadingMode;
+	public static final field POINT_TOWARDS Lcom/areslib/routine/RoutineHeadingMode;
+	public static final field TANGENTIAL Lcom/areslib/routine/RoutineHeadingMode;
+	public static final field TANGENTIAL_REVERSE Lcom/areslib/routine/RoutineHeadingMode;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lcom/areslib/routine/RoutineHeadingMode;
+	public static fun values ()[Lcom/areslib/routine/RoutineHeadingMode;
 }
 
 public final class com/areslib/routine/RoutinePose {
@@ -2387,6 +2479,7 @@ public final class com/areslib/subsystem/SubsystemSafetyDocument {
 
 public final class com/areslib/subsystem/SubsystemSchema {
 	public static final field INSTANCE Lcom/areslib/subsystem/SubsystemSchema;
+	public final fun formatValidationReport (Ljava/util/List;)Ljava/lang/String;
 	public final fun validate (Lcom/areslib/subsystem/SubsystemDocument;)Ljava/util/List;
 	public final fun validateAll (Ljava/util/List;)Ljava/util/List;
 }
@@ -2686,6 +2779,41 @@ public final class com/areslib/superstructure/StateTransitionEdge {
 	public fun toString ()Ljava/lang/String;
 }
 
+public final class com/areslib/superstructure/SuperstructureBuilder {
+	public final fun getDescription ()Ljava/lang/String;
+	public final fun getDisabledPolicy ()Lcom/areslib/superstructure/SuperstructureDisabledPolicy;
+	public final fun getDisabledStateId ()Ljava/lang/String;
+	public final fun getDisplayName ()Ljava/lang/String;
+	public final fun getFaultStateId ()Ljava/lang/String;
+	public final fun getInitialStateId ()Ljava/lang/String;
+	public final fun healthFallback (Ljava/lang/String;Lcom/areslib/superstructure/SuperstructureFieldReference;Ljava/lang/String;ZLjava/lang/String;)Lcom/areslib/superstructure/SuperstructureHealthFallbackPolicy;
+	public static synthetic fun healthFallback$default (Lcom/areslib/superstructure/SuperstructureBuilder;Ljava/lang/String;Lcom/areslib/superstructure/SuperstructureFieldReference;Ljava/lang/String;ZLjava/lang/String;ILjava/lang/Object;)Lcom/areslib/superstructure/SuperstructureHealthFallbackPolicy;
+	public final fun interlock (Ljava/lang/String;Lcom/areslib/superstructure/SuperstructureFieldReference;Lcom/areslib/superstructure/SuperstructureFieldReference;Lcom/areslib/subsystem/InterlockComparison;DLjava/lang/Double;Ljava/lang/Double;Ljava/lang/String;)Lcom/areslib/superstructure/SuperstructureInterlockRule;
+	public static synthetic fun interlock$default (Lcom/areslib/superstructure/SuperstructureBuilder;Ljava/lang/String;Lcom/areslib/superstructure/SuperstructureFieldReference;Lcom/areslib/superstructure/SuperstructureFieldReference;Lcom/areslib/subsystem/InterlockComparison;DLjava/lang/Double;Ljava/lang/Double;Ljava/lang/String;ILjava/lang/Object;)Lcom/areslib/superstructure/SuperstructureInterlockRule;
+	public final fun layout (Ljava/lang/String;DD)V
+	public final fun lut (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lcom/areslib/superstructure/LutInterpolationMethod;Lkotlin/jvm/functions/Function1;)Ljava/lang/String;
+	public static synthetic fun lut$default (Lcom/areslib/superstructure/SuperstructureBuilder;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lcom/areslib/superstructure/LutInterpolationMethod;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Ljava/lang/String;
+	public final fun onActionTransition (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lkotlin/jvm/functions/Function1;)Lcom/areslib/superstructure/StateTransitionEdge;
+	public static synthetic fun onActionTransition$default (Lcom/areslib/superstructure/SuperstructureBuilder;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lcom/areslib/superstructure/StateTransitionEdge;
+	public final fun port (Lcom/areslib/subsystem/SubsystemDocument;Ljava/lang/String;Lcom/areslib/superstructure/SuperstructurePortHealthRequirement;)Lcom/areslib/superstructure/SuperstructureFieldReference;
+	public final fun port (Ljava/lang/String;Ljava/lang/String;Lcom/areslib/superstructure/SuperstructurePortHealthRequirement;)Lcom/areslib/superstructure/SuperstructureFieldReference;
+	public static synthetic fun port$default (Lcom/areslib/superstructure/SuperstructureBuilder;Lcom/areslib/subsystem/SubsystemDocument;Ljava/lang/String;Lcom/areslib/superstructure/SuperstructurePortHealthRequirement;ILjava/lang/Object;)Lcom/areslib/superstructure/SuperstructureFieldReference;
+	public static synthetic fun port$default (Lcom/areslib/superstructure/SuperstructureBuilder;Ljava/lang/String;Ljava/lang/String;Lcom/areslib/superstructure/SuperstructurePortHealthRequirement;ILjava/lang/Object;)Lcom/areslib/superstructure/SuperstructureFieldReference;
+	public final fun sensorTransition (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILkotlin/jvm/functions/Function1;)Lcom/areslib/superstructure/StateTransitionEdge;
+	public static synthetic fun sensorTransition$default (Lcom/areslib/superstructure/SuperstructureBuilder;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lcom/areslib/superstructure/StateTransitionEdge;
+	public final fun setDescription (Ljava/lang/String;)V
+	public final fun setDisabledPolicy (Lcom/areslib/superstructure/SuperstructureDisabledPolicy;)V
+	public final fun setDisabledStateId (Ljava/lang/String;)V
+	public final fun setDisplayName (Ljava/lang/String;)V
+	public final fun setFaultStateId (Ljava/lang/String;)V
+	public final fun setInitialStateId (Ljava/lang/String;)V
+	public final fun state (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lkotlin/jvm/functions/Function1;)Ljava/lang/String;
+	public static synthetic fun state$default (Lcom/areslib/superstructure/SuperstructureBuilder;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Ljava/lang/String;
+	public final fun timedTransition (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;DIJ)Lcom/areslib/superstructure/StateTransitionEdge;
+	public static synthetic fun timedTransition$default (Lcom/areslib/superstructure/SuperstructureBuilder;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;DIJILjava/lang/Object;)Lcom/areslib/superstructure/StateTransitionEdge;
+	public final fun transition (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lkotlin/jvm/functions/Function1;)Lcom/areslib/superstructure/StateTransitionEdge;
+}
+
 public final class com/areslib/superstructure/SuperstructureDisabledPolicy : java/lang/Enum {
 	public static final field FORCE_SAFE_AND_REJECT_REQUESTS Lcom/areslib/superstructure/SuperstructureDisabledPolicy;
 	public static final field RETAIN_LOGICAL_STATE_WITH_NEUTRAL_OUTPUT Lcom/areslib/superstructure/SuperstructureDisabledPolicy;
@@ -2744,6 +2872,19 @@ public final class com/areslib/superstructure/SuperstructureDocumentKt {
 	public static final fun validateSuperstructureDocument (Lcom/areslib/superstructure/SuperstructureDocument;)Ljava/util/List;
 	public static final fun validateSuperstructureProject (Lcom/areslib/superstructure/SuperstructureDocument;Ljava/util/List;Ljava/util/Set;Ljava/util/Set;)Ljava/util/List;
 	public static synthetic fun validateSuperstructureProject$default (Lcom/areslib/superstructure/SuperstructureDocument;Ljava/util/List;Ljava/util/Set;Ljava/util/Set;ILjava/lang/Object;)Ljava/util/List;
+}
+
+public abstract interface annotation class com/areslib/superstructure/SuperstructureDsl : java/lang/annotation/Annotation {
+}
+
+public final class com/areslib/superstructure/SuperstructureDslKt {
+	public static final fun formatSuperstructureValidationReport (Ljava/util/List;)Ljava/lang/String;
+	public static final fun superstructure (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lcom/areslib/superstructure/SuperstructureDisabledPolicy;Lkotlin/jvm/functions/Function1;)Lcom/areslib/superstructure/SuperstructureDocument;
+	public static synthetic fun superstructure$default (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lcom/areslib/superstructure/SuperstructureDisabledPolicy;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lcom/areslib/superstructure/SuperstructureDocument;
+}
+
+public final class com/areslib/superstructure/SuperstructureDslRendererKt {
+	public static final fun toKotlinDsl (Lcom/areslib/superstructure/SuperstructureDocument;)Ljava/lang/String;
 }
 
 public final class com/areslib/superstructure/SuperstructureDynamicLut {
@@ -2839,6 +2980,18 @@ public final class com/areslib/superstructure/SuperstructureIssueSeverity : java
 	public static fun values ()[Lcom/areslib/superstructure/SuperstructureIssueSeverity;
 }
 
+public final class com/areslib/superstructure/SuperstructureLutBuilder {
+	public final fun getDisplayName ()Ljava/lang/String;
+	public final fun getInputUnit ()Ljava/lang/String;
+	public final fun getInterpolation ()Lcom/areslib/superstructure/LutInterpolationMethod;
+	public final fun getOutputUnit ()Ljava/lang/String;
+	public final fun point (DD)V
+	public final fun setDisplayName (Ljava/lang/String;)V
+	public final fun setInputUnit (Ljava/lang/String;)V
+	public final fun setInterpolation (Lcom/areslib/superstructure/LutInterpolationMethod;)V
+	public final fun setOutputUnit (Ljava/lang/String;)V
+}
+
 public final class com/areslib/superstructure/SuperstructurePortHealthRequirement : java/lang/Enum {
 	public static final field CONTROL_READY Lcom/areslib/superstructure/SuperstructurePortHealthRequirement;
 	public static final field FRESH_VALID Lcom/areslib/superstructure/SuperstructurePortHealthRequirement;
@@ -2846,6 +2999,25 @@ public final class com/areslib/superstructure/SuperstructurePortHealthRequiremen
 	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public static fun valueOf (Ljava/lang/String;)Lcom/areslib/superstructure/SuperstructurePortHealthRequirement;
 	public static fun values ()[Lcom/areslib/superstructure/SuperstructurePortHealthRequirement;
+}
+
+public final class com/areslib/superstructure/SuperstructureStateBuilder {
+	public final fun getDescription ()Ljava/lang/String;
+	public final fun getDisplayName ()Ljava/lang/String;
+	public final fun getTimeoutSeconds ()Ljava/lang/Double;
+	public final fun getTimeoutTargetStateId ()Ljava/lang/String;
+	public final fun onEntry ([Ljava/lang/String;)V
+	public final fun onExit ([Ljava/lang/String;)V
+	public final fun setDescription (Ljava/lang/String;)V
+	public final fun setDisplayName (Ljava/lang/String;)V
+	public final fun setTimeoutSeconds (Ljava/lang/Double;)V
+	public final fun setTimeoutTargetStateId (Ljava/lang/String;)V
+	public final fun targetBoolean (Lcom/areslib/superstructure/SuperstructureFieldReference;Z)V
+	public final fun targetDouble (Lcom/areslib/superstructure/SuperstructureFieldReference;D)V
+	public final fun targetLut (Lcom/areslib/superstructure/SuperstructureFieldReference;Ljava/lang/String;Lcom/areslib/superstructure/SuperstructureFieldReference;)V
+	public final fun targetPassThrough (Lcom/areslib/superstructure/SuperstructureFieldReference;Lcom/areslib/superstructure/SuperstructureFieldReference;)V
+	public final fun targetString (Lcom/areslib/superstructure/SuperstructureFieldReference;Ljava/lang/String;)V
+	public final fun timeout (DLjava/lang/String;)V
 }
 
 public final class com/areslib/superstructure/SuperstructureStatePreset {
@@ -2907,6 +3079,33 @@ public final class com/areslib/superstructure/SuperstructureTargetMode : java/la
 	public static fun values ()[Lcom/areslib/superstructure/SuperstructureTargetMode;
 }
 
+public final class com/areslib/superstructure/SuperstructureTransitionBuilder {
+	public final fun afterSeconds (DI)V
+	public static synthetic fun afterSeconds$default (Lcom/areslib/superstructure/SuperstructureTransitionBuilder;DIILjava/lang/Object;)V
+	public final fun getActionKey ()Ljava/lang/String;
+	public final fun getDebounceMs ()J
+	public final fun getPriority ()I
+	public final fun getTimeoutSeconds ()Ljava/lang/Double;
+	public final fun getTimeoutTargetStateId ()Ljava/lang/String;
+	public final fun getTriggerKind ()Lcom/areslib/superstructure/TransitionTriggerKind;
+	public final fun guardBoolean (Ljava/lang/String;Lcom/areslib/superstructure/SuperstructureFieldReference;ZLjava/lang/Long;)V
+	public static synthetic fun guardBoolean$default (Lcom/areslib/superstructure/SuperstructureTransitionBuilder;Ljava/lang/String;Lcom/areslib/superstructure/SuperstructureFieldReference;ZLjava/lang/Long;ILjava/lang/Object;)V
+	public final fun guardDouble (Ljava/lang/String;Lcom/areslib/superstructure/SuperstructureFieldReference;Lcom/areslib/subsystem/InterlockComparison;DDLjava/lang/Long;)V
+	public static synthetic fun guardDouble$default (Lcom/areslib/superstructure/SuperstructureTransitionBuilder;Ljava/lang/String;Lcom/areslib/superstructure/SuperstructureFieldReference;Lcom/areslib/subsystem/InterlockComparison;DDLjava/lang/Long;ILjava/lang/Object;)V
+	public final fun guardString (Ljava/lang/String;Lcom/areslib/superstructure/SuperstructureFieldReference;Ljava/lang/String;Ljava/lang/Long;)V
+	public static synthetic fun guardString$default (Lcom/areslib/superstructure/SuperstructureTransitionBuilder;Ljava/lang/String;Lcom/areslib/superstructure/SuperstructureFieldReference;Ljava/lang/String;Ljava/lang/Long;ILjava/lang/Object;)V
+	public final fun onAction (Ljava/lang/String;Ljava/lang/Double;Ljava/lang/String;)V
+	public static synthetic fun onAction$default (Lcom/areslib/superstructure/SuperstructureTransitionBuilder;Ljava/lang/String;Ljava/lang/Double;Ljava/lang/String;ILjava/lang/Object;)V
+	public final fun onSensorCondition (I)V
+	public static synthetic fun onSensorCondition$default (Lcom/areslib/superstructure/SuperstructureTransitionBuilder;IILjava/lang/Object;)V
+	public final fun setActionKey (Ljava/lang/String;)V
+	public final fun setDebounceMs (J)V
+	public final fun setPriority (I)V
+	public final fun setTimeoutSeconds (Ljava/lang/Double;)V
+	public final fun setTimeoutTargetStateId (Ljava/lang/String;)V
+	public final fun setTriggerKind (Lcom/areslib/superstructure/TransitionTriggerKind;)V
+}
+
 public final class com/areslib/superstructure/SuperstructureValidationIssue {
 	public fun <init> (Lcom/areslib/superstructure/SuperstructureIssueSeverity;Ljava/lang/String;Ljava/lang/String;)V
 	public final fun component1 ()Lcom/areslib/superstructure/SuperstructureIssueSeverity;
@@ -2957,6 +3156,9 @@ public final class com/areslib/superstructure/TransitionTriggerKind : java/lang/
 	public static fun values ()[Lcom/areslib/superstructure/TransitionTriggerKind;
 }
 
+public abstract interface annotation class com/areslib/tuning/AresTuningDsl : java/lang/annotation/Annotation {
+}
+
 public final class com/areslib/tuning/TuningApplyPolicy : java/lang/Enum {
 	public static final field CALIBRATION_ONLY Lcom/areslib/tuning/TuningApplyPolicy;
 	public static final field DISABLED_ONLY Lcom/areslib/tuning/TuningApplyPolicy;
@@ -2980,6 +3182,25 @@ public final class com/areslib/tuning/TuningAssignment {
 	public final fun getValue ()Lcom/areslib/tuning/TuningValue;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/areslib/tuning/TuningComponentBuilder {
+	public final fun boolean (Ljava/lang/String;ZLjava/lang/String;Ljava/lang/String;Ljava/lang/String;Lcom/areslib/tuning/TuningApplyPolicy;)Lcom/areslib/tuning/TuningParameterDeclaration;
+	public static synthetic fun boolean$default (Lcom/areslib/tuning/TuningComponentBuilder;Ljava/lang/String;ZLjava/lang/String;Ljava/lang/String;Ljava/lang/String;Lcom/areslib/tuning/TuningApplyPolicy;ILjava/lang/Object;)Lcom/areslib/tuning/TuningParameterDeclaration;
+	public final fun double (Ljava/lang/String;DLjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Double;Ljava/lang/Double;Lcom/areslib/tuning/TuningApplyPolicy;)Lcom/areslib/tuning/TuningParameterDeclaration;
+	public static synthetic fun double$default (Lcom/areslib/tuning/TuningComponentBuilder;Ljava/lang/String;DLjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Double;Ljava/lang/Double;Lcom/areslib/tuning/TuningApplyPolicy;ILjava/lang/Object;)Lcom/areslib/tuning/TuningParameterDeclaration;
+	public final fun enum (Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lcom/areslib/tuning/TuningApplyPolicy;)Lcom/areslib/tuning/TuningParameterDeclaration;
+	public static synthetic fun enum$default (Lcom/areslib/tuning/TuningComponentBuilder;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lcom/areslib/tuning/TuningApplyPolicy;ILjava/lang/Object;)Lcom/areslib/tuning/TuningParameterDeclaration;
+	public final fun getDescription ()Ljava/lang/String;
+	public final fun getDisplayName ()Ljava/lang/String;
+	public final fun getProjectId ()Ljava/lang/String;
+	public final fun getUid ()Ljava/lang/String;
+	public final fun int (Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Double;Ljava/lang/Double;Lcom/areslib/tuning/TuningApplyPolicy;)Lcom/areslib/tuning/TuningParameterDeclaration;
+	public static synthetic fun int$default (Lcom/areslib/tuning/TuningComponentBuilder;Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Double;Ljava/lang/Double;Lcom/areslib/tuning/TuningApplyPolicy;ILjava/lang/Object;)Lcom/areslib/tuning/TuningParameterDeclaration;
+	public final fun setDescription (Ljava/lang/String;)V
+	public final fun setDisplayName (Ljava/lang/String;)V
+	public final fun text (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lcom/areslib/tuning/TuningApplyPolicy;)Lcom/areslib/tuning/TuningParameterDeclaration;
+	public static synthetic fun text$default (Lcom/areslib/tuning/TuningComponentBuilder;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lcom/areslib/tuning/TuningApplyPolicy;ILjava/lang/Object;)Lcom/areslib/tuning/TuningParameterDeclaration;
 }
 
 public final class com/areslib/tuning/TuningComponentDocument {
@@ -3063,6 +3284,27 @@ public final class com/areslib/tuning/TuningProfileAuthority : java/lang/Enum {
 	public static fun values ()[Lcom/areslib/tuning/TuningProfileAuthority;
 }
 
+public final class com/areslib/tuning/TuningProfileBuilder {
+	public final fun assignBoolean (Ljava/lang/String;Z)V
+	public final fun assignDouble (Ljava/lang/String;D)V
+	public final fun assignInt (Ljava/lang/String;I)V
+	public final fun assignText (Ljava/lang/String;Ljava/lang/String;)V
+	public final fun getAuthority ()Lcom/areslib/tuning/TuningProfileAuthority;
+	public final fun getBaseProfileUid ()Ljava/lang/String;
+	public final fun getDescription ()Ljava/lang/String;
+	public final fun getDisplayName ()Ljava/lang/String;
+	public final fun getDrivebaseUid ()Ljava/lang/String;
+	public final fun getProfileId ()Ljava/lang/String;
+	public final fun getProjectId ()Ljava/lang/String;
+	public final fun getUid ()Ljava/lang/String;
+	public final fun promoteFromLocal (Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/util/List;Ljava/lang/String;Ljava/lang/String;)V
+	public final fun setAuthority (Lcom/areslib/tuning/TuningProfileAuthority;)V
+	public final fun setBaseProfileUid (Ljava/lang/String;)V
+	public final fun setDescription (Ljava/lang/String;)V
+	public final fun setDisplayName (Ljava/lang/String;)V
+	public final fun setDrivebaseUid (Ljava/lang/String;)V
+}
+
 public final class com/areslib/tuning/TuningProfileDocument {
 	public fun <init> (ILjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lcom/areslib/tuning/TuningProfileAuthority;Ljava/lang/String;Ljava/util/List;Lcom/areslib/tuning/TuningPromotionData;)V
 	public synthetic fun <init> (ILjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lcom/areslib/tuning/TuningProfileAuthority;Ljava/lang/String;Ljava/util/List;Lcom/areslib/tuning/TuningPromotionData;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
@@ -3108,6 +3350,14 @@ public final class com/areslib/tuning/TuningProfileDocumentKt {
 	public static final fun resolveTuningProfiles (Ljava/util/Collection;Ljava/util/Collection;)Ljava/util/Map;
 	public static final fun validateTuningParameterDeclarations (Ljava/util/List;)Ljava/util/List;
 	public static final fun validateTuningProfileDocument (Lcom/areslib/tuning/TuningProfileDocument;Ljava/util/Collection;)Ljava/util/List;
+}
+
+public final class com/areslib/tuning/TuningProfileDslKt {
+	public static final fun toKotlinDsl (Lcom/areslib/tuning/TuningProfileDocument;)Ljava/lang/String;
+	public static final fun tuningComponent (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lkotlin/jvm/functions/Function1;)Lcom/areslib/tuning/TuningComponentDocument;
+	public static synthetic fun tuningComponent$default (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lcom/areslib/tuning/TuningComponentDocument;
+	public static final fun tuningProfile (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lcom/areslib/tuning/TuningProfileAuthority;Ljava/lang/String;Ljava/lang/String;Lkotlin/jvm/functions/Function1;)Lcom/areslib/tuning/TuningProfileDocument;
+	public static synthetic fun tuningProfile$default (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lcom/areslib/tuning/TuningProfileAuthority;Ljava/lang/String;Ljava/lang/String;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lcom/areslib/tuning/TuningProfileDocument;
 }
 
 public final class com/areslib/tuning/TuningPromotionData {

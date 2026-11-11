@@ -102,6 +102,11 @@ class ProfiledPIDController(
      * @param min Lower allowable control output bound.
      * @param max Upper allowable control output bound.
      */
+    /** Configures dual-bandwidth proportional gain scheduling on the underlying [PIDController]. */
+    fun configureGainSchedule(largeKp: Double, threshold: Double) {
+        pidController.configureGainSchedule(largeKp, threshold)
+    }
+
     fun setOutputLimits(min: Double, max: Double) {
         pidController.setOutputLimits(min, max)
     }
