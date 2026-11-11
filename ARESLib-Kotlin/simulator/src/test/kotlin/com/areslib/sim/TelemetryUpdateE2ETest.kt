@@ -17,6 +17,7 @@ import org.junit.runners.MethodSorters
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 class TelemetryUpdateE2ETest {
+    private var simThread: Thread? = null
     private var drivePublisherThread: Thread? = null
 
     @org.junit.Before
@@ -33,20 +34,29 @@ class TelemetryUpdateE2ETest {
     fun teardown() {
         DesktopSimLauncher.isSimRunning = false
         drivePublisherThread?.interrupt()
-        drivePublisherThread?.join(1_000L)
+        drivePublisherThread?.join(2_000L)
         drivePublisherThread = null
+        simThread?.join(10_000L)
+        if (simThread?.isAlive == true) {
+            simThread?.interrupt()
+            simThread?.join(5_000L)
+        }
+        assertFalse("Headless simulator thread must terminate before next test", simThread?.isAlive == true)
+        simThread = null
         com.areslib.telemetry.SimInputBridge.reset()
+        com.areslib.util.RobotClock.useSystemTime()
     }
 
     @Test
     fun testAllTelemetryTopicsUpdateProperly() {
         // 1. Launch simulator in headless server mode
         println("[Telemetry E2E Test] Launching simulator in headless mode...")
-        val simThread = Thread {
+        simThread = Thread({
             DesktopSimLauncher.main(arrayOf("--headless"))
+        }, "Telemetry-E2E-HeadlessSim").also {
+            it.isDaemon = true
+            it.start()
         }
-        simThread.isDaemon = true
-        simThread.start()
 
         // Wait for NT4 server & OpMode init — use longer wait for cold JVM startup
         Thread.sleep(2500)
