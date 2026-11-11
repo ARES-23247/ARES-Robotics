@@ -1,54 +1,104 @@
 package com.ares.analytics.ui.components.dashboard
 
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Folder
-import androidx.compose.material.icons.filled.Analytics
-import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.automirrored.filled.ArrowRight
 import androidx.compose.material.icons.automirrored.filled.MenuOpen
-import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.foundation.gestures.detectDragGestures
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.layout.boundsInWindow
-import androidx.compose.ui.layout.positionInWindow
-import androidx.compose.ui.geometry.Rect
-import androidx.compose.ui.unit.IntOffset
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Analytics
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Folder
+import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.RestartAlt
+import androidx.compose.material.icons.filled.Save
 import androidx.compose.material3.*
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.boundsInWindow
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.ares.analytics.service.Nt4ClientService
 import com.ares.analytics.service.DatabaseService
+import com.ares.analytics.service.Nt4ClientService
 import com.ares.analytics.service.ReplayFrame
+import com.ares.analytics.service.dashboard.BuiltInDashboardLayoutProfiles
+import com.ares.analytics.service.dashboard.DashboardLayoutProfile
+import com.ares.analytics.service.layoutProfileNameError
 import com.ares.analytics.shared.RobotUnit
 import com.ares.analytics.shared.UnitCategory
 import com.ares.analytics.shared.UnitConversion
 import com.ares.analytics.ui.theme.*
-import androidx.compose.material.icons.filled.Menu
-import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.animation.core.tween
+import com.ares.analytics.ui.theme.AresBorder
+import com.ares.analytics.ui.theme.AresCyan
+import com.ares.analytics.ui.theme.AresError
+import com.ares.analytics.ui.theme.AresGreen
+import com.ares.analytics.ui.theme.AresOnAccent
+import com.ares.analytics.ui.theme.AresSurface
+import com.ares.analytics.ui.theme.AresSurfaceElevated
+import com.ares.analytics.ui.theme.AresTextPrimary
+import com.ares.analytics.ui.theme.AresTextSecondary
+import com.ares.analytics.ui.theme.AresTextTertiary
+import com.ares.analytics.ui.theme.AresThemeSettings
 import java.util.concurrent.ConcurrentHashMap
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -132,9 +182,6 @@ fun TelemetryChartPanel(
     // Selected target unit for each key
     val targetUnits = remember { mutableStateMapOf<String, RobotUnit>() }
 
-    // Searchable dropdown state
-    var dropdownExpanded by remember { mutableStateOf(false) }
-    var searchQuery by remember { mutableStateOf("") }
     val activeTopics = remember { mutableStateListOf<String>() }
 
     // Periodically update active topics from NT4 Service
@@ -237,231 +284,32 @@ fun TelemetryChartPanel(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-        // Header row
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(Modifier.weight(1f).padding(end = 8.dp)) {
-                Text(
-                    if (currentFrame == null) "Live Telemetry Viewer" else "Replay Telemetry Viewer",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = AresTextPrimary
-                )
-                Text(
-                    if (currentFrame == null) {
-                        "Real-time streaming multi-channel scope"
-                    } else {
-                        "Bounded history ending at the selected replay instant"
-                    },
-                    style = MaterialTheme.typography.bodySmall,
-                    color = AresTextTertiary
-                )
-            }
-
-            // Window size selector
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                onToggleFullscreen?.let { WidgetFullscreenButton(isFullscreen, it) }
-                timeWindows.forEach { sec ->
-                    FilterChip(
-                        selected = selectedWindowSec == sec,
-                        onClick = { selectedWindowSec = sec },
-                        label = { Text("${sec}s", fontSize = 11.sp) },
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = AresCyan,
-                            selectedLabelColor = AresOnAccent,
-                            containerColor = AresSurfaceElevated,
-                            labelColor = AresTextSecondary
-                        ),
-                        border = FilterChipDefaults.filterChipBorder(
-                            enabled = true,
-                            selected = selectedWindowSec == sec,
-                            borderColor = AresBorder
-                        )
-                    )
+        TelemetryChartHeaderAndToolbar(
+            isReplay = currentFrame != null,
+            timeWindows = timeWindows,
+            selectedWindowSec = selectedWindowSec,
+            onSelectWindowSec = { selectedWindowSec = it },
+            isFullscreen = isFullscreen,
+            onToggleFullscreen = onToggleFullscreen,
+            activeTopics = activeTopics.toList(),
+            selectedKeys = selectedKeys.toList(),
+            onAddKey = { topic ->
+                val cleanKey = topic.removePrefix("/")
+                if (selectedKeys.size < 8 && !selectedKeys.contains(cleanKey)) {
+                    selectedKeys.add(cleanKey)
                 }
-            }
-        }
-
-        HorizontalDivider(color = AresBorder, thickness = 1.dp)
-
-        // Dropdown Search / Add Channel controls
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Box {
-                Button(
-                    onClick = { dropdownExpanded = true },
-                    colors = ButtonDefaults.buttonColors(containerColor = AresSurfaceElevated),
-                    border = ButtonDefaults.outlinedButtonBorder(enabled = true),
-                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
-                ) {
-                    Icon(Icons.Default.Add, contentDescription = null, tint = AresCyan, modifier = Modifier.size(16.dp))
-                    Spacer(Modifier.width(6.dp))
-                    Text("Add Channel", color = AresTextPrimary, fontSize = 12.sp)
-                }
-
-                DropdownMenu(
-                    expanded = dropdownExpanded,
-                    onDismissRequest = { dropdownExpanded = false },
-                    modifier = Modifier
-                        .width(300.dp)
-                        .background(AresSurfaceElevated)
-                        .border(1.dp, AresBorder)
-                ) {
-                    OutlinedTextField(
-                        value = searchQuery,
-                        onValueChange = { searchQuery = it },
-                        placeholder = { Text("Search NT4 topics...", color = AresTextTertiary) },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(8.dp),
-                        singleLine = true,
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = AresCyan,
-                            unfocusedBorderColor = AresBorder,
-                            focusedTextColor = AresTextPrimary,
-                            unfocusedTextColor = AresTextPrimary
-                        )
-                    )
-                    val filteredTopics = activeTopics.filter {
-                        it.contains(searchQuery, ignoreCase = true) && !selectedKeys.contains(it)
-                    }
-
-                    if (filteredTopics.isEmpty()) {
-                        DropdownMenuItem(
-                            text = { Text("No matching topics found", color = AresTextTertiary, fontSize = 12.sp) },
-                            onClick = {}
-                        )
-                    } else {
-                        filteredTopics.take(10).forEach { topic ->
-                            DropdownMenuItem(
-                                text = { Text(topic, color = AresTextPrimary, fontSize = 12.sp) },
-                                onClick = {
-                                    if (selectedKeys.size < 8) {
-                                        selectedKeys.add(topic)
-                                    }
-                                    dropdownExpanded = false
-                                    searchQuery = ""
-                                }
-                            )
-                        }
-                    }
-                }
-            }
-
-            Button(
-                onClick = { isTreeVisible = !isTreeVisible },
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = if (isTreeVisible) AresCyan else AresSurfaceElevated,
-                    contentColor = if (isTreeVisible) AresOnAccent else AresTextPrimary,
-                ),
-                border = ButtonDefaults.outlinedButtonBorder(enabled = true),
-                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
-            ) {
-                Icon(
-                    imageVector = if (isTreeVisible) Icons.AutoMirrored.Filled.MenuOpen else Icons.Default.Menu,
-                    contentDescription = null,
-                    tint = if (isTreeVisible) AresOnAccent else AresCyan,
-                    modifier = Modifier.size(16.dp)
-                )
-                Spacer(Modifier.width(6.dp))
-                Text(
-                    if (isTreeVisible) "Hide Signals" else "Show Signals",
-                    color = if (isTreeVisible) AresOnAccent else AresTextPrimary,
-                    fontSize = 12.sp
-                )
-            }
-
-            // Legend chips
-            LazyRow(
-                modifier = Modifier.weight(1f),
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                items(selectedKeys.toList()) { key ->
-                    val index = selectedKeys.indexOf(key)
-                    val color = channelColors[index % channelColors.size]
-                    val detectedUnit = UnitConversion.detectUnitFromKey(key)
-                    val targetUnit = targetUnits[key] ?: detectedUnit
-                    var unitMenuExpanded by remember { mutableStateOf(false) }
-
-                    Box {
-                        Row(
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(6.dp))
-                                .background(AresSurfaceElevated)
-                                .border(1.dp, AresBorder, RoundedCornerShape(6.dp))
-                                .clickable {
-                                    if (detectedUnit != null && detectedUnit.category != UnitCategory.NONE) {
-                                        unitMenuExpanded = true
-                                    }
-                                }
-                                .padding(horizontal = 8.dp, vertical = 4.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(6.dp)
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(8.dp)
-                                    .clip(RoundedCornerShape(2.dp))
-                                    .background(color)
-                            )
-                            val label = key.split("/").last()
-                            val unitSuffix = targetUnit?.let { " (${it.symbol})" } ?: ""
-                            Text(
-                                "$label$unitSuffix",
-                                color = AresTextPrimary,
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.SemiBold
-                            )
-                            Icon(
-                                imageVector = Icons.Default.Close,
-                                contentDescription = "Remove",
-                                tint = AresTextTertiary,
-                                modifier = Modifier
-                                    .size(12.dp)
-                                    .clickable { selectedKeys.remove(key) }
-                            )
-                        }
-
-                        if (detectedUnit != null && detectedUnit.category != UnitCategory.NONE) {
-                            DropdownMenu(
-                                expanded = unitMenuExpanded,
-                                onDismissRequest = { unitMenuExpanded = false },
-                                modifier = Modifier.background(AresSurfaceElevated).border(1.dp, AresBorder)
-                            ) {
-                                RobotUnit.entries.filter { it.category == detectedUnit.category }.forEach { unit ->
-                                    DropdownMenuItem(
-                                        text = { Text(unit.name + " (${unit.symbol})", color = AresTextPrimary, fontSize = 12.sp) },
-                                        onClick = {
-                                            selectedKeys
-                                                .filter { telemetryChartCategory(it) == detectedUnit.category }
-                                                .forEach { sameCategoryKey -> targetUnits[sameCategoryKey] = unit }
-                                            unitMenuExpanded = false
-                                        }
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        if (telemetryChartGroupCount(selectedKeys) > 1) {
-            Text(
-                text = "Mixed dimensions use separate, time-aligned Y-axis bands.",
-                color = AresTextTertiary,
-                fontSize = 11.sp,
-            )
-        }
+            },
+            onRemoveKey = { selectedKeys.remove(it) },
+            isTreeVisible = isTreeVisible,
+            onToggleTreeVisible = { isTreeVisible = !isTreeVisible },
+            channelColors = channelColors,
+            targetUnits = targetUnits.toMap(),
+            onSelectCategoryUnit = { category, unit ->
+                selectedKeys
+                    .filter { telemetryChartCategory(it) == category }
+                    .forEach { sameCategoryKey -> targetUnits[sameCategoryKey] = unit }
+            },
+        )
         val signalTree = remember(activeTopics.toList()) { buildSignalTree(activeTopics.toList()) }
 
         val selectedKeySnapshot = selectedKeys.toList()
@@ -549,9 +397,16 @@ fun TelemetryChartPanel(
                     }
             ) {
                 if (selectedKeys.isEmpty()) {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Text("Drag & drop channels here or use tree (+) to plot.", color = AresTextTertiary, fontSize = 12.sp)
-                    }
+                    TelemetryChartEmptyState(
+                        onSelectTopics = { bundleTopics ->
+                            bundleTopics.forEach { topic ->
+                                val cleanKey = topic.removePrefix("/")
+                                if (selectedKeys.size < 8 && !selectedKeys.contains(cleanKey)) {
+                                    selectedKeys.add(cleanKey)
+                                }
+                            }
+                        },
+                    )
                 } else {
                     Canvas(modifier = Modifier.fillMaxSize().padding(horizontal = 48.dp, vertical = 12.dp).clipToBounds()) {
                         val width = size.width

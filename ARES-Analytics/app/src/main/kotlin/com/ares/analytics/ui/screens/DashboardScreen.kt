@@ -1,39 +1,82 @@
 package com.ares.analytics.ui.screens
 
-import com.ares.analytics.ui.components.icon
-
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.filled.Analytics
+import androidx.compose.material.icons.filled.Cancel
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.ErrorOutline
+import androidx.compose.material.icons.filled.FolderOpen
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Replay
+import androidx.compose.material.icons.filled.School
+import androidx.compose.material.icons.filled.WarningAmber
 import androidx.compose.material3.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ares.analytics.service.*
+import com.ares.analytics.service.ImportArchiveEntry
+import com.ares.analytics.service.project.persistence.ProjectMetadataRepository
 import com.ares.analytics.service.tuning.TuningProfileRepository
 import com.ares.analytics.shared.*
 import com.ares.analytics.shared.models.*
 import com.ares.analytics.ui.components.dashboard.*
+import com.ares.analytics.ui.components.icon
 import com.ares.analytics.ui.theme.*
+import com.ares.analytics.ui.theme.AresAmber
+import com.ares.analytics.ui.theme.AresBackground
+import com.ares.analytics.ui.theme.AresBorder
+import com.ares.analytics.ui.theme.AresCyan
+import com.ares.analytics.ui.theme.AresError
+import com.ares.analytics.ui.theme.AresGreen
+import com.ares.analytics.ui.theme.AresOnAccent
+import com.ares.analytics.ui.theme.AresSurface
+import com.ares.analytics.ui.theme.AresSurfaceElevated
+import com.ares.analytics.ui.theme.AresTextPrimary
+import com.ares.analytics.ui.theme.AresTextSecondary
+import com.ares.analytics.ui.theme.AresTextTertiary
+import com.ares.analytics.ui.util.AresFormatters
+import com.ares.analytics.ui.util.DesktopFileChoosers
 import com.ares.analytics.viewmodel.DashboardIntent
 import com.ares.analytics.viewmodel.DashboardViewModel
-import kotlinx.coroutines.launch
-import com.areslib.tuning.TuningParameterDeclaration
+import com.ares.analytics.viewmodel.ImportCenterIntent
+import com.ares.analytics.viewmodel.ImportCenterViewModel
 import com.areslib.project.requireXrpRuntimeOptions
-import com.ares.analytics.service.project.persistence.ProjectMetadataRepository
+import com.areslib.tuning.TuningParameterDeclaration
+import java.io.File
+import kotlinx.coroutines.launch
 
 /**
  * Primary telemetry analytics dashboard screen displaying real-time robot visualization cards.
@@ -238,6 +281,10 @@ internal fun DashboardScreen(
                 onOpenRunHistory = onOpenRunHistory,
                 onOpenHelp = onOpenHelp,
                 onDismiss = { offlineGuideDismissed = true },
+                onLaunchLocalSimulator = onLaunchSimulator,
+                isLocalSimulatorSelected = isLocalSimulator,
+                canLaunchSimulator = canLaunchSimulator,
+                isLaunchPreparationRunning = isSimulatorLaunchPreparationRunning,
             )
         }
 
@@ -316,7 +363,9 @@ internal fun DashboardScreen(
                         replayEngine.play()
                     }
                 },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                league = currentConfig.league,
+                databaseService = services.widgets.analysis.databaseService,
             )
         }
     }

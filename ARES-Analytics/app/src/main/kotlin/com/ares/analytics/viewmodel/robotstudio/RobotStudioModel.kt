@@ -578,8 +578,7 @@ internal fun evaluateRobotStudioHardwareReadiness(
     )
 }
 
-private fun sameProjectPath(first: String, second: String): Boolean {
-    if (first.isBlank() || second.isBlank()) return false
-    fun normalized(path: String): String = File(path).absoluteFile.normalize().path.replace('\\', '/')
-    return normalized(first).equals(normalized(second), ignoreCase = File.separatorChar == '\\')
-}
+internal fun sameProjectPath(first: String, second: String): Boolean =
+    com.ares.analytics.util.ProjectLayout.sameCanonicalProjectPath(first, second)
+
+

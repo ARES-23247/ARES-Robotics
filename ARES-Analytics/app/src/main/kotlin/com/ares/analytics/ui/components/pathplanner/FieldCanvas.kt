@@ -2,6 +2,7 @@ package com.ares.analytics.ui.components.pathplanner
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.awaitTouchSlopOrCancellation
@@ -9,33 +10,47 @@ import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.drag
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.PointerButton
 import androidx.compose.ui.input.pointer.PointerEventType
-import androidx.compose.ui.input.pointer.pointerInput
-import com.areslib.math.wrapAngle
 import androidx.compose.ui.input.pointer.isShiftPressed
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.positionChange
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalWindowInfo
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.ares.analytics.domain.project.FieldDocumentMapper
 import com.ares.analytics.shared.*
 import com.ares.analytics.shared.models.*
-import com.ares.analytics.util.ProjectLayout
 import com.ares.analytics.ui.theme.*
+import com.ares.analytics.util.ProjectLayout
+import com.ares.analytics.viewmodel.field.FieldImageLoader
 import com.ares.analytics.viewmodel.pathing.RobotDimensions
 import com.areslib.math.coordinate.CoordinateTransformers
-import com.ares.analytics.domain.project.FieldDocumentMapper
-import com.ares.analytics.viewmodel.field.FieldImageLoader
+import com.areslib.math.wrapAngle
 import com.areslib.state.RobotFieldDocument
+import kotlin.math.*
 import kotlin.math.cos
 import kotlin.math.pow
 import kotlin.math.sin
@@ -50,6 +65,7 @@ fun FieldCanvas(
     contextPath: List<Waypoint>? = null,
     contextWaypoints: List<Waypoint>? = null,
     onWaypointsChanged: (List<Waypoint>) -> Unit,
+    onPenStrokeCompleted: ((List<Waypoint>) -> Unit)? = null,
     projectPath: String? = null,
     showPathControls: Boolean = true,
     showObstacleControls: Boolean = true,
@@ -154,6 +170,7 @@ fun FieldCanvas(
     var panOffset by remember { mutableStateOf(Offset.Zero) }
     var showHeatmap by remember { mutableStateOf(false) }
     var showCostmap by remember { mutableStateOf(false) }
+    var showOnionSkin by remember { mutableStateOf(false) }
     val windowInfo = LocalWindowInfo.current
     val isShiftPressed = windowInfo.keyboardModifiers.isShiftPressed
     var viewRotation by remember(initialViewRotation) { mutableStateOf(initialViewRotation) }
@@ -190,6 +207,7 @@ fun FieldCanvas(
         }
     }
     val currentPolygonPoints = remember { mutableStateListOf<PathPoint>() }
+    val currentPenStrokePoints = remember { mutableStateListOf<Waypoint>() }
     val currentWaypoints by rememberUpdatedState(waypoints)
     val currentActiveObstacles by rememberUpdatedState(activeObstacles)
     val currentActiveGamePieces by rememberUpdatedState(activeGamePieces)
@@ -253,6 +271,8 @@ fun FieldCanvas(
                 onShowHeatmapChanged = { showHeatmap = it },
                 showCostmap = showCostmap,
                 onShowCostmapChanged = { showCostmap = it },
+                showOnionSkin = showOnionSkin,
+                onShowOnionSkinChanged = { showOnionSkin = it },
                 viewRotation = viewRotation,
                 onViewRotationChanged = {
                     viewRotation = it
@@ -285,6 +305,8 @@ fun FieldCanvas(
                             currentActiveAprilTags = currentActiveAprilTags,
                             currentActiveFieldWaypoints = currentActiveFieldWaypoints,
                             currentPolygonPoints = currentPolygonPoints,
+                            currentPenStrokePoints = currentPenStrokePoints,
+                            onPenStrokeCompleted = onPenStrokeCompleted,
                             availableGamePieceTypes = availableGamePieceTypes,
                             activeGamePieceType = activeGamePieceType,
                             showObstacleControls = showObstacleControls,
@@ -347,6 +369,31 @@ fun FieldCanvas(
 
                 if (!autoGoalMode) {
                     drawPlannedSpline(pathCache, splinePoints, waypoints, w, h, fieldWidthM, fieldHeightM, league)
+                    if (showOnionSkin) {
+                        val trajectoryForOnionSkin = if (splinePoints.isNotEmpty()) splinePoints else contextPath.orEmpty()
+                        drawOnionSkinFootprints(
+                            pathCache = pathCache,
+                            trajectoryPoints = trajectoryForOnionSkin,
+                            obstacles = currentActiveObstacles,
+                            robotDimensions = robotDimensions,
+                            w = w,
+                            h = h,
+                            fieldWidthM = fieldWidthM,
+                            fieldHeightM = fieldHeightM,
+                            league = league,
+                        )
+                    }
+                    if (currentPenStrokePoints.size >= 2) {
+                        drawFreehandPenPreview(
+                            pathCache = pathCache,
+                            penStrokePoints = currentPenStrokePoints,
+                            w = w,
+                            h = h,
+                            fieldWidthM = fieldWidthM,
+                            fieldHeightM = fieldHeightM,
+                            league = league,
+                        )
+                    }
                 }
 
                 drawActualPathAndDeviations(pathCache, actualPath, waypoints, w, h, fieldWidthM, fieldHeightM, league)

@@ -1,9 +1,12 @@
 package com.ares.analytics.ui.components.core
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -23,10 +26,14 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Code
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.TableChart
+import androidx.compose.material3.*
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -47,16 +54,20 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import com.ares.analytics.ui.theme.*
 import com.ares.analytics.ui.theme.AresBackground
 import com.ares.analytics.ui.theme.AresBorder
 import com.ares.analytics.ui.theme.AresCyan
@@ -93,7 +104,8 @@ data class AresSpecSection(
 )
 
 /**
- * High-density, multi-category modal dialog for inspecting complete builder specifications at a glance.
+ * High-density, multi-category modal dialog for inspecting complete builder specifications at a glance,
+ * including live Kotlin Text DSL decompilation.
  */
 @Composable
 fun AresSpecSummaryModal(
@@ -104,12 +116,16 @@ fun AresSpecSummaryModal(
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
     rawMarkdownGenerator: (() -> String)? = null,
+    kotlinDslGenerator: (() -> String)? = null,
 ) {
     if (!isOpen) return
 
     var selectedSectionIndex by remember { mutableStateOf(0) }
     var searchQuery by remember { mutableStateOf("") }
     var copyStatus by remember { mutableStateOf<String?>(null) }
+    var dslCopyStatus by remember { mutableStateOf<String?>(null) }
+    val dslTabIndex = sections.size
+    val isDslTabSelected = kotlinDslGenerator != null && selectedSectionIndex == dslTabIndex
 
     Dialog(
         onDismissRequest = onDismiss,
@@ -156,6 +172,24 @@ fun AresSpecSummaryModal(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
                         ) {
+                            if (kotlinDslGenerator != null) {
+                                OutlinedButton(
+                                    onClick = {
+                                        val text = kotlinDslGenerator()
+                                        try {
+                                            Toolkit.getDefaultToolkit().systemClipboard.setContents(StringSelection(text), null)
+                                            dslCopyStatus = "Copied DSL!"
+                                        } catch (_: Exception) {
+                                            dslCopyStatus = "Failed to copy"
+                                        }
+                                    },
+                                    border = BorderStroke(1.dp, AresCyan.copy(alpha = 0.6f)),
+                                ) {
+                                    Icon(Icons.Default.Code, contentDescription = null, tint = AresCyan, modifier = Modifier.size(15.dp))
+                                    Spacer(Modifier.width(6.dp))
+                                    Text(dslCopyStatus ?: "Copy Kotlin DSL", color = AresCyan, fontSize = 12.sp, maxLines = 1)
+                                }
+                            }
                             if (rawMarkdownGenerator != null) {
                                 OutlinedButton(
                                     onClick = {
@@ -203,53 +237,126 @@ fun AresSpecSummaryModal(
                                     ),
                                 )
                             }
+                            if (kotlinDslGenerator != null) {
+                                FilterChip(
+                                    selected = isDslTabSelected,
+                                    onClick = { selectedSectionIndex = dslTabIndex },
+                                    leadingIcon = {
+                                        Icon(
+                                            Icons.Default.Code,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(14.dp),
+                                            tint = if (isDslTabSelected) AresOnAccent else AresCyan,
+                                        )
+                                    },
+                                    label = { Text("Kotlin DSL") },
+                                    colors = FilterChipDefaults.filterChipColors(
+                                        containerColor = AresSurface,
+                                        labelColor = AresCyan,
+                                        selectedContainerColor = AresCyan,
+                                        selectedLabelColor = AresOnAccent,
+                                    ),
+                                )
+                            }
                         }
 
-                        OutlinedTextField(
-                            value = searchQuery,
-                            onValueChange = { searchQuery = it },
-                            placeholder = { Text("Filter spec rows…", fontSize = 12.sp, color = AresTextTertiary) },
-                            leadingIcon = { Icon(Icons.Default.Search, null, tint = AresTextSecondary, modifier = Modifier.size(16.dp)) },
-                            modifier = Modifier.width(240.dp),
-                            singleLine = true,
-                        )
+                        if (!isDslTabSelected) {
+                            OutlinedTextField(
+                                value = searchQuery,
+                                onValueChange = { searchQuery = it },
+                                placeholder = { Text("Filter spec rows…", fontSize = 12.sp, color = AresTextTertiary) },
+                                leadingIcon = { Icon(Icons.Default.Search, null, tint = AresTextSecondary, modifier = Modifier.size(16.dp)) },
+                                modifier = Modifier.width(240.dp),
+                                singleLine = true,
+                            )
+                        }
                     }
                 }
 
                 HorizontalDivider(color = AresBorder)
 
-                // Body table
-                val activeSection = sections.getOrNull(selectedSectionIndex) ?: sections.firstOrNull()
-                val filteredRows = activeSection?.rows.orEmpty().filter { row ->
-                    searchQuery.isBlank() ||
-                        row.primaryLabel.contains(searchQuery, ignoreCase = true) ||
-                        row.secondaryLabel?.contains(searchQuery, ignoreCase = true) == true ||
-                        row.badge?.contains(searchQuery, ignoreCase = true) == true ||
-                        row.columns.any { it.first.contains(searchQuery, ignoreCase = true) || it.second.contains(searchQuery, ignoreCase = true) }
-                }
-
-                if (activeSection == null || filteredRows.isEmpty()) {
-                    Box(
-                        modifier = Modifier.weight(1f).fillMaxWidth().padding(32.dp),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Text(
-                            if (searchQuery.isNotBlank()) "No spec rows matching \"$searchQuery\"." else activeSection?.emptyMessage ?: "No data.",
-                            color = AresTextSecondary,
-                            fontSize = 13.sp,
-                        )
-                    }
-                } else {
+                if (isDslTabSelected && kotlinDslGenerator != null) {
+                    val dslCode = remember(kotlinDslGenerator) { kotlinDslGenerator() }
                     Column(
                         modifier = Modifier
                             .weight(1f)
                             .fillMaxWidth()
-                            .verticalScroll(rememberScrollState())
                             .padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp),
                     ) {
-                        filteredRows.forEachIndexed { index, row ->
-                            AresSpecRowCard(row, isEven = index % 2 == 0)
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Text(
+                                "Self-contained Kotlin Text DSL decompiled from the active builder draft. Paste into any Kotlin source file or test.",
+                                color = AresTextSecondary,
+                                fontSize = 11.sp,
+                            )
+                            Text(
+                                "${dslCode.lines().size} lines",
+                                color = AresCyan,
+                                fontSize = 11.sp,
+                                fontFamily = FontFamily.Monospace,
+                            )
+                        }
+                        Surface(
+                            modifier = Modifier.weight(1f).fillMaxWidth(),
+                            color = AresBackground,
+                            shape = RoundedCornerShape(8.dp),
+                            border = BorderStroke(1.dp, AresBorder),
+                        ) {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .verticalScroll(rememberScrollState())
+                                    .padding(14.dp),
+                            ) {
+                                Text(
+                                    text = dslCode,
+                                    color = AresTextPrimary,
+                                    fontSize = 12.sp,
+                                    lineHeight = 18.sp,
+                                    fontFamily = FontFamily.Monospace,
+                                )
+                            }
+                        }
+                    }
+                } else {
+                    // Body table
+                    val activeSection = sections.getOrNull(selectedSectionIndex) ?: sections.firstOrNull()
+                    val filteredRows = activeSection?.rows.orEmpty().filter { row ->
+                        searchQuery.isBlank() ||
+                            row.primaryLabel.contains(searchQuery, ignoreCase = true) ||
+                            row.secondaryLabel?.contains(searchQuery, ignoreCase = true) == true ||
+                            row.badge?.contains(searchQuery, ignoreCase = true) == true ||
+                            row.columns.any { it.first.contains(searchQuery, ignoreCase = true) || it.second.contains(searchQuery, ignoreCase = true) }
+                    }
+
+                    if (activeSection == null || filteredRows.isEmpty()) {
+                        Box(
+                            modifier = Modifier.weight(1f).fillMaxWidth().padding(32.dp),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Text(
+                                if (searchQuery.isNotBlank()) "No spec rows matching \"$searchQuery\"." else activeSection?.emptyMessage ?: "No data.",
+                                color = AresTextSecondary,
+                                fontSize = 13.sp,
+                            )
+                        }
+                    } else {
+                        Column(
+                            modifier = Modifier
+                                .weight(1f)
+                                .fillMaxWidth()
+                                .verticalScroll(rememberScrollState())
+                                .padding(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            filteredRows.forEachIndexed { index, row ->
+                                AresSpecRowCard(row, isEven = index % 2 == 0)
+                            }
                         }
                     }
                 }
@@ -265,8 +372,14 @@ fun AresSpecSummaryModal(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
+                    val activeSection = sections.getOrNull(selectedSectionIndex) ?: sections.firstOrNull()
+                    val countText = if (isDslTabSelected) {
+                        "Kotlin Text DSL view active"
+                    } else {
+                        "${activeSection?.rows?.size ?: 0} total items in active category"
+                    }
                     Text(
-                        "${filteredRows.size} total items in active category",
+                        countText,
                         color = AresTextTertiary,
                         fontSize = 11.sp,
                     )

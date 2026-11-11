@@ -1,5 +1,52 @@
 package com.ares.analytics.ui.components.dashboard
 
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.ares.analytics.di.KeyboardDriveState
+import com.ares.analytics.service.Nt4ClientService
+import com.ares.analytics.shared.models.League
+import com.ares.analytics.shared.models.Session
+import com.ares.analytics.ui.help.StudentFriendlyDiagnosticCallout
+import com.ares.analytics.ui.help.translateDiagnosticForStudent
+import com.ares.analytics.ui.theme.AresAmber
+import com.ares.analytics.ui.theme.AresBorder
+import com.ares.analytics.ui.theme.AresCyan
+import com.ares.analytics.ui.theme.AresError
+import com.ares.analytics.ui.theme.AresGreen
+import com.ares.analytics.ui.theme.AresOnAccent
+import com.ares.analytics.ui.theme.AresSurface
+import com.ares.analytics.ui.theme.AresSurfaceElevated
+import com.ares.analytics.ui.theme.AresTextPrimary
+import com.ares.analytics.ui.theme.AresTextSecondary
+import com.ares.analytics.ui.theme.AresTextTertiary
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.serialization.json.Json
@@ -211,3 +258,83 @@ internal fun localSimulatorLaunchRequest(
     canRunBuild -> LocalSimulatorLaunchRequest.VERIFY_THEN_START
     else -> LocalSimulatorLaunchRequest.NONE
 }
+
+internal enum class SimulatorStepStatus {
+    PENDING,
+    ACTIVE,
+    COMPLETE,
+}
+
+internal data class SimulatorReadinessStep(
+    val stepNumber: Int,
+    val title: String,
+    val actionHint: String,
+    val status: SimulatorStepStatus,
+)
+
+internal fun computeSimulatorReadinessSteps(
+    isConnected: Boolean,
+    isSimulatorProcessRunning: Boolean,
+    isLaunchPreparationRunning: Boolean,
+    isStarting: Boolean,
+    isRunning: Boolean,
+    isAutonomousRunning: Boolean,
+    isAutonomousSelection: Boolean = false,
+    isKeyboardDriveArmed: Boolean,
+    receiverReady: Boolean,
+): List<SimulatorReadinessStep> {
+    val step1Status = if (isConnected) SimulatorStepStatus.COMPLETE else SimulatorStepStatus.ACTIVE
+    val step1Hint = when {
+        isConnected -> "Connected (127.0.0.1)"
+        isLaunchPreparationRunning -> "Building simulator…"
+        isSimulatorProcessRunning -> "Connecting to 5810…"
+        else -> "Click Launch simulator"
+    }
+
+    val programActive = isRunning || isAutonomousRunning
+    val step2Status = when {
+        programActive -> SimulatorStepStatus.COMPLETE
+        isConnected -> SimulatorStepStatus.ACTIVE
+        else -> SimulatorStepStatus.PENDING
+    }
+    val step2Hint = when {
+        isAutonomousRunning -> "Autonomous running"
+        isRunning -> "TeleOp running"
+        isStarting -> "Starting program…"
+        !isConnected -> "Wait for simulator"
+        isAutonomousSelection -> "Click Run autonomous"
+        else -> "Click Start driving"
+    }
+
+    val controlsReady = isAutonomousRunning || (isRunning && isKeyboardDriveArmed && receiverReady)
+    val step3Status = when {
+        controlsReady -> SimulatorStepStatus.COMPLETE
+        isRunning -> SimulatorStepStatus.ACTIVE
+        else -> SimulatorStepStatus.PENDING
+    }
+    val step3Hint = when {
+        isAutonomousRunning -> "Auto routine active"
+        controlsReady -> "WASD & Arrows ready"
+        isRunning && isKeyboardDriveArmed && !receiverReady -> "Syncing control link…"
+        isRunning -> "Click Arm control"
+        else -> "Start TeleOp first"
+    }
+
+    return listOf(
+        SimulatorReadinessStep(1, "Simulator Online", step1Hint, step1Status),
+        SimulatorReadinessStep(2, if (isAutonomousSelection || isAutonomousRunning) "Run Routine" else "Start TeleOp", step2Hint, step2Status),
+        SimulatorReadinessStep(3, if (isAutonomousSelection || isAutonomousRunning) "Observe Motion" else "Arm Controls", step3Hint, step3Status),
+    )
+}
+
+internal data class SimulatorKeycapGuideItem(
+    val keys: String,
+    val action: String,
+)
+
+internal val defaultSimulatorKeycapGuide: List<SimulatorKeycapGuideItem> = listOf(
+    SimulatorKeycapGuideItem("W / S", "Forward / Back"),
+    SimulatorKeycapGuideItem("A / D", "Strafe L / R"),
+    SimulatorKeycapGuideItem("← / →", "Rotate CCW / CW"),
+    SimulatorKeycapGuideItem("Space", "Action"),
+)

@@ -1,33 +1,77 @@
 package com.ares.analytics.ui.screens
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.border
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.HelpOutline
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.School
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEvent
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.isCtrlPressed
+import androidx.compose.ui.input.key.isShiftPressed
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.ares.analytics.di.ServiceRegistry
+import com.ares.analytics.domain.learning.LearningCatalog
+import com.ares.analytics.domain.navigation.NavigationTarget
+import com.ares.analytics.service.BuildExecutionPhase
+import com.ares.analytics.service.BuildExecutionState
+import com.ares.analytics.service.DeployExecutionState
+import com.ares.analytics.service.LearningProgressService
+import com.ares.analytics.service.UpdateCheckerService
 import com.ares.analytics.shared.models.League
+import com.ares.analytics.shared.models.WorkspaceConfig
+import com.ares.analytics.ui.components.CommandPalette
+import com.ares.analytics.ui.components.LearningCoachDrawer
+import com.ares.analytics.ui.components.QuickNavigationMenu
+import com.ares.analytics.ui.components.SectionNavigationBar
+import com.ares.analytics.ui.components.WorkspaceSelector
+import com.ares.analytics.ui.components.core.AresDialog
+import com.ares.analytics.ui.components.core.AresDialogVariant
+import com.ares.analytics.ui.components.core.ExecutionToolbar
+import com.ares.analytics.ui.components.core.OneClickDeployDialog
+import com.ares.analytics.ui.components.core.TargetSelection
+import com.ares.analytics.ui.components.core.chooseProjectDirectory
+import com.ares.analytics.ui.components.dashboard.DashboardCommandBar
+import com.ares.analytics.ui.components.dashboard.DashboardMissionHeader
+import com.ares.analytics.ui.components.dashboard.DashboardMissionSnapshot
+import com.ares.analytics.ui.components.layout.UpdateNotificationBanner
 import com.ares.analytics.ui.components.pathplanner.FieldCanvas
 import com.ares.analytics.ui.components.pathplanner.IndicatorLightRenderState
 import com.ares.analytics.ui.components.pathplanner.Waypoint
@@ -35,7 +79,6 @@ import com.ares.analytics.ui.components.routine.RoutineBuilderPane
 import com.ares.analytics.ui.components.routine.RoutineBuilderResponsiveBody
 import com.ares.analytics.ui.components.routine.RoutineEditorPanel
 import com.ares.analytics.ui.components.routine.routineBuilderLayoutPresentation
-import com.ares.analytics.ui.components.core.chooseProjectDirectory
 import com.ares.analytics.ui.theme.AresBackground
 import com.ares.analytics.ui.theme.AresBorder
 import com.ares.analytics.ui.theme.AresCyan
@@ -46,11 +89,22 @@ import com.ares.analytics.ui.theme.AresTextPrimary
 import com.ares.analytics.ui.theme.AresTextSecondary
 import com.ares.analytics.ui.theme.AresThemeSettings
 import com.ares.analytics.viewmodel.AutonomousTourTarget
+import com.ares.analytics.viewmodel.DashboardShellState
+import com.ares.analytics.viewmodel.MainIntent
+import com.ares.analytics.viewmodel.MainViewModel
+import com.ares.analytics.viewmodel.NewProjectHistoryInitializer
+import com.ares.analytics.viewmodel.OnboardingIntent
+import com.ares.analytics.viewmodel.OnboardingViewModel
 import com.ares.analytics.viewmodel.PathPlannerIntent
 import com.ares.analytics.viewmodel.PathPlannerViewModel
+import com.ares.analytics.viewmodel.ProjectSetupMode
 import com.ares.analytics.viewmodel.pathing.RobotDimensions
-import com.ares.analytics.viewmodel.routine.routineDriveStepsInExecutionOrder
+import com.ares.analytics.viewmodel.robotstudio.RobotStudioRuntimeEvidence
+import com.ares.analytics.viewmodel.robotstudio.RobotStudioShellState
+import com.ares.analytics.viewmodel.robotstudio.RobotStudioViewModel
 import com.ares.analytics.viewmodel.routine.RoutineLightingPreviewModel
+import com.ares.analytics.viewmodel.routine.routineDriveStepsInExecutionOrder
+import kotlinx.coroutines.CoroutineScope
 
 /**
  * Unified, offline-first routine builder.
@@ -181,6 +235,13 @@ fun PathPlannerScreen(
                         if (state.routineDirty) pendingProjectPath = selected.path
                         else onProjectPathChanged(selected.path)
                     }
+                },
+            )
+
+            com.ares.analytics.ui.components.routine.AutonomousStarterRecipeBar(
+                state = state,
+                onApplyRecipe = { recipe ->
+                    viewModel.onIntent(PathPlannerIntent.ApplyStarterRecipe(recipe))
                 },
             )
 

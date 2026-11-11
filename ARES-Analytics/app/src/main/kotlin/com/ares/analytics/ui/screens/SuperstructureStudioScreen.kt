@@ -1,26 +1,91 @@
+@file:OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+
 package com.ares.analytics.ui.screens
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.RadioButtonUnchecked
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.TableChart
 import androidx.compose.material3.*
+import androidx.compose.material3.Icon
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.areslib.superstructure.SuperstructureDocument
+import com.ares.analytics.domain.learning.AcademyLearningAssignment
+import com.ares.analytics.domain.learning.AcademyRuntimeSnapshot
+import com.ares.analytics.domain.learning.LearningCatalog
+import com.ares.analytics.domain.learning.LearningCheckpoint
+import com.ares.analytics.domain.learning.LearningCheckpointEvidence
+import com.ares.analytics.domain.learning.LearningLab
+import com.ares.analytics.domain.learning.LearningLabGuide
 import com.ares.analytics.ui.components.core.*
+import com.ares.analytics.ui.components.dashboard.EkfSensorFusionLabCard
+import com.ares.analytics.ui.components.pathplanner.MotionProfileLabCard
 import com.ares.analytics.ui.components.superstructure.*
+import com.ares.analytics.ui.help.DeveloperReferenceCatalog
+import com.ares.analytics.ui.help.GlossaryCatalog
+import com.ares.analytics.ui.help.GlossaryTerm
+import com.ares.analytics.ui.help.toAcademyAutonomousSnapshot
+import com.ares.analytics.ui.help.toAcademyControlsSnapshot
+import com.ares.analytics.ui.help.toAcademyGraduationSnapshot
+import com.ares.analytics.ui.help.toAcademyRunAnalysisSnapshot
+import com.ares.analytics.ui.help.toAcademySubsystemSnapshot
+import com.ares.analytics.ui.help.toAcademySuperstructureSnapshot
+import com.ares.analytics.ui.help.toAcademyTuningSnapshot
 import com.ares.analytics.ui.theme.*
+import com.ares.analytics.ui.theme.AresBorder
+import com.ares.analytics.ui.theme.AresCyan
+import com.ares.analytics.ui.theme.AresGreen
+import com.ares.analytics.ui.theme.AresSurfaceElevated
+import com.ares.analytics.ui.theme.AresTextPrimary
+import com.ares.analytics.ui.theme.AresTextSecondary
+import com.ares.analytics.ui.theme.AresTextTertiary
+import com.ares.analytics.ui.util.DesktopFileChoosers
+import com.ares.analytics.viewmodel.PathPlannerViewModel
+import com.ares.analytics.viewmodel.SubsystemGeneratorViewModel
+import com.ares.analytics.viewmodel.TuningViewModel
+import com.ares.analytics.viewmodel.controls.ControlsEditorViewModel
+import com.ares.analytics.viewmodel.robotstudio.RobotStudioViewModel
+import com.ares.analytics.viewmodel.runanalysis.GuidedRunAnalysisViewModel
 import com.ares.analytics.viewmodel.superstructure.*
+import com.ares.analytics.viewmodel.superstructure.SuperstructureStudioViewModel
+import com.areslib.superstructure.SuperstructureDocument
+import com.areslib.superstructure.toKotlinDsl
+import java.io.File
 
 @Composable
 fun SuperstructureStudioScreen(
@@ -248,7 +313,8 @@ fun SuperstructureStudioScreen(
                 title = "${currentDraft.displayName} Superstructure Specification",
                 subtitle = "Coordinator · .ares/superstructures/${currentDraft.superstructureId}.aressuperstructure",
                 sections = generateSuperstructureSpecSections(state, currentDraft),
-                onDismiss = { showSpecSummaryModal = false }
+                onDismiss = { showSpecSummaryModal = false },
+                kotlinDslGenerator = { currentDraft.toKotlinDsl() },
             )
         }
     }

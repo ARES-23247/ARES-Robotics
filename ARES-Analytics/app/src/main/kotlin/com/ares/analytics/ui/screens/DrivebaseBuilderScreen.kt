@@ -29,6 +29,7 @@ import com.ares.analytics.ui.components.core.ResponsiveBuilderHeader
 import com.ares.analytics.ui.components.drivebase.*
 import com.ares.analytics.ui.theme.*
 import com.ares.analytics.viewmodel.drivebase.*
+import com.areslib.drivetrain.toKotlinDsl
 
 @Composable
 fun DrivebaseBuilderScreen(
@@ -272,7 +273,11 @@ fun DrivebaseBuilderScreen(
             title = "${state.draft.displayName} Drivetrain Specification",
             subtitle = "${state.league.name} · .ares/drivetrains/${state.draft.documentId}.aresdrivetrain",
             sections = generateDrivebaseSpecSections(state),
-            onDismiss = { showSpecSummaryModal = false }
+            onDismiss = { showSpecSummaryModal = false },
+            kotlinDslGenerator = {
+                runCatching { state.draft.toCanonicalDrivebase().toKotlinDsl() }
+                    .getOrElse { "// Fix drivetrain configuration before rendering Kotlin DSL:\n// ${it.message}" }
+            },
         )
 
         // Discard Changes Confirmation Dialog

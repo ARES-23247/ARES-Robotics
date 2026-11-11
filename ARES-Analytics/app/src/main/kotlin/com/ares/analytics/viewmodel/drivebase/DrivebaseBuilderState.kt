@@ -95,6 +95,7 @@ sealed interface DrivebaseBuilderIntent {
     data object Reload : DrivebaseBuilderIntent
     data class SelectStep(val step: DrivebaseBuilderStep) : DrivebaseBuilderIntent
     data class SelectKind(val kind: DrivebaseKind) : DrivebaseBuilderIntent
+    data class ApplyChassisPreset(val preset: DrivebaseChassisPreset) : DrivebaseBuilderIntent
     data class SelectHardware(val id: String?) : DrivebaseBuilderIntent
     data class UpdateHardware(val device: DriveHardwareDeclaration) : DrivebaseBuilderIntent
     data object UseSimulationCanIds : DrivebaseBuilderIntent

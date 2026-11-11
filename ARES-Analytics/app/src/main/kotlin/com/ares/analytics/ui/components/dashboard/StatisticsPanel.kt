@@ -1,40 +1,44 @@
+@file:OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 package com.ares.analytics.ui.components.dashboard
 
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Analytics
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.FilterList
+import androidx.compose.material.icons.filled.HelpOutline
+import androidx.compose.material.icons.filled.Science
+import androidx.compose.material.icons.Icons
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
-import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ares.analytics.service.DatabaseService
 import com.ares.analytics.shared.models.TelemetryFrame
 import com.ares.analytics.ui.theme.*
-import kotlinx.coroutines.launch
 import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.pow
 import kotlin.math.sqrt
+import kotlinx.coroutines.launch
 
 enum class TimeFilter {
     FULL, AUTO, TELEOP, ENABLED
@@ -139,158 +143,19 @@ fun StatisticsPanel(
         return
     }
 
-    // Helper: Interpolation for aligning Signal 2 to Signal 1 timestamps
+    var activeRecipe by remember(sessionId) { mutableStateOf<StudentSignalRecipe?>(null) }
 
-    fun interpolate(t: Long, times: List<Long>, values: List<Double>): Double {
-        if (times.isEmpty()) return 0.0
-        val idx = times.binarySearch(t)
-        if (idx >= 0) return values[idx]
-        val insertIdx = -idx - 1
-        if (insertIdx == 0) return values.first()
-        if (insertIdx >= times.size) return values.last()
-        val t0 = times[insertIdx - 1]
-        val t1 = times[insertIdx]
-        val v0 = values[insertIdx - 1]
-        val v1 = values[insertIdx]
-        if (t1 == t0) return v0
-        val pct = (t - t0).toDouble() / (t1 - t0).toDouble()
-        return v0 + pct * (v1 - v0)
+    val filtered1 = remember(telemetry1, stateFrames, timeFilter) {
+        filterTelemetryByPhase(telemetry1, stateFrames, timeFilter)
     }
-
-    // Filter telemetry based on active TimeFilter
-    fun filterTelemetry(raw: List<TelemetryFrame>): List<TelemetryFrame> {
-        if (raw.isEmpty()) return emptyList()
-        val startMs = raw.first().timestampMs
-        val durationMs = raw.last().timestampMs - startMs
-
-        // Check if there is an explicit "/RobotState/Mode" or "/RobotState/Enabled" in telemetry
-        val enabledKey = stateFrames.firstOrNull { it.key.endsWith("enabled", ignoreCase = true) }?.key
-        val modeKey = stateFrames.firstOrNull { it.key.endsWith("mode", ignoreCase = true) }?.key
-
-        return when (timeFilter) {
-            TimeFilter.FULL -> raw
-            TimeFilter.AUTO -> {
-                if (modeKey != null) {
-                    val modeValues = stateFrames.filter { it.key == modeKey }
-                    raw.filter { frame ->
-                        val activeMode = interpolate(frame.timestampMs, modeValues.map { it.timestampMs }, modeValues.map { it.value })
-                        activeMode == 1.0 // Heuristic: 1.0 is Auto
-                    }
-                } else {
-                    // Fallback to first 15 seconds
-                    val cutoff = startMs + 15000L
-                    raw.filter { it.timestampMs <= cutoff }
-                }
-            }
-            TimeFilter.TELEOP -> {
-                if (modeKey != null) {
-                    val modeValues = stateFrames.filter { it.key == modeKey }
-                    raw.filter { frame ->
-                        val activeMode = interpolate(frame.timestampMs, modeValues.map { it.timestampMs }, modeValues.map { it.value })
-                        activeMode == 2.0 // Heuristic: 2.0 is Teleop
-                    }
-                } else {
-                    // Fallback to post-15 seconds
-                    val cutoff = startMs + 15000L
-                    raw.filter { it.timestampMs > cutoff }
-                }
-            }
-            TimeFilter.ENABLED -> {
-                if (enabledKey != null) {
-                    val enabledValues = stateFrames.filter { it.key == enabledKey }
-                    raw.filter { frame ->
-                        val isEnabled = interpolate(frame.timestampMs, enabledValues.map { it.timestampMs }, enabledValues.map { it.value })
-                        isEnabled > 0.5
-                    }
-                } else {
-                    raw // Fallback to all if no enabled key
-                }
-            }
-        }
+    val filtered2 = remember(telemetry2, stateFrames, timeFilter) {
+        filterTelemetryByPhase(telemetry2, stateFrames, timeFilter)
     }
-
-    // Processed primary signal values
-    val filtered1 = filterTelemetry(telemetry1)
-    val filtered2 = filterTelemetry(telemetry2)
-
-    // Compute active dataset to analyze based on mode
     val activeValues = remember(filtered1, filtered2, analysisMode) {
-        val list = mutableListOf<Double>()
-        if (analysisMode == AnalysisMode.SINGLE || filtered2.isEmpty()) {
-            list.addAll(filtered1.map { it.value })
-        } else {
-            val t2List = filtered2.map { it.timestampMs }
-            val v2List = filtered2.map { it.value }
-            for (f1 in filtered1) {
-                val val1 = f1.value
-                val val2 = interpolate(f1.timestampMs, t2List, v2List)
-                when (analysisMode) {
-                    AnalysisMode.ABSOLUTE_ERROR -> list.add(abs(val1 - val2))
-                    AnalysisMode.RELATIVE_ERROR -> list.add(abs(val1 - val2) / max(abs(val2), 1e-6))
-                    else -> list.add(val1) // Fallback normal comparison
-                }
-            }
-        }
-        list
+        computeActiveAnalysisValues(filtered1, filtered2, analysisMode)
     }
-
-    // Compute Descriptive Statistics
     val stats = remember(activeValues) {
-        if (activeValues.isEmpty()) null else {
-            val sorted = activeValues.sorted()
-            val n = sorted.size
-            val minVal = sorted.first()
-            val maxVal = sorted.last()
-            val sumVal = sorted.sum()
-            val meanVal = sumVal / n
-
-            // Median
-            val medianVal = if (n % 2 == 1) sorted[n / 2] else (sorted[n / 2 - 1] + sorted[n / 2]) / 2.0
-
-            // Mode
-            val counts = mutableMapOf<Double, Int>()
-            sorted.forEach { counts[it] = (counts[it] ?: 0) + 1 }
-            val modeVal = counts.maxByOrNull { it.value }?.key ?: 0.0
-
-            // StdDev
-            val variance = sorted.fold(0.0) { acc, d -> acc + (d - meanVal).pow(2) } / n
-            val stdDevVal = sqrt(variance)
-
-            // Percentiles
-            fun getPercentile(p: Double): Double {
-                val index = (p * (n - 1))
-                val lower = index.toInt()
-                val upper = (lower + 1).coerceAtMost(n - 1)
-                val weight = index - lower
-                return sorted[lower] * (1.0 - weight) + sorted[upper] * weight
-            }
-            val p5 = getPercentile(0.05)
-            val p25 = getPercentile(0.25)
-            val p50 = medianVal
-            val p75 = getPercentile(0.75)
-            val p95 = getPercentile(0.95)
-            val iqr = p75 - p25
-
-            // Skewness
-            val m3 = sorted.fold(0.0) { acc, d -> acc + (d - meanVal).pow(3) } / n
-            val skewnessVal = if (stdDevVal > 1e-9) m3 / stdDevVal.pow(3) else 0.0
-
-            mapOf(
-                "Count" to n.toDouble(),
-                "Min" to minVal,
-                "Max" to maxVal,
-                "Mean" to meanVal,
-                "Median" to medianVal,
-                "Mode" to modeVal,
-                "Std Dev" to stdDevVal,
-                "IQR" to iqr,
-                "Skewness" to skewnessVal,
-                "5th %" to p5,
-                "25th %" to p25,
-                "75th %" to p75,
-                "95th %" to p95
-            )
-        }
+        computeDashboardSignalStats(activeValues)
     }
 
     Column(
@@ -300,8 +165,19 @@ fun StatisticsPanel(
             .background(AresSurface)
             .border(1.dp, AresBorder, RoundedCornerShape(12.dp))
             .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
+        StudentStatisticsRecipeAndExplainerBar(
+            availableKeys = availableKeys,
+            activeRecipe = activeRecipe,
+            onSelectRecipe = { resolved ->
+                activeRecipe = resolved.recipe
+                selectedKey1 = resolved.primaryKey
+                selectedKey2 = resolved.secondaryKey
+                analysisMode = resolved.analysisMode
+            },
+        )
+
         // Toolbar
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -594,3 +470,8 @@ fun StatisticsPanel(
         }
     }
 }
+
+/**
+ * 1-click student telemetry recipes for the Dashboard Statistics & Forensics panel.
+ * Automatically picks matching primary/secondary telemetry keys and sets the appropriate [AnalysisMode].
+ */

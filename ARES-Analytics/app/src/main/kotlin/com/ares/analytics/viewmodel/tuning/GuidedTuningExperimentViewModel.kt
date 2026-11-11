@@ -93,6 +93,7 @@ sealed interface GuidedTuningExperimentIntent {
     data object StartRevision : GuidedTuningExperimentIntent
     data class LoadExperiment(val uid: String) : GuidedTuningExperimentIntent
     data class ExportReport(val destination: File) : GuidedTuningExperimentIntent
+    data class ApplySymptomStarter(val starter: StudentSymptomExperimentStarter) : GuidedTuningExperimentIntent
     data object ClearMessage : GuidedTuningExperimentIntent
 }
 
@@ -158,6 +159,9 @@ class GuidedTuningExperimentViewModel(
             GuidedTuningExperimentIntent.StartRevision -> startRevision()
             is GuidedTuningExperimentIntent.LoadExperiment -> loadExperiment(intent.uid)
             is GuidedTuningExperimentIntent.ExportReport -> export(intent.destination)
+            is GuidedTuningExperimentIntent.ApplySymptomStarter -> {
+                _state.value = applySymptomStarterToExperimentState(_state.value, intent.starter, editableRows())
+            }
             GuidedTuningExperimentIntent.ClearMessage -> _state.value = _state.value.copy(statusMessage = null, errorMessage = null)
         }
     }
@@ -552,77 +556,3 @@ class GuidedTuningExperimentViewModel(
     }
 }
 
-internal fun renderGuidedTuningExperimentReport(experiment: GuidedTuningExperiment): String = buildString {
-        appendLine("# ARES guided tuning experiment")
-        appendLine()
-        appendLine("Experiment: ${experiment.title}")
-        appendLine("Workspace: ${experiment.teamId} / ${experiment.seasonId} / ${experiment.robotId}")
-        appendLine("Configuration snapshot: ${experiment.snapshot.snapshotSha256}")
-        appendLine("Canonical profile: ${experiment.snapshot.profileUid} @ ${experiment.snapshot.profileContentSha256}")
-        appendLine()
-        appendLine("> This report records simulation evidence. It is not proof of causation or physical-hardware validation.")
-        appendLine()
-        appendLine("## Evidence and uncertainty")
-        appendLine("- ${experiment.finding.claimKind}: ${experiment.finding.title}")
-        appendLine("- ${experiment.finding.explanation}")
-        appendLine("- Replay: ${experiment.finding.sessionId} at ${experiment.finding.absoluteTimestampMs} ms")
-        appendLine("- Topics: ${experiment.finding.sourceTopics.joinToString()}")
-        appendLine()
-        appendLine("## Controlled change")
-        appendLine("- Question: ${experiment.question.ifBlank { "What effect will the one bounded change have on the intended metric?" }}")
-        appendLine("- Hypothesis: ${experiment.hypothesis}")
-        appendLine("- Parameter: ${experiment.change.displayName} (${experiment.change.key})")
-        appendLine("- Before: ${experiment.change.before.display()} ${experiment.change.unit}")
-        appendLine("- Candidate: ${experiment.change.proposed.display()} ${experiment.change.unit}")
-        appendLine("- Maximum bounded step used: ${experiment.change.boundedStepLimit.reportNumber()} ${experiment.change.unit}")
-        appendLine("- Apply policy: ${experiment.change.applyPolicy}")
-        appendLine("- Success threshold: ${experiment.successThresholdPercent.reportNumber()}% improvement")
-        appendLine("- Held constant:")
-        experiment.heldConstants.forEach { appendLine("  - $it") }
-        appendLine("- Safety boundary: ${experiment.safetyNotes.ifBlank { "Local Sim only; physical validation requires a separate documented safety procedure." }}")
-        appendLine("- Optional peer review: ${experiment.peerReviewState.name.replace('_', ' ')}")
-        appendLine()
-        appendLine("## Baseline and candidate")
-        appendLine("- Baseline run: ${experiment.baselineSessionId}")
-        appendLine("- Candidate run: ${experiment.candidateSessionId ?: "not recorded"}")
-        appendLine("- Intended metric: ${experiment.metric.metricLabel} / ${experiment.metric.statistic} / ${experiment.metric.goal}")
-        experiment.evaluation?.let { evaluation ->
-            appendLine("- Baseline value: ${evaluation.baselineValue.reportNumber()} ${evaluation.unit}")
-            appendLine("- Candidate value: ${evaluation.candidateValue.reportNumber()} ${evaluation.unit}")
-            appendLine("- Delta: ${evaluation.absoluteDelta.reportNumber()} ${evaluation.unit} (${evaluation.percentDelta.reportNumber()}%)")
-            appendLine("- Result: ${evaluation.summary}")
-            appendLine("- Outcome: ${evaluation.outcome}")
-            appendLine()
-            appendLine("## Limitations")
-            evaluation.limitations.forEach { appendLine("- $it") }
-        }
-        appendLine()
-        appendLine("## Student/mentor decision")
-        appendLine("- Decision: ${experiment.decision}")
-        appendLine("- Reason: ${experiment.decisionNote.ifBlank { "Not recorded" }}")
-        appendLine("- Next safe test or review: ${experiment.nextTest.ifBlank { "Not recorded" }}")
-        appendLine("- Rollback path: stop the managed simulator and remove the local proposal; reload the unchanged canonical profile before another run.")
-        appendLine("- Canonical profile changed by this workflow: no")
-}
-
-private val guidedExperimentTimeFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern("MMM d, h:mm:ss a")
-
-fun Session.guidedExperimentLabel(): String {
-    val recordedAt = guidedExperimentTimeFormatter.format(Instant.ofEpochMilli(createdAt).atZone(ZoneId.systemDefault()))
-    return "Simulation · $recordedAt · ${sessionId.take(8)}"
-}
-
-private fun ExperimentValue.display(): String = when {
-    doubleValue != null -> doubleValue.reportNumber()
-    intValue != null -> intValue.toString()
-    booleanValue != null -> booleanValue.toString()
-    else -> textValue.orEmpty()
-}
-
-private fun Double?.reportNumber(): String = when {
-    this == null || !isFinite() -> "unavailable"
-    else -> BigDecimal.valueOf(this)
-        .setScale(6, RoundingMode.HALF_UP)
-        .stripTrailingZeros()
-        .toPlainString()
-}

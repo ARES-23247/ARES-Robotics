@@ -1,5 +1,38 @@
 package com.ares.analytics.ui.help
 
+import com.ares.analytics.domain.learning.AcademyAutonomousSnapshot
+import com.ares.analytics.domain.learning.AcademyControlsSnapshot
+import com.ares.analytics.domain.learning.AcademyGraduationSnapshot
+import com.ares.analytics.domain.learning.AcademyRunAnalysisSnapshot
+import com.ares.analytics.domain.learning.AcademySubsystemSnapshot
+import com.ares.analytics.domain.learning.AcademySuperstructureSnapshot
+import com.ares.analytics.domain.learning.AcademyTuningSnapshot
+import com.ares.analytics.service.AresGenerationPhase
+import com.ares.analytics.viewmodel.controls.ControlsEditorState
+import com.ares.analytics.viewmodel.controls.ControlsProblemSeverity
+import com.ares.analytics.viewmodel.PathPlannerState
+import com.ares.analytics.viewmodel.robotstudio.RobotStudioStageId
+import com.ares.analytics.viewmodel.robotstudio.RobotStudioStageStatus
+import com.ares.analytics.viewmodel.robotstudio.RobotStudioState
+import com.ares.analytics.viewmodel.runanalysis.GuidedRunAnalysisState
+import com.ares.analytics.viewmodel.SubsystemBuilderStage
+import com.ares.analytics.viewmodel.SubsystemGeneratorState
+import com.ares.analytics.viewmodel.SubsystemProblemSeverity
+import com.ares.analytics.viewmodel.superstructure.PreviewPortCondition
+import com.ares.analytics.viewmodel.superstructure.SuperstructureStudioState
+import com.ares.analytics.viewmodel.TuningState
+import com.areslib.catalog.CapabilityContext
+import com.areslib.controls.ControlTargetKind
+import com.areslib.routine.RoutineValidationSeverity
+import com.areslib.subsystem.SubsystemControlStrategy
+import com.areslib.subsystem.SubsystemFieldRole
+import com.areslib.subsystem.SubsystemHardwareKind
+import com.areslib.subsystem.SubsystemHomingMethod
+import com.areslib.subsystem.SubsystemMeasurementSource
+import com.areslib.subsystem.SubsystemSimulationSupport
+import com.areslib.subsystem.SubsystemTemplate
+import com.areslib.tuning.TuningParameterDeclaration
+
 data class DeveloperReference(
     val id: String,
     val title: String,
@@ -230,6 +263,66 @@ object DeveloperReferenceCatalog {
             ),
             relatedTests = "core/src/test/kotlin/com/areslib/logging/",
             keywords = setOf("logs", "jsonl", "download", "offline", "pull"),
+        ),
+        DeveloperReference(
+            id = "subsystem-dsl",
+            title = "Subsystem Kotlin Text DSL",
+            category = "Code generation",
+            responsibility = "Author or decompile canonical SubsystemDocument specs in pure Kotlin with physical-unit helpers.",
+            sourcePath = "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/subsystem/{SubsystemDsl,SubsystemDslRenderer}.kt",
+            units = "Angles in radians (or deg/turns helpers); distances in meters (or inches/mm helpers); voltage in volts.",
+            invariants = listOf(
+                "Every subsystem { ... } block validates against validateSubsystemDocument before returning.",
+                "SubsystemDocument.toKotlinDsl() round-trips losslessly back into an identical SubsystemDocument.",
+                "Supports all 31 templates, hardware bindings, PID/profiled loops, feedforward, and safety interlocks.",
+            ),
+            relatedTests = "core/src/test/kotlin/com/areslib/subsystem/DslRoundTripTest.kt",
+            keywords = setOf("dsl", "subsystem", "tokotlindsl", "text dsl", "arm", "elevator", "flywheel"),
+        ),
+        DeveloperReference(
+            id = "superstructure-dsl",
+            title = "Superstructure coordinator Text DSL",
+            category = "State & control",
+            responsibility = "Define multi-mechanism postures, transitions, collision interlocks, and 1D lookup tables in Kotlin.",
+            sourcePath = "ARESLib-Kotlin/project-schema/src/main/kotlin/com/areslib/superstructure/{SuperstructureDsl,SuperstructureDslRenderer}.kt",
+            units = "Setpoints match target subsystem state field units; transition timeouts in seconds.",
+            invariants = listOf(
+                "Initial and fault postures must exist and every transition route must connect declared postures.",
+                "SuperstructureDocument.toKotlinDsl() decompiles any Studio coordinator into Kotlin code.",
+                "Collision interlocks are evaluated continuously alongside transition guards.",
+            ),
+            relatedTests = "core/src/test/kotlin/com/areslib/subsystem/DslRoundTripTest.kt",
+            keywords = setOf("dsl", "superstructure", "posture", "transition", "interlock", "lut"),
+        ),
+        DeveloperReference(
+            id = "drivetrain-dsl",
+            title = "Drivetrain kinematics & safety Text DSL",
+            category = "Drivetrain",
+            responsibility = "Configure FTC Mecanum, FRC CTRE Swerve, or Differential drivetrains and safety envelopes in Kotlin.",
+            sourcePath = "ARESLib-Kotlin/project-schema/src/main/kotlin/com/areslib/drivetrain/{DrivetrainDsl,DrivetrainDslRenderer}.kt",
+            units = "Wheel radius, track width, wheelbase in meters; linear speed in m/s; angular speed in rad/s.",
+            invariants = listOf(
+                "Presets (ftcMecanum, frcCtreSwerve, differential) populate required motor/encoder roles automatically.",
+                "DrivetrainDocument.toKotlinDsl() emits concise preset calls when standard roles are used.",
+                "Fail-closed neutral output and fresh-feedback leases are enforced by validateDrivetrainDocument.",
+            ),
+            relatedTests = "core/src/test/kotlin/com/areslib/subsystem/DslRoundTripTest.kt",
+            keywords = setOf("dsl", "drivetrain", "mecanum", "swerve", "differential", "tokotlindsl"),
+        ),
+        DeveloperReference(
+            id = "project-dsl",
+            title = "Whole-project Text DSL (aresProject)",
+            category = "Code generation",
+            responsibility = "Assemble and cross-validate drivetrains, subsystems, superstructures, routines, and controls in one block.",
+            sourcePath = "ARESLib-Kotlin/project-model/src/main/kotlin/com/areslib/project/model/AresProjectDsl.kt",
+            units = "Inherits canonical SI/radian units across all nested documents.",
+            invariants = listOf(
+                "Automatically propagates projectId and platform to nested builders.",
+                "Runs RobotProjectAssembler cross-document validation (action keys, resources, ports, tuning profiles).",
+                "EffectiveRobotProject.toKotlinDsl() and formatValidationReport() support full project inspection.",
+            ),
+            relatedTests = "project-model/src/test/kotlin/com/areslib/project/model/AresProjectDslTest.kt",
+            keywords = setOf("dsl", "aresproject", "autonomouscatalog", "tuningprofile", "validation"),
         ),
     )
 

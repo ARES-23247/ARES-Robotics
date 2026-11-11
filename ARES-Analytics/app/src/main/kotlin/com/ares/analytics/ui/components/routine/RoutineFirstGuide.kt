@@ -1,35 +1,96 @@
 package com.ares.analytics.ui.components.routine
 
-import androidx.compose.foundation.BorderStroke
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.School
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ares.analytics.shared.models.League
+import com.ares.analytics.ui.components.core.AresCoachBanner
+import com.ares.analytics.ui.components.core.AresPresetChipBar
 import com.ares.analytics.ui.theme.*
+import com.ares.analytics.ui.util.AresFormatters
+import com.ares.analytics.viewmodel.AutonomousTourStep
+import com.ares.analytics.viewmodel.pathing.RobotDimensions
 import com.ares.analytics.viewmodel.PathPlannerIntent
 import com.ares.analytics.viewmodel.PathPlannerState
-import com.ares.analytics.viewmodel.pathing.RobotDimensions
-import com.ares.analytics.viewmodel.routine.GuidedFirstRoutinePlan
 import com.ares.analytics.viewmodel.routine.defaultGuidedFirstRoutinePlan
+import com.ares.analytics.viewmodel.routine.GuidedFirstRoutinePlan
+import com.ares.analytics.viewmodel.routine.StudentAutonomousRecipe
 import com.ares.analytics.viewmodel.routine.validateGuidedFirstRoutinePlan
-import com.areslib.catalog.*
-import com.areslib.routine.*
+import com.areslib.routine.RoutinePose
+import com.areslib.routine.RoutineStep
+import com.areslib.routine.RoutineStepKind
+
+@Composable
+fun AutonomousStarterRecipeBar(
+    state: PathPlannerState,
+    onApplyRecipe: (StudentAutonomousRecipe) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    var pendingRecipe by remember { mutableStateOf<StudentAutonomousRecipe?>(null) }
+
+    pendingRecipe?.let { recipe ->
+        AlertDialog(
+            onDismissRequest = { pendingRecipe = null },
+            title = { Text("Replace current routine draft with '${recipe.title}'?") },
+            text = {
+                Text("Your current routine has unsaved edits. Loading this starter recipe will replace the visible draft.")
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        pendingRecipe = null
+                        onApplyRecipe(recipe)
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = AresError, contentColor = AresOnAccent),
+                ) { Text("Replace draft") }
+            },
+            dismissButton = {
+                OutlinedButton(onClick = { pendingRecipe = null }) { Text("Keep editing") }
+            },
+        )
+    }
+
+    AresCoachBanner(
+        badgeText = "STARTER RECIPES",
+        title = "1-Click Starter Autonomous Recipes",
+        subtitle = "Load a field-ready draft, press Play on the canvas, then customize steps:",
+        modifier = modifier,
+    ) {
+        AresPresetChipBar(
+            items = StudentAutonomousRecipe.entries,
+            labelFor = { "${it.title} · ${it.subtitle}" },
+            isSelected = { state.routine.name == it.title },
+            leadingIconFor = { Icon(Icons.Default.PlayArrow, contentDescription = null, modifier = Modifier.size(14.dp)) },
+            onSelect = { recipe ->
+                if (shouldConfirmRoutineReplacement(state)) pendingRecipe = recipe else onApplyRecipe(recipe)
+            },
+        )
+    }
+}
 
 @Composable
 internal fun FirstRoutineGuideCard(
@@ -216,9 +277,7 @@ internal fun FirstRoutineGuideDialog(
         },
         confirmButton = {
             Button(
-                onClick = {
-                    if (page < 3) page++ else parsedPlan?.let(onApply)
-                },
+                onClick = { if (page < 3) page++ else parsedPlan?.let(onApply) },
                 enabled = pageReady,
                 colors = ButtonDefaults.buttonColors(containerColor = AresCyan, contentColor = AresOnAccent),
             ) { Text(if (page < 3) "Continue" else "Apply unsaved draft") }
@@ -271,4 +330,3 @@ private fun GuidedNumberField(
         colors = routineTextFieldColors(),
     )
 }
-

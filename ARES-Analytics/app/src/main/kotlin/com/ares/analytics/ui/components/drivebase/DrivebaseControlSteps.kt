@@ -1,30 +1,47 @@
 package com.ares.analytics.ui.components.drivebase
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.HelpOutline
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ares.analytics.service.drivebase.*
+import com.ares.analytics.service.drivebase.DriveHardwareDeclaration
+import com.ares.analytics.service.drivebase.cornerDriveHardware
 import com.ares.analytics.shared.models.League
 import com.ares.analytics.ui.theme.*
 import com.ares.analytics.viewmodel.drivebase.*
+import com.ares.analytics.viewmodel.drivebase.DrivebaseBuilderState
 import com.areslib.drivetrain.DisabledDrivePolicy
 import com.areslib.drivetrain.DrivetrainControlKind
 import com.areslib.drivetrain.DrivetrainNeutralMode
@@ -32,6 +49,7 @@ import com.areslib.drivetrain.DrivetrainNeutralMode
 @Composable
 fun GeometryStep(state: DrivebaseBuilderState, viewModel: DrivebaseBuilderViewModel) {
     SectionHeading("3 · Measure geometry", "Use meters internally. Wheelbase and track width are center-to-center distances; robot dimensions include frame perimeter.")
+    DrivebaseChassisMeasurementGuideCard(state = state, viewModel = viewModel)
     val geometry = state.draft.geometry
     val labResult = evaluateGeometryLab(
         geometry = geometry,
@@ -245,6 +263,22 @@ private fun DriveControlLab(state: DrivebaseBuilderState, viewModel: DrivebaseBu
                 )
             }
             Text(result.explanation, color = AresTextTertiary, fontSize = 10.sp)
+            DriveMixingVectorCanvas(
+                kind = state.draft.kind,
+                lab = lab,
+                result = result,
+                onPresetSelected = { preset ->
+                    viewModel.onIntent(
+                        DrivebaseBuilderIntent.UpdateLab(
+                            lab.copy(
+                                forward = preset.forward,
+                                strafe = preset.strafe,
+                                rotate = preset.rotate,
+                            )
+                        )
+                    )
+                },
+            )
             result.wheelOutputs.entries.chunked(2).forEach { row ->
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     row.forEach { (id, output) ->
@@ -337,7 +371,6 @@ fun LocalizationStep(state: DrivebaseBuilderState, viewModel: DrivebaseBuilderVi
                 if (row.size == 1) Spacer(Modifier.weight(1f))
             }
         }
+        LocalizationSensorMountingCard(state = state, viewModel = viewModel)
     }
 }
-
-

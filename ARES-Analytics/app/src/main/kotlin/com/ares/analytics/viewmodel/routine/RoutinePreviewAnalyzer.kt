@@ -1,5 +1,8 @@
 package com.ares.analytics.viewmodel.routine
 
+import com.ares.analytics.shared.models.League
+import com.ares.analytics.ui.components.pathplanner.Waypoint
+import com.ares.analytics.viewmodel.PathPlannerState
 import com.areslib.routine.RoutineDocument
 import com.areslib.routine.RoutineDriveStep
 import com.areslib.routine.RoutinePose
@@ -127,4 +130,21 @@ private fun compositePreviewWarning(kind: RoutineStepKind): String {
     }
     return "Preview unavailable: $label has multiple possible timelines. " +
         "Select a runtime scenario before showing its route or duration."
+}
+
+internal fun splitRoutineStartAndDriveWaypoints(
+    current: PathPlannerState,
+    waypoints: List<Waypoint>,
+    league: League,
+): Pair<PathPlannerState, List<Waypoint>> {
+    val hasStart = current.autonomousEntry != null
+    val driveWaypoints = if (hasStart) waypoints.drop(1) else waypoints
+    val updatedState = if (hasStart) {
+        val start = waypoints.first()
+        val pose = clampRoutinePose(start.toRoutinePose(), league, current.robotDimensions)
+        current.copy(autonomousEntry = current.autonomousEntry?.copy(startingPose = pose))
+    } else {
+        current
+    }
+    return updatedState to driveWaypoints
 }

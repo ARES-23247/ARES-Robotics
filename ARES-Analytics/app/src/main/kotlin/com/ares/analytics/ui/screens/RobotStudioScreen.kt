@@ -9,8 +9,8 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Surface
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -25,18 +25,21 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ares.analytics.service.GamepadState
+import com.ares.analytics.service.drivebase.toCanonicalDrivebase
 import com.ares.analytics.shared.models.WorkspaceConfig
 import com.ares.analytics.ui.components.controls.ControlsEditorPanel
 import com.ares.analytics.ui.components.robotstudio.RobotContextInspector
 import com.ares.analytics.ui.components.robotstudio.RobotHierarchyTree
+import com.ares.analytics.ui.components.robotstudio.RobotProjectSpecModal
 import com.ares.analytics.ui.components.robotstudio.RobotStudioSelection
 import com.ares.analytics.ui.components.robotstudio.SubsystemTreeItem
+import com.ares.analytics.ui.components.robotstudio.buildRobotProjectSpecSnapshot
 import com.ares.analytics.ui.components.robotstudio.robotStudioPanePresentation
 import com.ares.analytics.ui.components.robotstudio.robotStudioPersistedRevision
 import com.ares.analytics.ui.theme.AresBackground
 import com.ares.analytics.ui.theme.AresRed
-import com.ares.analytics.ui.theme.AresThemeSettings
 import com.ares.analytics.ui.theme.AresTextPrimary
+import com.ares.analytics.ui.theme.AresThemeSettings
 import com.ares.analytics.viewmodel.PathPlannerViewModel
 import com.ares.analytics.viewmodel.SubsystemGeneratorViewModel
 import com.ares.analytics.viewmodel.SubsystemProblemSeverity
@@ -50,9 +53,9 @@ import com.ares.analytics.viewmodel.robotstudio.RobotStudioStageStatus
 import com.ares.analytics.viewmodel.robotstudio.RobotStudioState
 import com.ares.analytics.viewmodel.robotstudio.RobotStudioViewModel
 import com.ares.analytics.viewmodel.superstructure.SuperstructureStudioViewModel
-import com.areslib.subsystem.SubsystemTemplate
-import com.areslib.subsystem.SubsystemSchema
 import com.areslib.project.AresProjectAuthoringModel
+import com.areslib.subsystem.SubsystemSchema
+import com.areslib.subsystem.SubsystemTemplate
 import java.io.File
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
@@ -192,6 +195,8 @@ fun RobotStudioScreen(
         }
     }
 
+    var showProjectSpecModal by remember { mutableStateOf(false) }
+
     RobotStudioWorkspace(
         state = state,
         subsystems = subsystemTreeItems,
@@ -211,12 +216,14 @@ fun RobotStudioScreen(
         onOpenInIde = onOpenInIde,
         onChooseStandaloneExport = onChooseStandaloneExport,
         onExportStandaloneProject = onExportStandaloneProject,
+        onOpenProjectSpec = { showProjectSpecModal = true },
     ) { selected ->
         when (selected) {
             RobotStudioSelection.Identity -> ProjectIdentityScreen(
                 viewModel = projectIdentityViewModel,
                 config = config,
                 onBackToStudio = null,
+                onOpenProjectSpec = { showProjectSpecModal = true },
             )
             RobotStudioSelection.Drivetrain -> DrivebaseBuilderScreen(
                 viewModel = drivebaseViewModel,
@@ -260,8 +267,41 @@ fun RobotStudioScreen(
                 report = state.verificationReport,
                 isRunning = state.buildStage?.status == RobotStudioStageStatus.RUNNING,
                 onRunVerification = onRunVerification,
+                onNavigateToSelection = { newSelection ->
+                    if (newSelection is RobotStudioSelection.Subsystem) {
+                        val targetId = newSelection.documentId.ifBlank {
+                            subsystemTreeItems.firstOrNull()?.documentId.orEmpty()
+                        }
+                        if (targetId.isNotBlank()) {
+                            subsystemViewModel.selectDocument(targetId)
+                        }
+                        selection = RobotStudioSelection.Subsystem(targetId)
+                    } else {
+                        selection = newSelection
+                    }
+                },
             )
         }
+    }
+
+    if (showProjectSpecModal) {
+        val currentDrivetrain = runCatching {
+            (drivebaseState.saved ?: drivebaseState.draft).toCanonicalDrivebase()
+        }.getOrNull()
+        RobotProjectSpecModal(
+            isOpen = true,
+            snapshot = buildRobotProjectSpecSnapshot(
+                identityState = identityState,
+                drivetrain = currentDrivetrain,
+                subsystems = subsystemState.documents,
+                superstructures = superstructureState.documents,
+                controlSchemes = controlsState.schemes,
+                routines = pathPlannerState.availableRoutines,
+                hardwareCount = hardwareState.snapshot?.items?.size ?: 0,
+                hardwareReviewStatus = hardwareState.snapshot?.reviewStatus?.name,
+            ),
+            onDismiss = { showProjectSpecModal = false },
+        )
     }
 }
 
@@ -276,6 +316,7 @@ internal fun RobotStudioWorkspace(
     onOpenInIde: (() -> String)? = null,
     onChooseStandaloneExport: (() -> File?)? = null,
     onExportStandaloneProject: (suspend (File) -> String)? = null,
+    onOpenProjectSpec: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
     centerContent: @Composable (RobotStudioSelection) -> Unit,
 ) {
@@ -290,7 +331,7 @@ internal fun RobotStudioWorkspace(
         }
 
         Column(Modifier.fillMaxSize()) {
-            if (onOpenInIde != null || (onChooseStandaloneExport != null && onExportStandaloneProject != null)) {
+            if (onOpenProjectSpec != null || onOpenInIde != null || (onChooseStandaloneExport != null && onExportStandaloneProject != null)) {
                 var ideMessage by remember(state.projectPath) { mutableStateOf<String?>(null) }
                 var exportInProgress by remember(state.projectPath) { mutableStateOf(false) }
                 val actionScope = rememberCoroutineScope()
@@ -310,6 +351,9 @@ internal fun RobotStudioWorkspace(
                         fontWeight = FontWeight.SemiBold,
                         modifier = Modifier.weight(1f),
                     )
+                    onOpenProjectSpec?.let { openSpec ->
+                        OutlinedButton(onClick = openSpec) { Text("Robot Spec & DSL") }
+                    }
                     onOpenInIde?.let { open ->
                         OutlinedButton(onClick = { ideMessage = open() }) { Text("Open in IDE") }
                     }

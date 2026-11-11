@@ -146,6 +146,7 @@ dependencies {
 
     // Testing
     testImplementation(kotlin("test"))
+    testImplementation("org.jetbrains.kotlin:kotlin-compiler-embeddable:2.4.21")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.11.0")
     testImplementation("io.ktor:ktor-client-mock-jvm:3.5.2")
     testImplementation("io.ktor:ktor-server-websockets:3.5.2")

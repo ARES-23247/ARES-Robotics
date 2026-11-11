@@ -28,6 +28,7 @@ class KotlinToolchainTest(unittest.TestCase):
         for product in ("ARES-FRC", "ARES-FRC-Starter"):
             self.write(f"{product}/build.gradle", 'id "org.jetbrains.kotlin.jvm" version "2.4.21"\n')
         self.write("ARESLib-Kotlin/codegen/build.gradle.kts", 'testImplementation("org.jetbrains.kotlin:kotlin-compiler-embeddable:2.4.21")\n')
+        self.write("ARES-Analytics/app/build.gradle.kts", 'testImplementation("org.jetbrains.kotlin:kotlin-compiler-embeddable:2.4.21")\n')
 
     @staticmethod
     def stdlib():
@@ -49,7 +50,7 @@ class KotlinToolchainTest(unittest.TestCase):
         self.assertIn(diagnostic, "\n".join(errors))
 
     def test_aligned_cohort_checks_all_pins(self):
-        self.assertEqual(toolchain.verify(self.root), ("2.4.21", 23, []))
+        self.assertEqual(toolchain.verify(self.root), ("2.4.21", 24, []))
 
     def test_each_consumer_must_follow_library_compiler(self):
         for product, name in (("ARES-Analytics", "build.gradle.kts"), ("ARES-FTC", "build.gradle"),
@@ -98,7 +99,7 @@ class KotlinToolchainTest(unittest.TestCase):
         name = "ARES-Analytics/build.gradle.kts"
         text = (self.root / name).read_text(encoding="utf-8")
         self.write(name, text + '\n// kotlin("jvm") version "1.9.0"\n/* 2.4.10 */\nurl = "https://example.invalid/repository"\n')
-        self.assertEqual(toolchain.verify(self.root), ("2.4.21", 23, []))
+        self.assertEqual(toolchain.verify(self.root), ("2.4.21", 24, []))
 
     def test_missing_product_is_actionable(self):
         (self.root / "ARES-FRC/build.gradle").unlink()

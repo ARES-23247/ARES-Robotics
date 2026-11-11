@@ -84,6 +84,7 @@ import com.areslib.controls.ControlTimingDocument
 import com.areslib.controls.ControllerControlDocument
 import com.areslib.controls.ControllerInputPlatform
 import com.areslib.controls.ControllerSurfaceDocument
+import com.areslib.controls.toKotlinDsl
 
 @Composable
 fun ControlsEditorPanel(
@@ -233,6 +234,7 @@ fun ControlsEditorPanel(
             }),
             onDismiss = { showKeymapSummary = false },
             rawMarkdownGenerator = { generateKeymapMarkdown(state) },
+            kotlinDslGenerator = state.selectedScheme?.let { scheme -> { scheme.toKotlinDsl() } },
         )
     }
 }

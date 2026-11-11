@@ -53,6 +53,8 @@ class DashboardWidgetCatalogTest {
             "state_tracker" to (4 to 5),
             "runs_index" to (4 to 9),
             "pose_viewer" to (6 to 6),
+            "data_table" to (5 to 6),
+            "video_sync" to (5 to 6),
             "match_schedule" to (4 to 9),
             "console_viewer" to (6 to 9),
             "tuning_card" to (3 to 3),

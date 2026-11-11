@@ -1,13 +1,57 @@
 package com.ares.analytics.ui.components.dashboard
 
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowRight
 import androidx.compose.material.icons.automirrored.filled.FactCheck
 import androidx.compose.material.icons.automirrored.filled.ShowChart
 import androidx.compose.material.icons.automirrored.filled.TrendingDown
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Analytics
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.Folder
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.runtime.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInWindow
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.ares.analytics.service.DashboardLayoutConfig
 import com.ares.analytics.service.MatchInfo
 import com.ares.analytics.service.ReplayFrame
@@ -23,6 +67,15 @@ import com.ares.analytics.service.dashboard.DashboardWidgetType
 import com.ares.analytics.service.dashboard.allows
 import com.ares.analytics.shared.models.ForensicsResponse
 import com.ares.analytics.shared.models.WorkspaceConfig
+import com.ares.analytics.ui.components.forms.AresTextField
+import com.ares.analytics.ui.theme.*
+import com.ares.analytics.ui.theme.AresBorder
+import com.ares.analytics.ui.theme.AresCyan
+import com.ares.analytics.ui.theme.AresGreen
+import com.ares.analytics.ui.theme.AresSurfaceElevated
+import com.ares.analytics.ui.theme.AresTextPrimary
+import com.ares.analytics.ui.theme.AresTextSecondary
+import com.ares.analytics.ui.theme.AresTextTertiary
 import com.ares.analytics.viewmodel.DashboardState
 import com.ares.analytics.viewmodel.pathing.RobotDimensions
 import com.areslib.tuning.TuningParameterDeclaration
@@ -308,6 +361,21 @@ object DashboardWidgetRegistry : DashboardWidgetCatalog {
         },
         definition("pose_viewer", "Robot Pose Tracker", "Numeric EKF, odometry, and vision pose values.", Icons.Default.MyLocation, DashboardWidgetCategory.REPLAY, 6, 6, capabilities = liveReplay) { _, context, modifier ->
             PoseViewerCard(context.liveServices.nt4ClientService, context.replayFrame, modifier)
+        },
+        definition("data_table", "Telemetry Data Table", "Timestamp-aligned tabular view of recorded telemetry topics with click-to-scrub replay sync.", Icons.Default.TableChart, DashboardWidgetCategory.REPLAY, 5, 6, capabilities = dataReplay) { _, context, modifier ->
+            DataTablePanel(
+                databaseService = context.analysisServices.databaseService,
+                replayEngineService = context.replayServices.replayEngineService,
+                sessionId = context.dashboardState.primarySessionId,
+                modifier = modifier,
+            )
+        },
+        definition("video_sync", "Match Video Sync", "Synchronize local match video timestamps with replay telemetry and open in system player.", Icons.Default.VideoLibrary, DashboardWidgetCategory.REPLAY, 5, 6, capabilities = setOf(DashboardWidgetCapability.REPLAY)) { _, context, modifier ->
+            VideoPlayerPanel(
+                videoSyncService = context.replayServices.videoSyncService,
+                replayEngineService = context.replayServices.replayEngineService,
+                modifier = modifier,
+            )
         },
         definition("match_schedule", "Match Schedule", "TBA/TOA schedule and match association.", Icons.Default.CalendarMonth, DashboardWidgetCategory.REPLAY, 4, 9, capabilities = data) { _, context, modifier ->
             MatchScheduleCard(context.matches, context.workspace.teamId, context.onSelectMatch, modifier)

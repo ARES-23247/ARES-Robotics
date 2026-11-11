@@ -1,21 +1,35 @@
 package com.ares.analytics.ui.components.routine
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.ErrorOutline
+import androidx.compose.material.icons.Icons
 import androidx.compose.material3.*
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Text
 import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -24,15 +38,23 @@ import com.ares.analytics.shared.models.League
 import com.ares.analytics.ui.components.catalog.AresActionCatalogPicker
 import com.ares.analytics.ui.components.core.AresCard
 import com.ares.analytics.ui.components.core.AresStatusBanner
+import com.ares.analytics.ui.help.RoutineValidationLearningLinks
 import com.ares.analytics.ui.theme.*
+import com.ares.analytics.ui.theme.AresBorder
+import com.ares.analytics.ui.theme.AresCyan
+import com.ares.analytics.ui.theme.AresError
+import com.ares.analytics.ui.theme.AresTextPrimary
+import com.ares.analytics.ui.theme.AresTextSecondary
+import com.ares.analytics.viewmodel.pathing.RobotDimensions
 import com.ares.analytics.viewmodel.PathPlannerIntent
 import com.ares.analytics.viewmodel.PathPlannerState
-import com.ares.analytics.viewmodel.pathing.RobotDimensions
-import com.ares.analytics.viewmodel.routine.GuidedFirstRoutinePlan
 import com.ares.analytics.viewmodel.routine.defaultGuidedFirstRoutinePlan
+import com.ares.analytics.viewmodel.routine.GuidedFirstRoutinePlan
 import com.ares.analytics.viewmodel.routine.validateGuidedFirstRoutinePlan
 import com.areslib.catalog.*
+import com.areslib.catalog.ConditionDescriptor
 import com.areslib.routine.*
+import com.areslib.routine.RoutineDocument
 
 @Composable
 internal fun RoutineStepCard(
@@ -99,6 +121,8 @@ internal fun RoutineStepCard(
                 RoutineStepKind.DRIVE_TO -> step.drive?.let { drive ->
                     RoutinePoseEditors(drive.target) { onUpdate(step.copy(drive = drive.copy(target = it))) }
                     MotionPresetPicker(drive.motionPresetKey) { onUpdate(step.copy(drive = drive.copy(motionPresetKey = it))) }
+                    HeadingModePicker(drive) { updatedDrive -> onUpdate(step.copy(drive = updatedDrive)) }
+                    BlendHandoffToggle(drive.blendHandoff) { blend -> onUpdate(step.copy(drive = drive.copy(blendHandoff = blend))) }
                     DriveMechanismActionsEditor(drive, actions) { updatedDrive ->
                         onUpdate(step.copy(drive = updatedDrive))
                     }

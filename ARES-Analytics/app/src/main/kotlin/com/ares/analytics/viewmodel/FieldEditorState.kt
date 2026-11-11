@@ -12,6 +12,7 @@ import com.ares.analytics.shared.models.League
 import com.ares.analytics.viewmodel.field.FieldEditorLayout
 import com.ares.analytics.viewmodel.field.FieldMeasurementUnit
 import com.ares.analytics.viewmodel.field.FieldValidationIssue
+import com.ares.analytics.viewmodel.field.StudentPracticeFieldPreset
 import com.areslib.state.AprilTagMapFormat
 import com.areslib.state.RobotFieldConfig
 import java.io.File
@@ -47,6 +48,7 @@ data class FieldEditorState(
 
 sealed class FieldEditorIntent {
     data object LoadBiobuzzPreset : FieldEditorIntent()
+    data class ApplyPracticeFieldPreset(val preset: StudentPracticeFieldPreset) : FieldEditorIntent()
     data class LoadConfig(val projectPath: String?, val league: League) : FieldEditorIntent()
     object SaveDocument : FieldEditorIntent()
     data class ImportFieldImage(val imageFile: File, val projectPath: String?, val league: League) : FieldEditorIntent()

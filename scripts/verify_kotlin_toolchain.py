@@ -68,6 +68,9 @@ def verify(root):
     inspect("ARESLib-Kotlin/codegen/build.gradle.kts", [
         ("embedded generated-code compiler", coordinate("kotlin-compiler-embeddable")),
     ])
+    inspect("ARES-Analytics/app/build.gradle.kts", [
+        ("embedded generated-code compiler", coordinate("kotlin-compiler-embeddable")),
+    ])
     version = next((value for path, label, value in pins
                     if path == "ARESLib-Kotlin/build.gradle.kts" and label == "Kotlin/JVM"), None)
     if version is not None:

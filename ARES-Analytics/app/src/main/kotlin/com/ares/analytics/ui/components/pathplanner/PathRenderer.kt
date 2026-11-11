@@ -501,7 +501,6 @@ fun DrawScope.drawRobotRepresentations(
     }
 }
 
-
 fun DrawScope.drawWaypoints(
     pathCache: PathCacheHolder,
     waypoints: List<Waypoint>,
@@ -512,32 +511,29 @@ fun DrawScope.drawWaypoints(
     h: Float,
     fieldWidthM: Double,
     fieldHeightM: Double,
-    league: League
+    league: League,
 ) {
     waypoints.forEachIndexed { idx, wp ->
         val offset = getCanvasOffsetBase(wp, w, h, fieldWidthM, fieldHeightM, league)
         val isSelected = idx == selectedWaypointIndex
         val color = if (isSelected) AresCyan else AresTextPrimary
 
-        // --- Tangent heading handle (amber arrowhead) ---
         val resolvedHeading = resolveHeading(waypoints, idx)
         val hasExplicitHeading = wp.headingRad != null
         val handleMeters = Waypoint(wp.x + wp.nextControlLength * cos(resolvedHeading), wp.y + wp.nextControlLength * sin(resolvedHeading))
         val arrowEnd = getCanvasOffsetBase(handleMeters, w, h, fieldWidthM, fieldHeightM, league)
 
-        // Tangent line
         val tangentAlpha = when {
-            !hasExplicitHeading && !isSelected -> 0.15f  // auto heading, not selected: very dim
-            !hasExplicitHeading -> 0.35f                  // auto heading, selected: dim
-            isSelected -> 0.9f                            // explicit, selected: bright
-            else -> 0.4f                                  // explicit, not selected
+            !hasExplicitHeading && !isSelected -> 0.15f
+            !hasExplicitHeading -> 0.35f
+            isSelected -> 0.9f
+            else -> 0.4f
         }
         drawLine(color = color.copy(alpha = tangentAlpha), start = offset, end = arrowEnd, strokeWidth = if (hasExplicitHeading) 2.dp.toPx() else 1.dp.toPx())
 
-        // Arrowhead at end of tangent line
         val handleColor = when {
             isSelected && isDraggingHeading -> AresCyan
-            !hasExplicitHeading -> Color.Gray    // ghost color for auto heading
+            !hasExplicitHeading -> Color.Gray
             else -> AresAmber
         }
         val handleAlpha = when {
@@ -567,7 +563,6 @@ fun DrawScope.drawWaypoints(
             drawCircle(color = handleColor.copy(alpha = handleAlpha), radius = arrowSize, center = arrowEnd)
         }
 
-        // --- Prev tangent heading handle ---
         val prevHandleMeters = Waypoint(wp.x + wp.prevControlLength * cos(resolvedHeading + Math.PI), wp.y + wp.prevControlLength * sin(resolvedHeading + Math.PI))
         val prevArrowEnd = getCanvasOffsetBase(prevHandleMeters, w, h, fieldWidthM, fieldHeightM, league)
 
@@ -597,9 +592,113 @@ fun DrawScope.drawWaypoints(
             drawCircle(color = prevHandleColor.copy(alpha = handleAlpha), radius = arrowSize, center = prevArrowEnd)
         }
 
-        // --- Waypoint center dot (drawn on top) ---
         drawCircle(color = color, radius = 8.dp.toPx(), center = offset)
         drawCircle(color = AresBackground, radius = 4.dp.toPx(), center = offset)
-
     }
+}
+
+
+
+internal fun DrawScope.drawOnionSkinFootprints(
+    pathCache: PathCacheHolder,
+    trajectoryPoints: List<Waypoint>,
+    obstacles: List<com.ares.analytics.shared.Obstacle>,
+    robotDimensions: RobotDimensions,
+    w: Float,
+    h: Float,
+    fieldWidthM: Double,
+    fieldHeightM: Double,
+    league: League,
+    sampleStep: Int = 6,
+) {
+    if (trajectoryPoints.size < 2) return
+    val dimensions = robotDimensions.normalized()
+    val collidingIndices = FreehandStrokeSplineFitter.findCollidingTrajectoryIndices(
+        trajectoryPoints = trajectoryPoints,
+        obstacles = obstacles,
+        robotDimensions = dimensions,
+        fieldWidthM = fieldWidthM,
+        fieldHeightM = fieldHeightM,
+        league = league,
+    )
+    val pixelsPerMeter = minOf(w / fieldWidthM.toFloat(), h / fieldHeightM.toFloat())
+    val corridorWidthPx = (maxOf(dimensions.lengthMeters, dimensions.widthMeters).toFloat() * pixelsPerMeter).coerceAtLeast(8f)
+    val corridorPath = pathCache.reusableArrowPath.apply {
+        reset()
+        trajectoryPoints.forEachIndexed { idx, pt ->
+            val offset = getCanvasOffsetBase(pt, w, h, fieldWidthM, fieldHeightM, league)
+            if (idx == 0) moveTo(offset.x, offset.y) else lineTo(offset.x, offset.y)
+        }
+    }
+    drawPath(
+        path = corridorPath,
+        color = if (collidingIndices.isNotEmpty()) AresRed.copy(alpha = 0.12f) else AresCyan.copy(alpha = 0.09f),
+        style = Stroke(
+            width = corridorWidthPx,
+            cap = androidx.compose.ui.graphics.StrokeCap.Round,
+            join = androidx.compose.ui.graphics.StrokeJoin.Round,
+        ),
+    )
+    for (idx in trajectoryPoints.indices step sampleStep.coerceAtLeast(1)) {
+        val wp = trajectoryPoints[idx]
+        val isColliding = idx in collidingIndices
+        val color = if (isColliding) AresRed else AresGold.copy(alpha = 0.28f)
+        val fillAlpha = if (isColliding) 0.24f else 0.05f
+        drawAutoFootprint(
+            pathCache = pathCache,
+            pose = wp,
+            dimensions = dimensions,
+            color = color,
+            fillAlpha = fillAlpha,
+            w = w,
+            h = h,
+            fieldWidthM = fieldWidthM,
+            fieldHeightM = fieldHeightM,
+            league = league,
+        )
+    }
+    for (idx in collidingIndices) {
+        if (idx % sampleStep.coerceAtLeast(1) != 0) {
+            val wp = trajectoryPoints[idx]
+            drawAutoFootprint(
+                pathCache = pathCache,
+                pose = wp,
+                dimensions = dimensions,
+                color = AresRed,
+                fillAlpha = 0.24f,
+                w = w,
+                h = h,
+                fieldWidthM = fieldWidthM,
+                fieldHeightM = fieldHeightM,
+                league = league,
+            )
+        }
+    }
+}
+
+internal fun DrawScope.drawFreehandPenPreview(
+    pathCache: PathCacheHolder,
+    penStrokePoints: List<Waypoint>,
+    w: Float,
+    h: Float,
+    fieldWidthM: Double,
+    fieldHeightM: Double,
+    league: League,
+) {
+    if (penStrokePoints.size < 2) return
+    val strokePath = pathCache.reusableArrowPath.apply {
+        reset()
+        penStrokePoints.forEachIndexed { idx, pt ->
+            val offset = getCanvasOffsetBase(pt, w, h, fieldWidthM, fieldHeightM, league)
+            if (idx == 0) moveTo(offset.x, offset.y) else lineTo(offset.x, offset.y)
+        }
+    }
+    drawPath(
+        path = strokePath,
+        color = AresGold.copy(alpha = 0.85f),
+        style = Stroke(
+            width = 2.5.dp.toPx(),
+            pathEffect = androidx.compose.ui.graphics.PathEffect.dashPathEffect(floatArrayOf(10f, 6f), 0f),
+        ),
+    )
 }

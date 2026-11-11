@@ -80,6 +80,7 @@ fun RoutineEditorPanel(
     var setupExpanded by remember { mutableStateOf(false) }
     var pendingReplacement by remember { mutableStateOf<PendingRoutineReplacement?>(null) }
     var firstRoutineGuideOpen by remember { mutableStateOf(false) }
+    var showSpecSummaryModal by remember { mutableStateOf(false) }
     val hasErrors = state.routineValidation.any { it.severity == RoutineValidationSeverity.ERROR }
     val hasPlayablePreview = state.routinePreviewWarning == null &&
         state.trajectory != null && state.estimatedDuration > 0.0
@@ -141,6 +142,15 @@ fun RoutineEditorPanel(
         )
     }
 
+    com.ares.analytics.ui.components.core.AresSpecSummaryModal(
+        isOpen = showSpecSummaryModal,
+        title = "${state.routine.name} Routine Specification",
+        subtitle = "${league.name} · .ares/routines/${state.routine.documentId}.aresroutine",
+        sections = generateRoutineSpecSections(state),
+        onDismiss = { showSpecSummaryModal = false },
+        kotlinDslGenerator = { state.routine.toKotlinDsl() },
+    )
+
     Box(modifier) {
         Column(
             Modifier.fillMaxSize()
@@ -201,6 +211,11 @@ fun RoutineEditorPanel(
                     Spacer(Modifier.width(4.dp))
                     Text("New")
                 }
+                OutlinedButton(onClick = { showSpecSummaryModal = true }) {
+                    Icon(Icons.Default.TableChart, null, Modifier.size(16.dp))
+                    Spacer(Modifier.width(4.dp))
+                    Text("Spec")
+                }
                 OutlinedButton(
                     enabled = projectPath != null && league == League.FTC && state.generationPhase != AresGenerationPhase.RUNNING,
                     onClick = {
@@ -257,24 +272,11 @@ fun RoutineEditorPanel(
                     color = AresTextSecondary,
                     style = MaterialTheme.typography.bodySmall
                 )
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    IconButton(
-                        onClick = { onIntent(PathPlannerIntent.TogglePlayback) },
-                        enabled = hasPlayablePreview,
-                        modifier = Modifier.size(32.dp)
-                    ) {
-                        Icon(
-                            if (state.isPlaying) Icons.Default.Stop else Icons.Default.PlayArrow,
-                            if (state.isPlaying) "Pause preview" else "Play preview",
-                            tint = if (hasPlayablePreview) AresCyan else AresTextSecondary,
-                            modifier = Modifier.size(20.dp)
-                        )
-                    }
-                    if (state.routinePreviewWarning == null) {
-                        Text("${formatRoutineNumber(state.playbackTime)} s", color = AresTextSecondary)
-                    }
-                }
             }
+            RoutineTimelineScrubberCard(
+                state = state,
+                onIntent = onIntent
+            )
             state.routinePreviewWarning?.let { warning ->
                 Text(
                     warning,
@@ -487,3 +489,50 @@ internal fun CompactStepPicker(
         }
     }
 }
+
+private fun generateRoutineSpecSections(
+    state: PathPlannerState,
+): List<com.ares.analytics.ui.components.core.AresSpecSection> {
+    val routine = state.routine
+    return listOf(
+        com.ares.analytics.ui.components.core.AresSpecSection(
+            title = "Routine Overview",
+            rows = listOf(
+                com.ares.analytics.ui.components.core.AresSpecRow(
+                    id = "name",
+                    primaryLabel = "Routine Name",
+                    secondaryLabel = "id: ${routine.documentId}",
+                    badge = "REV ${routine.revision}",
+                    columns = listOf(
+                        "Steps" to "${routine.steps.size}",
+                        "Estimated Duration" to "${formatRoutineNumber(state.estimatedDuration)} s",
+                    ),
+                ),
+            ),
+        ),
+        com.ares.analytics.ui.components.core.AresSpecSection(
+            title = "Steps (${routine.steps.size})",
+            rows = routine.steps.mapIndexed { idx, step ->
+                val detail = when (step.kind) {
+                    RoutineStepKind.ACTION -> step.actionKey ?: "Unassigned action"
+                    RoutineStepKind.DRIVE_TO -> step.drive?.let {
+                        "(${formatRoutineNumber(it.target.xMeters)}, ${formatRoutineNumber(it.target.yMeters)}) m"
+                    } ?: "Unassigned pose"
+                    RoutineStepKind.WAIT -> "${step.durationSeconds ?: 0.0} s"
+                    RoutineStepKind.WAIT_UNTIL, RoutineStepKind.BRANCH -> step.conditionKey ?: "Unassigned condition"
+                    RoutineStepKind.CALL -> step.routineId ?: "Unassigned routine"
+                    RoutineStepKind.REPEAT -> "${step.repeatCount ?: 1}x (${step.children.size} children)"
+                    else -> "${step.children.size} nested steps"
+                }
+                com.ares.analytics.ui.components.core.AresSpecRow(
+                    id = step.stepId,
+                    primaryLabel = "${idx + 1}. ${routineStepTitle(step.kind)}",
+                    secondaryLabel = "id: ${step.stepId}",
+                    badge = step.kind.name,
+                    columns = listOf("Summary" to detail),
+                )
+            },
+        ),
+    )
+}
+

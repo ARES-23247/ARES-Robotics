@@ -40,6 +40,8 @@ internal fun Modifier.fieldCanvasGestures(
     currentActiveAprilTags: List<AprilTagPlacement>,
     currentActiveFieldWaypoints: List<FieldWaypoint>,
     currentPolygonPoints: SnapshotStateList<PathPoint>,
+    currentPenStrokePoints: SnapshotStateList<Waypoint>? = null,
+    onPenStrokeCompleted: ((List<Waypoint>) -> Unit)? = null,
     availableGamePieceTypes: List<com.ares.analytics.shared.GamePieceType>,
     activeGamePieceType: String,
     showObstacleControls: Boolean,
@@ -244,6 +246,10 @@ internal fun Modifier.fieldCanvasGestures(
                         gestureSelection.isDraggingFieldWaypointHeading,
                     )
                 }
+                EditorMode.PEN_PATH -> {
+                    currentPenStrokePoints?.clear()
+                    currentPenStrokePoints?.add(pressCoord)
+                }
                 else -> { /* Placement handled on release when !hasDragged */ }
             }
 
@@ -360,7 +366,33 @@ internal fun Modifier.fieldCanvasGestures(
                                 }
                             }
                         }
-                        null -> Unit
+                        null -> {
+                            if (editorMode == EditorMode.PEN_PATH) {
+                                val posMeters = getRobotCoordFromScreen(change.position, w, h, fieldWidthM, fieldHeightM, league, zoomScale, panOffset, viewRotation)
+                                currentPenStrokePoints?.add(posMeters)
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (editorMode == EditorMode.PEN_PATH && hasDragged) {
+                val stroke = currentPenStrokePoints?.toList().orEmpty()
+                currentPenStrokePoints?.clear()
+                if (stroke.size >= 2) {
+                    val anchors = FreehandStrokeSplineFitter.fitStrokeToWaypoints(
+                        stroke = stroke,
+                        epsilonMeters = 0.08,
+                        startingWaypoint = currentWaypoints.lastOrNull(),
+                    )
+                    if (anchors.size >= 2) {
+                        val updated = if (currentWaypoints.isNotEmpty()) {
+                            currentWaypoints.dropLast(1) + anchors
+                        } else {
+                            anchors
+                        }
+                        onWaypointsChanged(updated)
+                        onPenStrokeCompleted?.invoke(anchors)
                     }
                 }
             }
@@ -368,7 +400,8 @@ internal fun Modifier.fieldCanvasGestures(
             // 4. On release without drag: tool mode clicks
             if (!hasDragged) {
                 when (editorMode) {
-                    EditorMode.ADD_WAYPOINT -> {
+                    EditorMode.ADD_WAYPOINT, EditorMode.PEN_PATH -> {
+                        currentPenStrokePoints?.clear()
                         val newWp = pressCoord
                         onWaypointsChanged(currentWaypoints + newWp)
                     }

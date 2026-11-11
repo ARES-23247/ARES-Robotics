@@ -3,27 +3,34 @@ package com.ares.analytics.ui.components.pathplanner
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.automirrored.filled.RotateRight
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.Icons
 import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.TextMeasurer
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.runtime.*
+import com.ares.analytics.domain.project.FieldDocumentMapper
 import com.ares.analytics.shared.GamePieceType
 import com.ares.analytics.shared.models.League
 import com.ares.analytics.shared.Obstacle
 import com.ares.analytics.shared.PathPoint
+import com.ares.analytics.ui.canvas.drawVectorArrow
 import com.ares.analytics.ui.theme.*
-import com.ares.analytics.domain.project.FieldDocumentMapper
+import com.areslib.math.wrapAngle
 
 @Composable
 @OptIn(ExperimentalMaterial3Api::class)
@@ -50,6 +57,8 @@ fun FieldCanvasToolbar(
     onViewRotationChanged: (Float) -> Unit,
     gamePieceTypes: List<GamePieceType> = emptyList(),
     onGamePieceTypesChanged: ((List<GamePieceType>) -> Unit)? = null,
+    showOnionSkin: Boolean = false,
+    onShowOnionSkinChanged: ((Boolean) -> Unit)? = null,
 ) {
     var showCatalogDialog by remember { mutableStateOf(false) }
 
@@ -93,6 +102,15 @@ fun FieldCanvasToolbar(
                     colors = IconButtonDefaults.iconButtonColors(contentColor = if (editorMode == EditorMode.ADD_WAYPOINT) AresCyan else AresTextTertiary)
                 ) {
                     Icon(Icons.Default.AddLocation, contentDescription = "Add Path Waypoint Mode")
+                }
+
+                // Freehand Pen Path Tool
+                TooltipButton(
+                    tooltipText = "Freehand Pen Path Tool (Sketch & Simplify Spline)",
+                    onClick = { onEditorModeChanged(EditorMode.PEN_PATH) },
+                    colors = IconButtonDefaults.iconButtonColors(contentColor = if (editorMode == EditorMode.PEN_PATH) AresCyan else AresTextTertiary)
+                ) {
+                    Icon(Icons.Default.Edit, contentDescription = "Freehand Pen Path Tool")
                 }
             }
 
@@ -263,6 +281,15 @@ fun FieldCanvasToolbar(
                 colors = IconButtonDefaults.iconButtonColors(contentColor = if (showCostmap) AresCyan else AresTextTertiary)
             ) {
                 Icon(Icons.Default.GridOn, contentDescription = "Toggle Costmap clearance visualizer")
+            }
+            if (onShowOnionSkinChanged != null) {
+                TooltipButton(
+                    tooltipText = "Toggle Swept Robot Footprint (Onion Skin)",
+                    onClick = { onShowOnionSkinChanged(!showOnionSkin) },
+                    colors = IconButtonDefaults.iconButtonColors(contentColor = if (showOnionSkin) AresCyan else AresTextTertiary)
+                ) {
+                    Icon(Icons.Default.Layers, contentDescription = "Toggle Swept Footprint Onion Skin")
+                }
             }
             TooltipButton(
                 tooltipText = "Rotate Field View 90°",

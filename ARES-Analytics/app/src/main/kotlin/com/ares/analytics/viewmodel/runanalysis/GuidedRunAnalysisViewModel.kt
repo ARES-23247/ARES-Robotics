@@ -210,6 +210,30 @@ class GuidedRunAnalysisViewModel(
         }
     }
 
+    fun applyComparisonPreset(preset: com.ares.analytics.ui.components.runanalysis.StudentRunComparisonPreset) {
+        val selectedWorkspace = workspace ?: return
+        val current = _state.value
+        val resolved = com.ares.analytics.ui.components.runanalysis.resolveStudentComparisonPreset(current.sessions, preset) ?: return
+        val request = ++generation
+        _state.value = current.copy(
+            selectedSessionId = resolved.primarySessionId,
+            comparisonSessionIds = resolved.comparisonSessionIds,
+            selectedAlignmentId = RUN_START_ALIGNMENT_ID,
+            report = null,
+            comparisonReport = null,
+            error = null,
+            comparisonError = null,
+            exportMessage = null,
+            comparisonExportMessage = null,
+        )
+        analyze(resolved.primarySessionId, selectedWorkspace, request)
+        compare(selectedWorkspace)
+    }
+
+    fun setExportNotice(message: String) {
+        _state.value = _state.value.copy(exportMessage = message)
+    }
+
     fun clearExportMessage() {
         _state.value = _state.value.copy(exportMessage = null)
     }

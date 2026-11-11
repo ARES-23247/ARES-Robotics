@@ -4,33 +4,65 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Replay
+import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material3.*
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderDefaults
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ares.analytics.shared.models.League
+import com.ares.analytics.shared.models.Trajectory
 import com.ares.analytics.ui.components.catalog.AresActionCatalogPicker
 import com.ares.analytics.ui.theme.*
+import com.ares.analytics.ui.theme.AresBackground
+import com.ares.analytics.ui.theme.AresBorder
+import com.ares.analytics.ui.theme.AresCyan
+import com.ares.analytics.ui.theme.AresGreen
+import com.ares.analytics.ui.theme.AresSurface
+import com.ares.analytics.ui.theme.AresTextPrimary
+import com.ares.analytics.ui.theme.AresTextSecondary
 import com.ares.analytics.viewmodel.PathPlannerIntent
 import com.ares.analytics.viewmodel.PathPlannerState
 import com.ares.analytics.viewmodel.pathing.RobotDimensions
 import com.ares.analytics.viewmodel.routine.GuidedFirstRoutinePlan
+import com.ares.analytics.viewmodel.routine.RoutinePreviewAction
 import com.ares.analytics.viewmodel.routine.defaultGuidedFirstRoutinePlan
 import com.ares.analytics.viewmodel.routine.validateGuidedFirstRoutinePlan
 import com.areslib.catalog.*
 import com.areslib.routine.*
+import java.util.Locale
+import kotlin.math.PI
+import kotlin.math.abs
 
 @Composable
 internal fun RoutinePoseEditors(pose: RoutinePose, onChanged: (RoutinePose) -> Unit) {
@@ -329,4 +361,95 @@ internal fun RoutineDecimalEditor(
         modifier = modifier.onFocusChanged { focused = it.isFocused },
         colors = routineTextFieldColors(),
     )
+}
+
+@Composable
+internal fun HeadingModePicker(
+    drive: RoutineDriveStep,
+    onChanged: (RoutineDriveStep) -> Unit,
+) {
+    var expanded by remember { mutableStateOf(false) }
+    val modeLabel = when (drive.headingMode) {
+        RoutineHeadingMode.LINEAR -> "Linear to goal"
+        RoutineHeadingMode.CONSTANT -> "Constant heading"
+        RoutineHeadingMode.TANGENTIAL -> "Tangential (forward)"
+        RoutineHeadingMode.TANGENTIAL_REVERSE -> "Tangential (reverse)"
+        RoutineHeadingMode.POINT_TOWARDS -> "Point towards (X, Y)"
+    }
+    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Box {
+            OutlinedButton({ expanded = true }, modifier = Modifier.fillMaxWidth()) {
+                Text("Heading mode: $modeLabel")
+                Spacer(Modifier.weight(1f))
+                Icon(Icons.Default.ArrowDropDown, null)
+            }
+            DropdownMenu(expanded, { expanded = false }) {
+                listOf(
+                    RoutineHeadingMode.LINEAR to "Linear to goal (interpolate start → target heading)",
+                    RoutineHeadingMode.CONSTANT to "Constant heading (hold start heading)",
+                    RoutineHeadingMode.TANGENTIAL to "Tangential (face curve direction)",
+                    RoutineHeadingMode.TANGENTIAL_REVERSE to "Tangential reverse (face opposite curve direction)",
+                    RoutineHeadingMode.POINT_TOWARDS to "Point towards field coordinate / AprilTag (X, Y)",
+                ).forEach { (mode, description) ->
+                    DropdownMenuItem(
+                        text = { Text(description) },
+                        onClick = {
+                            val updatedLookAt = if (mode == RoutineHeadingMode.POINT_TOWARDS) {
+                                drive.lookAtPoint ?: RoutinePose(drive.target.xMeters, drive.target.yMeters, 0.0)
+                            } else {
+                                drive.lookAtPoint
+                            }
+                            onChanged(drive.copy(headingMode = mode, lookAtPoint = updatedLookAt))
+                            expanded = false
+                        },
+                    )
+                }
+            }
+        }
+        if (drive.headingMode == RoutineHeadingMode.POINT_TOWARDS) {
+            val point = drive.lookAtPoint ?: RoutinePose(drive.target.xMeters, drive.target.yMeters, 0.0)
+            Row(Modifier.fillMaxWidth(), Arrangement.spacedBy(8.dp)) {
+                RoutineDecimalEditor(point.xMeters, "Focus X", "m", Modifier.weight(1f)) { x ->
+                    onChanged(drive.copy(lookAtPoint = point.copy(xMeters = x)))
+                }
+                RoutineDecimalEditor(point.yMeters, "Focus Y", "m", Modifier.weight(1f)) { y ->
+                    onChanged(drive.copy(lookAtPoint = point.copy(yMeters = y)))
+                }
+            }
+        }
+    }
+}
+
+@Composable
+internal fun BlendHandoffToggle(
+    blendHandoff: Boolean,
+    onChanged: (Boolean) -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(AresBackground.copy(alpha = 0.30f), RoundedCornerShape(8.dp))
+            .border(1.dp, if (blendHandoff) AresCyan.copy(alpha = 0.6f) else AresBorder, RoundedCornerShape(8.dp))
+            .padding(horizontal = 10.dp, vertical = 6.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(Modifier.weight(1f)) {
+            Text(
+                "Blend into next step (pathSkip)",
+                style = MaterialTheme.typography.labelMedium,
+                color = if (blendHandoff) AresCyan else AresTextPrimary,
+                fontWeight = FontWeight.SemiBold,
+            )
+            Text(
+                "Hands off momentum using Foresight stopping-pose lookahead instead of braking to a full stop.",
+                style = MaterialTheme.typography.labelSmall,
+                color = AresTextSecondary,
+            )
+        }
+        Switch(
+            checked = blendHandoff,
+            onCheckedChange = onChanged,
+        )
+    }
 }

@@ -10,6 +10,7 @@ import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Error
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.TableChart
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -22,6 +23,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ares.analytics.shared.models.League
 import com.ares.analytics.shared.models.WorkspaceConfig
+import com.ares.analytics.ui.components.robotstudio.RobotFootprintPreviewCard
+import com.ares.analytics.ui.components.robotstudio.RobotProjectSpecModal
+import com.ares.analytics.ui.components.robotstudio.buildRobotProjectSpecSnapshot
 import com.ares.analytics.ui.theme.*
 import com.ares.analytics.viewmodel.project.ProjectIdentityEditorState
 import com.ares.analytics.viewmodel.project.ProjectIdentityField
@@ -37,41 +41,57 @@ fun ProjectIdentityScreen(
     viewModel: ProjectIdentityViewModel,
     config: WorkspaceConfig,
     onBackToStudio: (() -> Unit)? = null,
+    onOpenProjectSpec: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     val state by viewModel.state.collectAsState()
+    var showLocalSpecModal by remember { mutableStateOf(false) }
     LaunchedEffect(config) { viewModel.load(config) }
 
-    LazyColumn(
-        modifier = modifier.fillMaxSize().padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        item {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                if (onBackToStudio != null) {
-                    OutlinedButton(onClick = onBackToStudio) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
+    Box(modifier = modifier.fillMaxSize()) {
+        LazyColumn(
+            modifier = Modifier.fillMaxSize().padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            item {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
+                    if (onBackToStudio != null) {
+                        OutlinedButton(onClick = onBackToStudio) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
+                            Spacer(Modifier.width(6.dp))
+                            Text("Robot Studio")
+                        }
+                    }
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            "Project Identity & Robot Footprint",
+                            modifier = Modifier.semantics { heading() },
+                            color = AresTextPrimary,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 18.sp,
+                        )
+                        Text(
+                            "Configure the robot identity and outer physical boundary shared by simulators, collision checkers, and autonomous paths.",
+                            color = AresTextSecondary,
+                            fontSize = 12.sp,
+                        )
+                    }
+                    OutlinedButton(
+                        onClick = {
+                            if (onOpenProjectSpec != null) onOpenProjectSpec() else showLocalSpecModal = true
+                        },
+                    ) {
+                        Icon(Icons.Default.TableChart, contentDescription = "Open robot specification", modifier = Modifier.size(16.dp))
                         Spacer(Modifier.width(6.dp))
-                        Text("Robot Studio")
+                        Text("Robot Spec & DSL")
                     }
                 }
-                Column {
-                    Text(
-                        "Project Identity & Robot Footprint",
-                        modifier = Modifier.semantics { heading() },
-                        color = AresTextPrimary,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 18.sp,
-                    )
-                    Text(
-                        "Configure the robot identity and outer physical boundary shared by simulators, collision checkers, and autonomous paths.",
-                        color = AresTextSecondary,
-                        fontSize = 12.sp,
-                    )
-                }
             }
-        }
-        item { ProjectIdentityDestinationCard(state) }
+            item { ProjectIdentityDestinationCard(state) }
 
         if (state.loading) {
             item {
@@ -199,6 +219,14 @@ fun ProjectIdentityScreen(
                     Text(guidance, color = if (state.projectSourceError != null) AresError else AresGold, fontSize = 12.sp)
                 }
             }
+        }
+        }
+        if (showLocalSpecModal) {
+            RobotProjectSpecModal(
+                isOpen = true,
+                snapshot = buildRobotProjectSpecSnapshot(state),
+                onDismiss = { showLocalSpecModal = false },
+            )
         }
     }
 }
@@ -421,6 +449,12 @@ private fun ProjectIdentityForm(
                 enabled = sourceAvailable && (state.protectedError == null || state.protectedContentHash != null),
             )
 
+            RobotFootprintPreviewCard(
+                league = state.workspaceLeague,
+                robotLengthMetersText = state.draft.robotLengthMeters,
+                robotWidthMetersText = state.draft.robotWidthMeters,
+            )
+
             if (isFtc) {
                 HorizontalDivider(color = AresBorder)
                 FtcRuntimeOptionsEditor(
@@ -524,7 +558,7 @@ internal fun IdentityField(
 }
 
 @Composable
-private fun ReadOnlyIdentityRow(label: String, value: String) {
+internal fun ReadOnlyIdentityRow(label: String, value: String) {
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
         Text(label, modifier = Modifier.weight(0.35f), color = AresTextSecondary)
         Text(value, modifier = Modifier.weight(0.65f), color = AresTextPrimary, fontFamily = FontFamily.Monospace)
@@ -532,7 +566,7 @@ private fun ReadOnlyIdentityRow(label: String, value: String) {
 }
 
 @Composable
-private fun ProjectIdentityErrors(errors: List<String>) {
+internal fun ProjectIdentityErrors(errors: List<String>) {
     Card(
         colors = CardDefaults.cardColors(containerColor = AresError.copy(alpha = 0.10f)),
         border = BorderStroke(1.dp, AresError),
@@ -545,7 +579,7 @@ private fun ProjectIdentityErrors(errors: List<String>) {
 }
 
 @Composable
-private fun ProjectIdentityMessage(message: String, isError: Boolean, isWarning: Boolean = false) {
+internal fun ProjectIdentityMessage(message: String, isError: Boolean, isWarning: Boolean = false) {
     val icon = when {
         isError -> Icons.Default.Error
         isWarning -> Icons.Default.Info
@@ -561,11 +595,7 @@ private fun ProjectIdentityMessage(message: String, isError: Boolean, isWarning:
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Icon(
-            icon,
-            contentDescription = null,
-            tint = color,
-        )
+        Icon(icon, contentDescription = null, tint = color)
         Text(
             text = when {
                 isError -> "Error: $message"
@@ -576,3 +606,4 @@ private fun ProjectIdentityMessage(message: String, isError: Boolean, isWarning:
         )
     }
 }
+

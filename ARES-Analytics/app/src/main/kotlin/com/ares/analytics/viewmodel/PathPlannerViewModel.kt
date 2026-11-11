@@ -4,41 +4,14 @@ import com.ares.analytics.service.Nt4ClientService
 import com.ares.analytics.service.AresProjectGenerator
 import com.ares.analytics.service.versioncontrol.ProjectCheckpointRecorder
 import com.ares.analytics.service.project.ProjectSession
-import com.ares.analytics.service.project.AresProjectDocuments
-import com.ares.analytics.service.project.ProjectSessionMutationResult
 import com.ares.analytics.service.project.ProjectSessionRevision
 import com.ares.analytics.shared.*
 import com.ares.analytics.shared.models.*
 import com.ares.analytics.ui.components.pathplanner.Waypoint
 import com.ares.analytics.viewmodel.pathing.RobotDimensions
-import com.ares.analytics.viewmodel.routine.RoutinePersistenceService
-import com.ares.analytics.viewmodel.routine.RoutinePlaybackController
-import com.ares.analytics.viewmodel.routine.routineProjectRefreshProjection
-import com.ares.analytics.viewmodel.routine.toAnalyticsLeague
-import com.ares.analytics.viewmodel.routine.toRoutinePose
-import com.ares.analytics.viewmodel.routine.clampRoutinePose
-import com.ares.analytics.viewmodel.routine.clampDriveTargets
-import com.ares.analytics.viewmodel.routine.analyzeRoutinePreview
-import com.ares.analytics.viewmodel.routine.defaultRoutineStep
-import com.ares.analytics.viewmodel.routine.defaultAutonomousEntry
-import com.ares.analytics.viewmodel.routine.lastRoutineDriveTarget
-import com.ares.analytics.viewmodel.routine.moveStepById
-import com.ares.analytics.viewmodel.routine.removeStepById
-import com.ares.analytics.viewmodel.routine.routineEditorValidation
-import com.ares.analytics.viewmodel.routine.RoutineTrajectoryPreviewCompiler
-import com.ares.analytics.viewmodel.routine.updateStepById
-import com.ares.analytics.viewmodel.routine.validateGuidedFirstRoutinePlan
-import com.ares.analytics.viewmodel.routine.withRoutineRouteWaypoints
+import com.ares.analytics.viewmodel.routine.*
 import com.areslib.catalog.CapabilityCatalogDocument
-import com.areslib.routine.AutonomousCatalogDocument
-import com.areslib.routine.AutonomousCatalogEntry
-import com.areslib.routine.RoutineAlliance
-import com.areslib.routine.RoutineDocument
-import com.areslib.routine.RoutineDriveStep
-import com.areslib.routine.RoutinePose
-import com.areslib.routine.RoutineStep
-import com.areslib.routine.RoutineStepKind
-import com.areslib.routine.RoutineValidationSeverity
+import com.areslib.routine.*
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
@@ -106,26 +79,11 @@ class PathPlannerViewModel(
                 is PathPlannerIntent.UpdateViewRotation -> _state.update { it.copy(viewRotation = intent.viewRotation) }
 
                 is PathPlannerIntent.TogglePlayback -> playbackController.togglePlayback()
+                is PathPlannerIntent.SeekPlayback -> playbackController.seekTo(intent.timeSeconds)
+                is PathPlannerIntent.SetPlaybackSpeed -> playbackController.setSpeed(intent.speedMultiplier)
 
                 is PathPlannerIntent.ConfigureField -> {
-                    _state.update { current ->
-                        val metadata = current.projectMetadata
-                        val dimensions = metadata?.let { RobotDimensions(it.robotLengthMeters, it.robotWidthMeters) }
-                            ?: intent.robotDimensions.normalized()
-                        val league = metadata?.league?.toAnalyticsLeague() ?: intent.league
-                        current.copy(
-                            activeLeague = league,
-                            robotDimensions = dimensions,
-                            routineValidation = routineEditorValidation(
-                                current.routine,
-                                current.capabilityCatalog,
-                                current.availableRoutines,
-                                league,
-                                dimensions,
-                                current.autonomousEntry
-                            )
-                        )
-                    }
+                    _state.update { current -> applyConfigureFieldState(current, intent) }
                     recalculateRoutinePreview()
                 }
                 is PathPlannerIntent.UpdateCanonicalRobotDimensions -> {
@@ -160,24 +118,19 @@ class PathPlannerViewModel(
                 is PathPlannerIntent.CreateRoutine -> {
                     val draft = newRoutine(intent.name)
                     routineProjectPath = selectedProjectPath ?: loadedProjectPath
-                    _state.update { current ->
-                        current.copy(
-                            routine = draft,
-                            routineValidation = routineEditorValidation(
-                                draft,
-                                current.capabilityCatalog,
-                                current.availableRoutines,
-                                current.activeLeague,
-                                current.robotDimensions,
-                                null
-                            ),
-                            routineRevisions = emptyList(),
-                            autonomousEntry = null,
-                            availableInAutonomousSelector = false,
-                            routineDirty = true,
-                            saveStatus = "New reusable routine initialized"
-                        )
-                    }
+                    _state.update { current -> applyNewRoutineDraftState(current, draft) }
+                    recalculateRoutinePreview()
+                }
+                is PathPlannerIntent.ApplyStarterRecipe -> {
+                    val current = _state.value
+                    val (draft, entry) = com.ares.analytics.viewmodel.routine.buildStudentStarterRoutineDraft(
+                        recipe = intent.recipe,
+                        league = current.activeLeague,
+                        dimensions = current.robotDimensions,
+                        firstActionKey = current.routineActions.firstOrNull()?.key,
+                    )
+                    routineProjectPath = selectedProjectPath ?: loadedProjectPath
+                    _state.update { com.ares.analytics.viewmodel.routine.applyStarterRecipeDraftState(it, draft, entry, intent.recipe) }
                     recalculateRoutinePreview()
                 }
                 is PathPlannerIntent.CreateGuidedFirstRoutine -> {
@@ -498,25 +451,7 @@ class PathPlannerViewModel(
             persistence.loadRoutine(activeProjectPath, documentId)
         }.onSuccess { (routine, revisions, autonomous) ->
             if (!isLoadedProject(activeProjectPath)) return@onSuccess
-            val entry = autonomous?.entries?.firstOrNull { it.routineId == routine.documentId }
-            _state.update { current ->
-                current.copy(
-                    routine = routine,
-                    routineDirty = false,
-                    routineRevisions = revisions,
-                    autonomousEntry = entry,
-                    availableInAutonomousSelector = entry != null,
-                    routineValidation = routineEditorValidation(
-                        routine,
-                        current.capabilityCatalog,
-                        current.availableRoutines,
-                        current.activeLeague,
-                        current.robotDimensions,
-                        entry
-                    ),
-                    saveStatus = "Loaded ${routine.name} revision ${routine.revision}"
-                )
-            }
+            _state.update { current -> applyLoadedRoutineState(current, routine, revisions, autonomous) }
             routineProjectPath = activeProjectPath
             recalculateRoutinePreview()
         }.onFailure { error ->
@@ -539,21 +474,7 @@ class PathPlannerViewModel(
         }.onSuccess { (saved, revisions) ->
             savedSuccessfully = true
             if (!isLoadedProject(activeProjectPath)) return@onSuccess
-            val entry = saved.autonomous.entries.firstOrNull { it.routineId == saved.routine.documentId }
-            _state.update { state ->
-                state.copy(
-                    routine = saved.routine,
-                    routineDirty = false,
-                    routineRevisions = revisions,
-                    autonomousEntry = entry,
-                    availableInAutonomousSelector = entry != null,
-                    saveStatus = if (saved.createdRevision) {
-                        "Saved routine revision ${saved.routine.revision}"
-                    } else {
-                        "Already up to date at revision ${saved.routine.revision}"
-                    }
-                )
-            }
+            _state.update { state -> applySavedRoutineState(state, saved, revisions) }
             scheduleProjectRefresh(activeProjectPath, _state.value.activeLeague)
         }.onFailure { error ->
             if (selectedProjectPath == activeProjectPath) {
@@ -602,23 +523,7 @@ class PathPlannerViewModel(
             persistence.restoreRoutine(activeProjectPath, documentId, contentHash, current.projectRevision)
         }.onSuccess { (restored, revisions, projectRevision) ->
             if (!isLoadedProject(activeProjectPath)) return@onSuccess
-            _state.update { current ->
-                current.copy(
-                    routine = restored,
-                    routineDirty = false,
-                    routineRevisions = revisions,
-                    projectRevision = projectRevision ?: current.projectRevision,
-                    routineValidation = routineEditorValidation(
-                        restored,
-                        current.capabilityCatalog,
-                        current.availableRoutines,
-                        current.activeLeague,
-                        current.robotDimensions,
-                        current.autonomousEntry
-                    ),
-                    saveStatus = "Restored as revision ${restored.revision}"
-                )
-            }
+            _state.update { state -> applyRestoredRoutineState(state, restored, revisions, projectRevision) }
             routineProjectPath = activeProjectPath
             recalculateRoutinePreview()
         }.onFailure { error ->
@@ -630,21 +535,12 @@ class PathPlannerViewModel(
 
     private fun updateRoutineFieldWaypoints(waypoints: List<Waypoint>, league: League) {
         if (waypoints.isEmpty()) return
-        val hasStart = _state.value.autonomousEntry != null
-        val driveWaypoints = if (hasStart) waypoints.drop(1) else waypoints
-        if (hasStart) {
-            val start = waypoints.first()
-            val pose = clampRoutinePose(start.toRoutinePose(), league, _state.value.robotDimensions)
-            _state.update { current -> current.copy(autonomousEntry = current.autonomousEntry?.copy(startingPose = pose)) }
+        val (_, driveWaypoints) = com.ares.analytics.viewmodel.routine.splitRoutineStartAndDriveWaypoints(_state.value, waypoints, league)
+        _state.update { current ->
+            com.ares.analytics.viewmodel.routine.splitRoutineStartAndDriveWaypoints(current, waypoints, league).first
         }
         updateRoutine { routine ->
-            routine.copy(
-                steps = routine.steps.withRoutineRouteWaypoints(
-                    driveWaypoints.iterator(),
-                    league,
-                    _state.value.robotDimensions
-                )
-            )
+            routine.copy(steps = routine.steps.withRoutineRouteWaypointsAndAppendRemaining(driveWaypoints, league, _state.value.robotDimensions))
         }
     }
 
@@ -652,52 +548,66 @@ class PathPlannerViewModel(
     private fun recalculateRoutinePreview() {
         routinePreviewJob?.cancel()
         playbackController.cancel()
-        val snapshot = _state.value
-        val projectGeneration = projectRefreshGeneration.get()
-        val draft = snapshot.routine
-        val analysis = analyzeRoutinePreview(draft, snapshot.availableRoutines)
-
-        fun matchesInputs(current: PathPlannerState): Boolean =
-            projectRefreshGeneration.get() == projectGeneration &&
-                current.routine == draft &&
-                current.activeLeague == snapshot.activeLeague &&
-                current.autonomousEntry == snapshot.autonomousEntry &&
-                current.availableRoutines == snapshot.availableRoutines
-
-        // Invalidate the previous timeline immediately, including while a replacement
-        // is being generated. Check the inputs inside the atomic state update.
-        _state.update { current ->
-            if (!matchesInputs(current)) current else current.copy(
-                trajectory = null,
-                previewActions = emptyList(),
-                estimatedDuration = 0.0,
-                playbackTime = 0.0,
-                isPlaying = false,
-                routinePreviewWarning = analysis.warning,
-            )
-        }
-        if (analysis.warning != null || analysis.steps.isEmpty()) return
-        val previewStart = snapshot.autonomousEntry?.startingPose ?: analysis.drives.firstOrNull()?.target
-            ?: return
-        routinePreviewJob = scope.launch(Dispatchers.Default, start = CoroutineStart.LAZY) {
-            if (!isActive) return@launch
-            val preview = routinePreviewCompiler.compile(
-                steps = analysis.steps,
-                previewStart = previewStart,
-                hasAutonomousStart = snapshot.autonomousEntry != null,
-                league = snapshot.activeLeague,
-                checkActive = { ensureActive() },
-            )
-            _state.update { current ->
-                if (!isActive || !matchesInputs(current)) current else current.copy(
-                    trajectory = preview.trajectory,
-                    previewActions = preview.actions,
-                    estimatedDuration = preview.estimatedDurationSeconds,
-                    playbackTime = 0.0,
-                    isPlaying = false,
-                    routinePreviewWarning = preview.warning,
-                )
-            }
-        }.also { it.start() }
+        routinePreviewJob = launchRoutinePreviewRecalculation(
+            scope = scope,
+            stateFlow = _state,
+            projectRefreshGeneration = projectRefreshGeneration,
+            routinePreviewCompiler = routinePreviewCompiler,
+        )
     }
 }
+
+internal fun launchRoutinePreviewRecalculation(
+    scope: CoroutineScope,
+    stateFlow: MutableStateFlow<PathPlannerState>,
+    projectRefreshGeneration: AtomicLong,
+    routinePreviewCompiler: RoutineTrajectoryPreviewCompiler,
+): Job? {
+    val snapshot = stateFlow.value
+    val projectGeneration = projectRefreshGeneration.get()
+    val draft = snapshot.routine
+    val analysis = analyzeRoutinePreview(draft, snapshot.availableRoutines)
+
+    fun matchesInputs(current: PathPlannerState): Boolean =
+        projectRefreshGeneration.get() == projectGeneration &&
+            current.routine == draft &&
+            current.activeLeague == snapshot.activeLeague &&
+            current.autonomousEntry == snapshot.autonomousEntry &&
+            current.availableRoutines == snapshot.availableRoutines
+
+    stateFlow.update { current ->
+        if (!matchesInputs(current)) current else current.copy(
+            trajectory = null,
+            previewActions = emptyList(),
+            estimatedDuration = 0.0,
+            playbackTime = 0.0,
+            isPlaying = false,
+            routinePreviewWarning = analysis.warning,
+        )
+    }
+    if (analysis.warning != null || analysis.steps.isEmpty()) return null
+    val previewStart = snapshot.autonomousEntry?.startingPose ?: analysis.drives.firstOrNull()?.target
+        ?: return null
+    return scope.launch(Dispatchers.Default, start = CoroutineStart.LAZY) {
+        if (!isActive) return@launch
+        val preview = routinePreviewCompiler.compile(
+            steps = analysis.steps,
+            previewStart = previewStart,
+            hasAutonomousStart = snapshot.autonomousEntry != null,
+            league = snapshot.activeLeague,
+            checkActive = { ensureActive() },
+        )
+        stateFlow.update { current ->
+            if (!isActive || !matchesInputs(current)) current else current.copy(
+                trajectory = preview.trajectory,
+                previewActions = preview.actions,
+                estimatedDuration = preview.estimatedDurationSeconds,
+                playbackTime = 0.0,
+                isPlaying = false,
+                routinePreviewWarning = preview.warning,
+            )
+        }
+    }.also { it.start() }
+}
+
+
