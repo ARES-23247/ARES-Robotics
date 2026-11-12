@@ -101,6 +101,7 @@ fun GuidedTuningExperimentPanel(
     onOpenGuidedRunReview: () -> Unit,
     onOpenReplay: (String, Long) -> Unit,
     onOpenAdvancedProfiles: () -> Unit,
+    onLogExperimentToNotebook: ((com.ares.analytics.service.tuning.GuidedTuningExperiment) -> Unit)? = null,
 ) {
     val scroll = rememberScrollState()
     Column(
@@ -139,7 +140,7 @@ fun GuidedTuningExperimentPanel(
             onStopSimulator,
         )
         CandidateStep(state, viewModel)
-        DecisionStep(state, viewModel, onOpenAdvancedProfiles)
+        DecisionStep(state, viewModel, onOpenAdvancedProfiles, onLogExperimentToNotebook)
     }
 }
 

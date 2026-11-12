@@ -58,10 +58,12 @@ private data class LoadedMatchStrategySnapshot(
 fun MatchStrategyScreen(
     databaseService: DatabaseService? = null,
     exportService: ExportService? = null,
+    notebookCaptureService: com.ares.analytics.service.integration.EngineeringNotebookCaptureService? = null,
     workspace: WorkspaceConfig? = null,
     reloadTrigger: Int = 0,
     onOpenReplay: (String, Long?) -> Unit = { _, _ -> },
     onOpenImports: () -> Unit = {},
+    onOpenNotebookEntry: ((String) -> Unit)? = null,
 ) {
     val scope = rememberCoroutineScope()
     val league = workspace?.league ?: League.FTC
@@ -73,6 +75,7 @@ fun MatchStrategyScreen(
     var selectedSessionId by remember(workspace?.id) { mutableStateOf<String?>(null) }
     var heatmapMode by remember { mutableStateOf(StrategyHeatmapMode.OCCUPANCY) }
     var statusBanner by remember { mutableStateOf<String?>(null) }
+    var lastLoggedNotebookEntryId by remember { mutableStateOf<String?>(null) }
 
     val workspaceSessionsAndSummaries by produceState<Pair<List<Session>, List<SessionSummary>>>(
         initialValue = emptyList<Session>() to emptyList(),
@@ -319,6 +322,38 @@ fun MatchStrategyScreen(
                                 Spacer(Modifier.width(4.dp))
                                 Text("Copy", fontSize = 11.sp, color = AresTextPrimary)
                             }
+
+                            if (workspace != null && notebookCaptureService != null) {
+                                Button(
+                                    onClick = {
+                                        scope.launch {
+                                            runCatching {
+                                                notebookCaptureService.captureMatchDebrief(
+                                                    workspace = workspace,
+                                                    session = snap.session,
+                                                    summary = snap.summary,
+                                                    insights = snap.insights,
+                                                    heatmap = snap.heatmap,
+                                                    alerts = snap.alerts,
+                                                    annotations = snap.annotations,
+                                                )
+                                            }.onSuccess { saved ->
+                                                lastLoggedNotebookEntryId = saved.entryId
+                                                statusBanner = "Logged ${saved.entryId} r${saved.revision} to Engineering Notebook."
+                                            }.onFailure { err ->
+                                                statusBanner = "Notebook capture failed: ${err.message}"
+                                            }
+                                        }
+                                    },
+                                    colors = ButtonDefaults.buttonColors(containerColor = AresCyan, contentColor = AresOnAccent),
+                                    shape = RoundedCornerShape(8.dp),
+                                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
+                                ) {
+                                    Icon(Icons.Default.Book, contentDescription = null, modifier = Modifier.size(14.dp))
+                                    Spacer(Modifier.width(4.dp))
+                                    Text("Log to Notebook", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                }
+                            }
                         }
 
                         IconButton(onClick = { manualRefreshNonce += 1 }) {
@@ -328,7 +363,18 @@ fun MatchStrategyScreen(
                 }
 
                 statusBanner?.let { msg ->
-                    Text(msg, fontSize = 11.sp, color = AresGreen, fontWeight = FontWeight.SemiBold)
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Text(msg, fontSize = 11.sp, color = AresGreen, fontWeight = FontWeight.SemiBold)
+                        val entryId = lastLoggedNotebookEntryId
+                        if (entryId != null && onOpenNotebookEntry != null) {
+                            OutlinedButton(
+                                onClick = { onOpenNotebookEntry(entryId) },
+                                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 3.dp),
+                            ) {
+                                Text("Open in Notebook", fontSize = 10.sp, color = AresCyan)
+                            }
+                        }
+                    }
                 }
             }
         }

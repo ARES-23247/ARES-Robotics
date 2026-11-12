@@ -22,6 +22,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Analytics
+import androidx.compose.material.icons.filled.Book
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Error
@@ -100,6 +101,7 @@ fun GuidedRunAnalysisScreen(
     onCreateTuningExperiment: (GuidedTuningExperimentSeed) -> Unit,
     onOpenAcademy: () -> Unit,
     onOpenRunHistory: () -> Unit,
+    onLogToNotebook: ((GuidedRunAnalysisReport, com.ares.analytics.service.RunComparisonReport?) -> Unit)? = null,
 ) {
     val state by viewModel.state.collectAsState()
     LaunchedEffect(viewModel) { viewModel.refreshSessions() }
@@ -194,6 +196,7 @@ fun GuidedRunAnalysisScreen(
                         onExport = { destination -> viewModel.export(destination) },
                         onCopiedNotice = viewModel::setExportNotice,
                         onOpenRunHistory = onOpenRunHistory,
+                        onLogToNotebook = onLogToNotebook?.let { cb -> { cb(report, state.comparisonReport) } },
                     )
                 }
                 item { LimitationsCard(report.limitations) }
@@ -453,8 +456,9 @@ private fun PreserveEvidenceStep(
     onExport: (File) -> Unit,
     onCopiedNotice: (String) -> Unit,
     onOpenRunHistory: () -> Unit,
+    onLogToNotebook: (() -> Unit)? = null,
 ) {
-    GuideStep(7, "Preserve the review", "Export a checked Markdown summary or copy an Engineering Notebook entry while keeping the original database session unchanged.") {
+    GuideStep(7, "Preserve the review", "Export a checked Markdown summary, save a revisioned Engineering Notebook entry, or copy Markdown while keeping the original database session unchanged.") {
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Button(
                 onClick = { chooseGuidedReviewFile(report.session.sessionId)?.let(onExport) },
@@ -463,6 +467,16 @@ private fun PreserveEvidenceStep(
                 Icon(Icons.Default.Download, contentDescription = null, modifier = Modifier.size(17.dp))
                 Spacer(Modifier.width(6.dp))
                 Text("Export evidence report")
+            }
+            if (onLogToNotebook != null) {
+                Button(
+                    onClick = onLogToNotebook,
+                    colors = ButtonDefaults.buttonColors(containerColor = AresGreen, contentColor = AresOnAccent),
+                ) {
+                    Icon(Icons.Default.Book, contentDescription = null, modifier = Modifier.size(17.dp))
+                    Spacer(Modifier.width(6.dp))
+                    Text("Log to Engineering Notebook")
+                }
             }
             com.ares.analytics.ui.components.runanalysis.StudentEngineeringNotebookCopyButton(
                 report = report,

@@ -46,6 +46,7 @@ internal data class RobotAuthoringRouteActions(
     val chooseStandaloneExport: () -> File?,
     val exportStandaloneProject: suspend (File) -> String,
     val refreshRobotStudio: () -> Unit,
+    val logVerificationToNotebook: ((com.ares.analytics.service.verification.RobotVerificationReport) -> Unit)? = null,
 )
 
 /**
@@ -93,6 +94,7 @@ internal fun RobotAuthoringRouteHost(
             onOpenInIde = actions.openInIde,
             onChooseStandaloneExport = actions.chooseStandaloneExport,
             onExportStandaloneProject = actions.exportStandaloneProject,
+            onLogVerificationToNotebook = actions.logVerificationToNotebook,
         )
         true
     }

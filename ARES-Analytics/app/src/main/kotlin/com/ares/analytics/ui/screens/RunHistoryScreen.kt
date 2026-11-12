@@ -38,14 +38,18 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Chat
 import androidx.compose.ui.graphics.SolidColor
+import com.ares.analytics.domain.analysis.CohortStatisticsAnalyzer
 import com.ares.analytics.service.DatabaseService
 import com.ares.analytics.service.AiDiagnosticsService
+import com.ares.analytics.service.integration.EngineeringNotebookCaptureService
 import com.ares.analytics.shared.models.Session
 import com.ares.analytics.shared.models.SessionSummary
 import com.ares.analytics.shared.models.TelemetryFrame
 import com.ares.analytics.shared.models.WorkspaceConfig
+import com.ares.analytics.ui.components.history.RunCohortExplorerCard
 import com.ares.analytics.ui.components.history.RunFilterHeader
 import com.ares.analytics.ui.components.history.RunDataCard
+import com.ares.analytics.ui.components.history.SessionMetadataDialog
 import com.ares.analytics.ui.theme.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -116,8 +120,13 @@ fun RunHistoryScreen(
     aiDiagnosticsService: AiDiagnosticsService,
     workspace: WorkspaceConfig,
     reloadTrigger: Int = 0,
+    notebookCaptureService: EngineeringNotebookCaptureService? = null,
     onOpenImports: () -> Unit = {},
-    onOpenHelp: () -> Unit = {}
+    onOpenHelp: () -> Unit = {},
+    onOpenReplay: (String) -> Unit = {},
+    onOpenGuidedReview: (String) -> Unit = {},
+    onOpenMatchStrategy: () -> Unit = {},
+    onOpenNotebookEntry: (String) -> Unit = {},
 ) {
     val scope = rememberCoroutineScope()
     var sessions by remember { mutableStateOf<List<Session>>(emptyList()) }
@@ -125,6 +134,11 @@ fun RunHistoryScreen(
     var diagnosticsMap by remember { mutableStateOf<Map<String, Map<String, Double>>>(emptyMap()) }
     var isLoading by remember { mutableStateOf(true) }
     var isAiAnalystOpen by remember { mutableStateOf(false) }
+    var isCohortExplorerOpen by remember { mutableStateOf(false) }
+    var searchQuery by remember { mutableStateOf("") }
+    var selectedTagFilter by remember { mutableStateOf<String?>(null) }
+    var editingSession by remember { mutableStateOf<Session?>(null) }
+    var statusBanner by remember { mutableStateOf<String?>(null) }
     val analystChatHistory = remember { mutableStateListOf<Pair<String, String>>() }
     var userQueryText by remember { mutableStateOf("") }
     var isAnalystLoading by remember { mutableStateOf(false) }
@@ -238,17 +252,62 @@ fun RunHistoryScreen(
     val groupedRows = remember(allRows) {
         allRows.groupBy { it.category }
     }
+    val availableTags = remember(sessions) {
+        CohortStatisticsAnalyzer.discoverTags(sessions)
+    }
+    val filteredSessions = remember(sessions, searchQuery, selectedTagFilter) {
+        val q = searchQuery.trim().lowercase(Locale.US)
+        sessions.filter { session ->
+            val tagOk = selectedTagFilter == null || session.tags.any { it.equals(selectedTagFilter, ignoreCase = true) }
+            val queryOk = q.isEmpty() ||
+                session.sessionId.lowercase(Locale.US).contains(q) ||
+                session.matchNumber?.let { "match #$it".contains(q) || "m#$it".contains(q) || "$it" == q } == true ||
+                session.allianceColor?.lowercase(Locale.US)?.contains(q) == true ||
+                session.tags.any { it.lowercase(Locale.US).contains(q) }
+            tagOk && queryOk
+        }
+    }
 
     Row(modifier = Modifier.fillMaxSize()) {
         Column(
             modifier = Modifier.weight(1f).fillMaxHeight().padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            // Title Row
             RunFilterHeader(
                 isAiAnalystOpen = isAiAnalystOpen,
-                onToggleAiAnalyst = { isAiAnalystOpen = !isAiAnalystOpen }
+                onToggleAiAnalyst = { isAiAnalystOpen = !isAiAnalystOpen },
+                isCohortExplorerOpen = isCohortExplorerOpen,
+                onToggleCohortExplorer = { isCohortExplorerOpen = !isCohortExplorerOpen },
+                searchQuery = searchQuery,
+                onSearchQueryChange = { searchQuery = it },
+                availableTags = availableTags,
+                selectedTagFilter = selectedTagFilter,
+                onSelectTagFilter = { selectedTagFilter = it },
+                visibleRunCount = filteredSessions.size,
+                totalRunCount = sessions.size,
             )
+
+            statusBanner?.let { msg ->
+                Text(msg, color = AresGreen, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+            }
+
+            AnimatedVisibility(visible = isCohortExplorerOpen) {
+                RunCohortExplorerCard(
+                    sessions = sessions,
+                    summaries = summaries,
+                    diagnosticsMap = diagnosticsMap,
+                    motorNames = allMotorNames,
+                    onLogCohortToNotebook = notebookCaptureService?.let { capture ->
+                        { comparison ->
+                            scope.launch {
+                                val entry = capture.captureCohortComparison(workspace, comparison)
+                                statusBanner = "Logged cohort distribution study (${entry.entryId} r${entry.revision}) to Engineering Notebook."
+                                onOpenNotebookEntry(entry.entryId)
+                            }
+                        }
+                    },
+                )
+            }
 
         // Spreadsheet Container
         Surface(
@@ -273,7 +332,7 @@ fun RunHistoryScreen(
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(56.dp)
+                            .height(64.dp)
                             .bottomBorder(1.dp, AresBorder)
                             .padding(12.dp),
                         contentAlignment = Alignment.CenterStart
@@ -332,7 +391,7 @@ fun RunHistoryScreen(
                             .fillMaxSize()
                             .horizontalScroll(horizontalScrollState)
                     ) {
-                        sessions.forEachIndexed { sessionIdx, session ->
+                        filteredSessions.forEachIndexed { sessionIdx, session ->
                             val summary = summaries[session.sessionId]
                             val diags = diagnosticsMap[session.sessionId] ?: emptyMap()
 
@@ -343,28 +402,47 @@ fun RunHistoryScreen(
                                     .endBorder(1.dp, AresBorder)
                                     .verticalScroll(verticalScrollState)
                             ) {
-                                // Run Header block
+                                // Run Header block (click to edit metadata or jump to Replay / Notebook)
                                 Box(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .height(56.dp)
+                                        .height(64.dp)
                                         .background(if (sessionIdx % 2 == 0) AresSurface else AresSurfaceElevated)
                                         .bottomBorder(1.dp, AresBorder)
-                                        .padding(8.dp),
+                                        .pointerHoverIcon(PointerIcon(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)))
+                                        .clickable { editingSession = session }
+                                        .padding(horizontal = 8.dp, vertical = 6.dp),
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                        Text(
-                                            text = session.matchNumber?.let { "Match #$it" } ?: "Run #${sessionIdx + 1}",
-                                            fontWeight = FontWeight.Bold,
-                                            color = AresTextPrimary,
-                                            fontSize = 12.sp
-                                        )
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                        ) {
+                                            Text(
+                                                text = session.matchNumber?.let { "Match #$it" } ?: "Run #${sessions.indexOf(session) + 1}",
+                                                fontWeight = FontWeight.Bold,
+                                                color = AresCyan,
+                                                fontSize = 12.sp,
+                                            )
+                                            session.allianceColor?.takeIf(String::isNotBlank)?.let { al ->
+                                                val badgeColor = if (al.equals("red", ignoreCase = true)) AresError else AresCyan
+                                                Text(al.uppercase(Locale.US), color = badgeColor, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                                            }
+                                        }
                                         Text(
                                             text = dateFormatter.format(Instant.ofEpochMilli(session.createdAt)),
                                             color = AresTextSecondary,
                                             fontSize = 10.sp
                                         )
+                                        if (session.tags.isNotEmpty()) {
+                                            Text(
+                                                text = session.tags.take(2).joinToString(" · "),
+                                                color = AresTextTertiary,
+                                                fontSize = 9.sp,
+                                                maxLines = 1,
+                                            )
+                                        }
                                     }
                                 }
 
@@ -585,11 +663,49 @@ fun RunHistoryScreen(
     selectedRowForGraph?.let { rowDef ->
         RunDataCard(
             rowDefinition = rowDef,
-            sessions = sessions,
+            sessions = filteredSessions,
             summaries = summaries,
             diagnosticsMap = diagnosticsMap,
             dateFormatter = dateFormatter,
             onDismiss = { selectedRowForGraph = null }
+        )
+    }
+
+    editingSession?.let { targetSession ->
+        SessionMetadataDialog(
+            session = targetSession,
+            existingWorkspaceTags = availableTags,
+            onSaveMetadata = { matchNumber, allianceColor, updatedTags ->
+                scope.launch {
+                    withContext(Dispatchers.IO) {
+                        databaseService.updateSessionMatchDetails(targetSession.sessionId, matchNumber, allianceColor)
+                        databaseService.updateSessionTags(targetSession.sessionId, updatedTags)
+                    }
+                    sessions = sessions.map { s ->
+                        if (s.sessionId == targetSession.sessionId) {
+                            s.copy(matchNumber = matchNumber, allianceColor = allianceColor, tags = updatedTags)
+                        } else s
+                    }
+                    statusBanner = "Updated metadata for ${matchNumber?.let { "Match #$it" } ?: targetSession.sessionId.take(8)}."
+                }
+            },
+            onOpenReplay = onOpenReplay,
+            onOpenGuidedReview = onOpenGuidedReview,
+            onOpenMatchStrategy = onOpenMatchStrategy,
+            onLogRunToNotebook = notebookCaptureService?.let { capture ->
+                {
+                    scope.launch {
+                        val entry = capture.captureSingleSessionSummary(
+                            workspace = workspace,
+                            session = targetSession,
+                            summary = summaries[targetSession.sessionId],
+                        )
+                        statusBanner = "Logged run note (${entry.entryId} r${entry.revision}) to Engineering Notebook."
+                        onOpenNotebookEntry(entry.entryId)
+                    }
+                }
+            },
+            onDismiss = { editingSession = null },
         )
     }
 }

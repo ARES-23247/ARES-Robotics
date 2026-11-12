@@ -18,6 +18,7 @@ import com.ares.analytics.ui.components.dashboard.DashboardWidgetServices
 import com.ares.analytics.ui.util.DesktopFileChoosers
 import com.ares.analytics.viewmodel.MainIntent
 import com.ares.analytics.viewmodel.MainViewModel
+import com.ares.analytics.viewmodel.notebook.EngineeringNotebookViewModel
 import java.io.File
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -120,6 +121,7 @@ internal fun rememberWorkspaceRouteFeatureScope(
     models.tuning,
     models.sysId,
     models.guidedTuningExperiment,
+    models.engineeringNotebook,
     models.robotStudio,
     models.drivebaseBuilder,
     models.subsystemGenerator,
@@ -145,6 +147,7 @@ internal fun rememberWorkspaceRouteFeatureScope(
             database = services.databaseService,
             sync = services.syncEngineService,
             aiDiagnostics = services.aiDiagnosticsService,
+            notebookCapture = services.engineeringNotebookCaptureService,
         ),
         academy = academyFeatureScope,
         learningProgress = services.learningProgressService,
@@ -152,6 +155,8 @@ internal fun rememberWorkspaceRouteFeatureScope(
         tuning = models.tuning,
         sysId = models.sysId,
         tuningExperiment = models.guidedTuningExperiment,
+        engineeringNotebook = models.engineeringNotebook,
+        notebookCapture = services.engineeringNotebookCaptureService,
         authoring = RobotAuthoringFeatureScope(
             robotStudio = models.robotStudio,
             drivebase = models.drivebaseBuilder,
@@ -184,6 +189,7 @@ internal fun createWorkspaceRouteActions(
     workspaceScope: CoroutineScope,
     services: ServiceRegistry,
     currentConfig: WorkspaceConfig,
+    engineeringNotebook: EngineeringNotebookViewModel,
     updateMissionSnapshot: (DashboardMissionSnapshot) -> Unit,
     requestSimulatorLaunch: () -> Unit,
     startSimulator: () -> Unit,
@@ -230,6 +236,41 @@ internal fun createWorkspaceRouteActions(
             currentConfig.projectPath,
             currentConfig.league,
         ).message
+    },
+    openNotebookEntry = { entryId ->
+        engineeringNotebook.openAndSelectEntry(entryId)
+        mainViewModel.onIntent(MainIntent.SetActiveNav(NavigationTarget.ENGINEERING_NOTEBOOK))
+    },
+    logGuidedReviewToNotebook = { report, comparison ->
+        workspaceScope.launch {
+            val saved = services.engineeringNotebookCaptureService.captureGuidedRunReview(
+                workspace = currentConfig,
+                report = report,
+                comparison = comparison,
+            )
+            engineeringNotebook.openAndSelectEntry(saved.entryId)
+            mainViewModel.onIntent(MainIntent.SetActiveNav(NavigationTarget.ENGINEERING_NOTEBOOK))
+        }
+    },
+    logTuningExperimentToNotebook = { experiment ->
+        workspaceScope.launch {
+            val saved = services.engineeringNotebookCaptureService.captureTuningExperiment(
+                workspace = currentConfig,
+                experiment = experiment,
+            )
+            engineeringNotebook.openAndSelectEntry(saved.entryId)
+            mainViewModel.onIntent(MainIntent.SetActiveNav(NavigationTarget.ENGINEERING_NOTEBOOK))
+        }
+    },
+    logVerificationToNotebook = { report ->
+        workspaceScope.launch {
+            val saved = services.engineeringNotebookCaptureService.captureVerificationReport(
+                workspace = currentConfig,
+                report = report,
+            )
+            engineeringNotebook.openAndSelectEntry(saved.entryId)
+            mainViewModel.onIntent(MainIntent.SetActiveNav(NavigationTarget.ENGINEERING_NOTEBOOK))
+        }
     },
 )
 

@@ -4,14 +4,19 @@ import androidx.compose.runtime.Composable
 import com.ares.analytics.service.AcademyPracticeIdentity
 import com.ares.analytics.service.AcademyPracticeWorkflowService
 import com.ares.analytics.service.ExportService
+import com.ares.analytics.service.GuidedRunAnalysisReport
 import com.ares.analytics.service.LearningProgressService
 import com.ares.analytics.service.MatchInfo
 import com.ares.analytics.service.Nt4ClientService
+import com.ares.analytics.service.RunComparisonReport
 import com.ares.analytics.service.SimulatorProcessService
 import com.ares.analytics.service.hardware.HardwareSetupService
+import com.ares.analytics.service.integration.EngineeringNotebookCaptureService
 import com.ares.analytics.service.isLoopbackDriveControlHost
 import com.ares.analytics.service.project.ProjectExecutionCommand
 import com.ares.analytics.service.project.ProjectSession
+import com.ares.analytics.service.tuning.GuidedTuningExperiment
+import com.ares.analytics.service.verification.RobotVerificationReport
 import com.ares.analytics.shared.models.ForensicsResponse
 import com.ares.analytics.shared.models.WorkspaceConfig
 import com.ares.analytics.domain.navigation.NavigationTarget
@@ -24,6 +29,7 @@ import com.ares.analytics.viewmodel.PathPlannerViewModel
 import com.ares.analytics.viewmodel.SysIdViewModel
 import com.ares.analytics.viewmodel.TuningIntent
 import com.ares.analytics.viewmodel.TuningViewModel
+import com.ares.analytics.viewmodel.notebook.EngineeringNotebookViewModel
 import com.ares.analytics.viewmodel.pathing.RobotDimensions
 import com.ares.analytics.viewmodel.tuning.GuidedTuningExperimentIntent
 import com.ares.analytics.viewmodel.tuning.GuidedTuningExperimentViewModel
@@ -41,6 +47,8 @@ internal data class WorkspaceRouteFeatureScope(
     val tuning: TuningViewModel,
     val sysId: SysIdViewModel,
     val tuningExperiment: GuidedTuningExperimentViewModel,
+    val engineeringNotebook: EngineeringNotebookViewModel,
+    val notebookCapture: EngineeringNotebookCaptureService,
     val authoring: RobotAuthoringFeatureScope,
     val workspaceServices: WorkspaceServicesFeatureScope,
     val nt4: Nt4ClientService,
@@ -88,6 +96,10 @@ internal data class WorkspaceRouteActions(
     val openAcademyCheckpoint: (String, String) -> Unit,
     val executeProjectCommand: (ProjectExecutionCommand) -> Boolean,
     val openInIde: () -> String,
+    val openNotebookEntry: (String) -> Unit,
+    val logGuidedReviewToNotebook: (GuidedRunAnalysisReport, RunComparisonReport?) -> Unit,
+    val logTuningExperimentToNotebook: (GuidedTuningExperiment) -> Unit,
+    val logVerificationToNotebook: (RobotVerificationReport) -> Unit,
 )
 
 /** Renders the selected workspace route from explicit feature capabilities and shell actions. */
@@ -163,6 +175,8 @@ internal fun WorkspaceRouteHost(
                     actions.navigate(NavigationTarget.TUNING)
                 },
                 openAcademyLesson = actions.openAcademyLesson,
+                openNotebookEntry = actions.openNotebookEntry,
+                logGuidedReviewToNotebook = actions.logGuidedReviewToNotebook,
             ),
         )
 
@@ -229,6 +243,7 @@ internal fun WorkspaceRouteHost(
         NavigationTarget.MATCH_STRATEGY -> MatchStrategyScreen(
             databaseService = scope.runData.database,
             exportService = scope.export,
+            notebookCaptureService = scope.notebookCapture,
             workspace = workspace,
             reloadTrigger = state.runsReloadTrigger,
             onOpenReplay = { sessionId, timestampMs ->
@@ -236,6 +251,21 @@ internal fun WorkspaceRouteHost(
                 actions.navigate(NavigationTarget.DASHBOARD)
             },
             onOpenImports = { actions.navigate(NavigationTarget.IMPORT_CENTER) },
+            onOpenNotebookEntry = actions.openNotebookEntry,
+        )
+        NavigationTarget.ENGINEERING_NOTEBOOK -> EngineeringNotebookScreen(
+            viewModel = scope.engineeringNotebook,
+            workspace = workspace,
+            reloadTrigger = state.runsReloadTrigger,
+            onOpenReplay = { sessionId ->
+                scope.dashboard.onIntent(DashboardIntent.SelectPrimarySession(sessionId, null))
+                actions.navigate(NavigationTarget.DASHBOARD)
+            },
+            onOpenGuidedReview = { sessionId ->
+                scope.runData.guidedAnalysis.openSession(sessionId)
+                actions.navigate(NavigationTarget.GUIDED_RUN_ANALYSIS)
+            },
+            onOpenIntegrations = { actions.navigate(NavigationTarget.INTEGRATIONS) },
         )
         NavigationTarget.TUNING -> TuningScreen(
             viewModel = scope.tuning,
@@ -278,6 +308,7 @@ internal fun WorkspaceRouteHost(
                 scope.dashboard.onIntent(DashboardIntent.SelectPrimarySession(sessionId, timestampMs))
                 actions.navigate(NavigationTarget.DASHBOARD)
             },
+            onLogExperimentToNotebook = actions.logTuningExperimentToNotebook,
         )
 
         NavigationTarget.ROBOT_STUDIO,
@@ -300,6 +331,7 @@ internal fun WorkspaceRouteHost(
                 chooseStandaloneExport = actions.chooseStandaloneExport,
                 exportStandaloneProject = actions.exportStandaloneProject,
                 refreshRobotStudio = scope.authoring.robotStudio::refresh,
+                logVerificationToNotebook = actions.logVerificationToNotebook,
             ),
         )
 

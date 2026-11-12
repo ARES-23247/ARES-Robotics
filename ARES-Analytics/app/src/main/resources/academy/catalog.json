@@ -1914,6 +1914,7 @@
     "MATCH_STRATEGY": "read-driver-coaching",
     "GUIDED_RUN_ANALYSIS": "compare-run-evidence",
     "RUN_HISTORY": "compare-run-evidence",
+    "ENGINEERING_NOTEBOOK": "compare-run-evidence",
     "DATABASE_VIEWER": "query-stored-telemetry",
     "CONTROLS": "map-one-control",
     "TUNING": "tuning-evidence",

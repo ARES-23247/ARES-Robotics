@@ -173,6 +173,12 @@ class ServiceRegistry {
             ),
         )
     }
+    val engineeringNotebookCaptureService by lazy {
+        com.ares.analytics.service.integration.EngineeringNotebookCaptureService(
+            databaseService = databaseService,
+            exportService = exportService,
+        )
+    }
 
     // ── Tier 2: Depend on Tier 0 + Tier 1 ────────────────────────────────────
     val academyPracticeWorkflowService by lazy {

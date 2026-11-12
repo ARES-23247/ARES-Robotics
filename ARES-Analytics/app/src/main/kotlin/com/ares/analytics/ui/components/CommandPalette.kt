@@ -29,10 +29,12 @@ import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.AccountTree
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.Book
 import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.RadioButtonUnchecked
 import androidx.compose.material.icons.filled.Route
 import androidx.compose.material.icons.filled.School
@@ -76,9 +78,12 @@ import com.ares.analytics.domain.learning.LearningCheckpoint
 import com.ares.analytics.domain.learning.LearningCheckpointAction
 import com.ares.analytics.domain.learning.LearningJourneyEvaluator
 import com.ares.analytics.domain.navigation.NavigationTarget
+import com.ares.analytics.domain.notebook.NotebookSectionParser
 import com.ares.analytics.service.LearningProgressService
 import com.ares.analytics.service.project.AresProjectDocuments
+import com.ares.analytics.shared.models.EngineeringNotebookEntry
 import com.ares.analytics.shared.models.League
+import com.ares.analytics.shared.models.Session
 import com.ares.analytics.shared.models.WorkspaceConfig
 import com.ares.analytics.ui.help.GlossaryCatalog
 import com.ares.analytics.ui.theme.AresBackground
@@ -110,6 +115,81 @@ data class CommandPaletteProjectItem(
     val target: NavigationTarget,
     val keywords: List<String> = emptyList(),
 )
+
+data class CommandPaletteRunItem(
+    val sessionId: String,
+    val label: String,
+    val subtitle: String,
+    val keywords: List<String> = emptyList(),
+)
+
+data class CommandPaletteNotebookItem(
+    val entryId: String,
+    val title: String,
+    val subtitle: String,
+    val keywords: List<String> = emptyList(),
+)
+
+fun buildCommandPaletteRunItems(sessions: List<Session>): List<CommandPaletteRunItem> =
+    sessions.sortedByDescending(Session::createdAt).map { session ->
+        val runTitle = session.matchNumber?.let { "Match #$it" } ?: "Run ${session.sessionId.take(8)}"
+        val alliancePart = session.allianceColor?.uppercase() ?: "Practice"
+        val tagsPart = if (session.tags.isEmpty()) "untagged" else session.tags.joinToString(", ")
+        val matchTerms = session.matchNumber?.let { listOf("match $it", "match #$it", "m#$it", "$it") }.orEmpty()
+        CommandPaletteRunItem(
+            sessionId = session.sessionId,
+            label = "$runTitle ($alliancePart)",
+            subtitle = "Session ${session.sessionId.take(12)} · Tags: $tagsPart",
+            keywords = listOf("run", "replay", "session", session.sessionId, alliancePart) + matchTerms + session.tags,
+        )
+    }
+
+fun buildCommandPaletteNotebookItems(entries: List<EngineeringNotebookEntry>): List<CommandPaletteNotebookItem> =
+    entries.sortedByDescending(EngineeringNotebookEntry::updatedAtMs).map { entry ->
+        val parsed = NotebookSectionParser.parseMarkdown(entry.markdownBody)
+        val title = parsed.title.ifBlank { entry.entryId }
+        val tagsText = if (parsed.tags.isEmpty()) entry.entryType.name else parsed.tags.joinToString(", ")
+        CommandPaletteNotebookItem(
+            entryId = entry.entryId,
+            title = title,
+            subtitle = "${entry.entryId} · r${entry.revision} (${entry.reviewState.name}) · $tagsText",
+            keywords = listOf(
+                "notebook",
+                "note",
+                "portfolio",
+                entry.entryId,
+                entry.entryType.name,
+                entry.reviewState.name,
+                entry.markdownBody.take(400),
+            ) + parsed.tags + listOfNotNull(entry.humanAuthorId) + entry.evidence.map { it.referenceId },
+        )
+    }
+
+fun filterCommandPaletteRuns(
+    query: String,
+    items: List<CommandPaletteRunItem>,
+): List<CommandPaletteRunItem> {
+    val normalized = query.trim().lowercase()
+    if (normalized.isEmpty()) return emptyList()
+    return items.filter { item ->
+        item.label.lowercase().contains(normalized) ||
+            item.subtitle.lowercase().contains(normalized) ||
+            item.keywords.any { it.lowercase().contains(normalized) }
+    }.take(8)
+}
+
+fun filterCommandPaletteNotebookEntries(
+    query: String,
+    items: List<CommandPaletteNotebookItem>,
+): List<CommandPaletteNotebookItem> {
+    val normalized = query.trim().lowercase()
+    if (normalized.isEmpty()) return emptyList()
+    return items.filter { item ->
+        item.title.lowercase().contains(normalized) ||
+            item.subtitle.lowercase().contains(normalized) ||
+            item.keywords.any { it.lowercase().contains(normalized) }
+    }.take(8)
+}
 
 fun defaultRobotStudioStageItems(): List<CommandPaletteProjectItem> = listOf(
     CommandPaletteProjectItem(
@@ -252,9 +332,13 @@ fun CommandPalette(
     developerMode: Boolean,
     projectPath: String = "",
     projectItems: List<CommandPaletteProjectItem>? = null,
+    runItems: List<CommandPaletteRunItem> = emptyList(),
+    notebookItems: List<CommandPaletteNotebookItem> = emptyList(),
     onDismiss: () -> Unit,
     onNavigate: (NavigationTarget) -> Unit,
     onOpenGlossaryTerm: (String) -> Unit = {},
+    onOpenRun: (String) -> Unit = {},
+    onOpenNotebookEntry: (String) -> Unit = {},
 ) {
     var query by remember { mutableStateOf("") }
     val focusRequester = remember { FocusRequester() }
@@ -263,6 +347,12 @@ fun CommandPalette(
     }
     val matchingProjectItems = remember(query, allProjectItems) {
         filterCommandPaletteProjectItems(query, allProjectItems)
+    }
+    val matchingRuns = remember(query, runItems) {
+        filterCommandPaletteRuns(query, runItems)
+    }
+    val matchingNotebookEntries = remember(query, notebookItems) {
+        filterCommandPaletteNotebookEntries(query, notebookItems)
     }
     val results = remember(query, developerMode) { filterNavigationTargets(query, developerMode) }
     val glossaryResults = remember(query) {
@@ -276,7 +366,7 @@ fun CommandPalette(
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text("Go anywhere", color = AresTextPrimary, fontWeight = FontWeight.Bold, fontSize = 20.sp)
                 Text(
-                    "Search screens, Robot Studio stages, mechanisms, superstructures, routines, or glossary terms.",
+                    "Search screens, recorded runs, notebook entries, Robot Studio stages, mechanisms, routines, or glossary terms.",
                     color = AresTextSecondary,
                     fontSize = 12.sp
                 )
@@ -289,16 +379,54 @@ fun CommandPalette(
                     onValueChange = { query = it },
                     modifier = Modifier.fillMaxWidth().focusRequester(focusRequester),
                     singleLine = true,
-                    placeholder = { Text("Search screens, subsystems, routines, or stages...") },
+                    placeholder = { Text("Search screens, runs (Match #), notebook entries, subsystems, routines...") },
                     leadingIcon = { Icon(Icons.Default.Search, null) }
                 )
                 HorizontalDivider(color = AresBorder)
-                if (matchingProjectItems.isEmpty() && results.isEmpty() && glossaryResults.isEmpty()) {
+                if (
+                    matchingProjectItems.isEmpty() &&
+                    matchingRuns.isEmpty() &&
+                    matchingNotebookEntries.isEmpty() &&
+                    results.isEmpty() &&
+                    glossaryResults.isEmpty()
+                ) {
                     Box(Modifier.fillMaxWidth().heightIn(min = 180.dp), contentAlignment = Alignment.Center) {
-                        Text("No matching screens or project entities", color = AresTextSecondary)
+                        Text("No matching screens, runs, notebook entries, or project entities", color = AresTextSecondary)
                     }
                 } else {
                     LazyColumn(Modifier.fillMaxWidth().heightIn(max = 430.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        items(matchingRuns, key = { "run-${it.sessionId}" }) { run ->
+                            Row(
+                                Modifier.fillMaxWidth().clickable {
+                                    onOpenRun(run.sessionId)
+                                    onDismiss()
+                                }.background(AresSurfaceElevated, RoundedCornerShape(8.dp)).padding(horizontal = 12.dp, vertical = 10.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(Icons.Default.PlayArrow, null, tint = AresCyan, modifier = Modifier.size(20.dp))
+                                Column(Modifier.padding(start = 10.dp).weight(1f)) {
+                                    Text(run.label, color = AresTextPrimary, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                    Text(run.subtitle, color = AresTextTertiary, fontSize = 10.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                }
+                                Text("Replay Run", color = AresCyan, fontSize = 10.sp, fontWeight = FontWeight.SemiBold)
+                            }
+                        }
+                        items(matchingNotebookEntries, key = { "note-${it.entryId}" }) { note ->
+                            Row(
+                                Modifier.fillMaxWidth().clickable {
+                                    onOpenNotebookEntry(note.entryId)
+                                    onDismiss()
+                                }.background(AresSurfaceElevated, RoundedCornerShape(8.dp)).padding(horizontal = 12.dp, vertical = 10.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(Icons.Default.Book, null, tint = AresGold, modifier = Modifier.size(20.dp))
+                                Column(Modifier.padding(start = 10.dp).weight(1f)) {
+                                    Text(note.title, color = AresTextPrimary, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                    Text(note.subtitle, color = AresTextTertiary, fontSize = 10.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                }
+                                Text("Notebook", color = AresGold, fontSize = 10.sp, fontWeight = FontWeight.SemiBold)
+                            }
+                        }
                         items(matchingProjectItems, key = { "project-${it.id}" }) { item ->
                             val icon = when (item.category) {
                                 CommandPaletteProjectCategory.STAGE -> Icons.Default.SettingsInputComponent

@@ -12,22 +12,33 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.produceState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.ares.analytics.domain.navigation.NavigationTarget
+import com.ares.analytics.service.DatabaseService
 import com.ares.analytics.service.DeployExecutionState
 import com.ares.analytics.service.LearningProgressService
 import com.ares.analytics.service.UpdateCheckerService
+import com.ares.analytics.service.integration.EngineeringNotebookCaptureService
 import com.ares.analytics.shared.models.League
+import com.ares.analytics.shared.models.WorkspaceConfig
 import com.ares.analytics.ui.components.CommandPalette
+import com.ares.analytics.ui.components.CommandPaletteNotebookItem
+import com.ares.analytics.ui.components.CommandPaletteRunItem
 import com.ares.analytics.ui.components.LearningCoachDrawer
+import com.ares.analytics.ui.components.buildCommandPaletteNotebookItems
+import com.ares.analytics.ui.components.buildCommandPaletteRunItems
 import com.ares.analytics.ui.components.core.AresDialog
 import com.ares.analytics.ui.components.core.AresDialogVariant
 import com.ares.analytics.ui.components.core.OneClickDeployDialog
 import com.ares.analytics.ui.components.core.TargetSelection
 import com.ares.analytics.ui.components.layout.UpdateNotificationBanner
 import com.ares.analytics.ui.theme.AresTextSecondary
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 internal data class MainScreenOverlayState(
     val activeNavigation: NavigationTarget,
@@ -54,6 +65,8 @@ internal data class MainScreenOverlayActions(
     val stopSimulator: () -> Unit,
     val dismissCommandPalette: () -> Unit,
     val openGlossaryTerm: (String) -> Unit,
+    val openRunReplay: (String) -> Unit = {},
+    val openNotebookEntry: (String) -> Unit = {},
     val confirmWorkspaceDeletion: (String) -> Unit,
     val dismissWorkspaceDeletion: () -> Unit,
     val confirmDeploy: () -> Unit,
@@ -68,6 +81,9 @@ internal fun BoxScope.MainScreenOverlays(
     state: MainScreenOverlayState,
     actions: MainScreenOverlayActions,
     learningProgressService: LearningProgressService,
+    workspace: WorkspaceConfig? = null,
+    databaseService: DatabaseService? = null,
+    notebookCaptureService: EngineeringNotebookCaptureService? = null,
 ) {
     AnimatedVisibility(
         visible = state.coachDrawerOpen &&
@@ -93,12 +109,55 @@ internal fun BoxScope.MainScreenOverlays(
     }
 
     if (state.commandPaletteOpen) {
+        val indexedEntities by produceState(
+            initialValue = emptyList<CommandPaletteRunItem>() to emptyList<CommandPaletteNotebookItem>(),
+            workspace?.id,
+            workspace?.teamId,
+            workspace?.seasonId,
+            workspace?.robotId,
+            databaseService,
+            notebookCaptureService,
+        ) {
+            value = withContext(Dispatchers.IO) {
+                val runs = if (
+                    workspace != null &&
+                    databaseService != null &&
+                    workspace.teamId.isNotBlank() &&
+                    workspace.seasonId.isNotBlank() &&
+                    workspace.robotId.isNotBlank()
+                ) {
+                    runCatching {
+                        buildCommandPaletteRunItems(
+                            databaseService.getSessionsForWorkspace(
+                                workspace.teamId,
+                                workspace.seasonId,
+                                workspace.robotId,
+                            )
+                        )
+                    }.getOrDefault(emptyList())
+                } else {
+                    emptyList()
+                }
+                val notes = if (workspace != null && notebookCaptureService != null) {
+                    runCatching {
+                        buildCommandPaletteNotebookItems(notebookCaptureService.listWorkspaceEntries(workspace, limit = 150))
+                    }.getOrDefault(emptyList())
+                } else {
+                    emptyList()
+                }
+                runs to notes
+            }
+        }
         CommandPalette(
             developerMode = state.developerMode,
             projectPath = state.projectPath,
+            runItems = indexedEntities.first,
+            notebookItems = indexedEntities.second,
             onDismiss = actions.dismissCommandPalette,
             onNavigate = actions.navigate,
             onOpenGlossaryTerm = actions.openGlossaryTerm,
+            onOpenRun = actions.openRunReplay,
+            onOpenNotebookEntry = actions.openNotebookEntry,
         )
     }
 

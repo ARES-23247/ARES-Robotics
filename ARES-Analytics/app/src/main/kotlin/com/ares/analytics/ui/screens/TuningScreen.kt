@@ -76,6 +76,7 @@ fun TuningScreen(
     onStopSimulator: () -> Unit,
     onOpenGuidedRunReview: () -> Unit,
     onOpenReplay: (String, Long) -> Unit,
+    onLogExperimentToNotebook: ((com.ares.analytics.service.tuning.GuidedTuningExperiment) -> Unit)? = null,
 ) {
     val state by viewModel.state.collectAsState()
     val sysIdState by sysIdViewModel.state.collectAsState()
@@ -149,6 +150,7 @@ fun TuningScreen(
                 onOpenGuidedRunReview = onOpenGuidedRunReview,
                 onOpenReplay = onOpenReplay,
                 onOpenAdvancedProfiles = { activeMode = 1 },
+                onLogExperimentToNotebook = onLogExperimentToNotebook,
             )
             return@Column
         }

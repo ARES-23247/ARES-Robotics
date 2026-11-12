@@ -91,44 +91,22 @@ fun ImportCenterScreen(
             }
         }
 
-        Surface(
-            modifier = Modifier.fillMaxWidth().border(1.dp, AresCyan.copy(alpha = 0.65f), RoundedCornerShape(10.dp)),
-            color = AresCyan.copy(alpha = 0.08f),
-            shape = RoundedCornerShape(10.dp),
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(14.dp),
-                horizontalArrangement = Arrangement.spacedBy(14.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Icon(Icons.Default.FolderOpen, contentDescription = null, tint = AresCyan, modifier = Modifier.size(28.dp))
-                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text("Import a completed run", color = AresTextPrimary, fontWeight = FontWeight.Bold)
-                    Text(
-                        "Choose robot or simulator logs. ARES verifies and archives a copy inside this workspace, then adds one run to local history. Your originals are never changed.",
-                        color = AresTextSecondary,
-                        fontSize = 12.sp,
-                    )
-                    Text(
-                        "CSV/CSV.GZ · JSONL · Parquet · WPILOG/WPILOGXZ · DSLOG · RLOG · REVLOG · Hoot · Road Runner LOG",
-                        color = AresTextTertiary,
-                        fontSize = 10.sp,
-                    )
-                }
-                Button(
-                    onClick = {
-                        val selected = chooseCompletedRobotLogs(projectPath)
-                        if (selected.isNotEmpty()) viewModel.onIntent(ImportCenterIntent.ImportFiles(selected))
-                    },
-                    enabled = !state.isImporting && state.retryingId == null,
-                    colors = ButtonDefaults.buttonColors(containerColor = AresCyan, contentColor = AresOnAccent),
-                ) {
-                    Icon(Icons.Default.FolderOpen, contentDescription = null)
-                    Spacer(Modifier.width(7.dp))
-                    Text("Choose log files", fontWeight = FontWeight.Bold)
-                }
-            }
-        }
+        com.ares.analytics.ui.components.importcenter.ImportDropZoneAndMetadataCard(
+            enabled = !state.isImporting && state.retryingId == null,
+            pendingMatchNumber = state.pendingMatchNumber,
+            pendingAlliance = state.pendingAlliance,
+            pendingTagsText = state.pendingTagsText,
+            onMatchNumberChange = { viewModel.onIntent(ImportCenterIntent.SetPendingMatchNumber(it)) },
+            onAllianceChange = { viewModel.onIntent(ImportCenterIntent.SetPendingAlliance(it)) },
+            onTagsChange = { viewModel.onIntent(ImportCenterIntent.SetPendingTags(it)) },
+            onChooseFilesClick = {
+                val selected = chooseCompletedRobotLogs(projectPath)
+                if (selected.isNotEmpty()) viewModel.onIntent(ImportCenterIntent.ImportFiles(selected))
+            },
+            onFilesDropped = { dropped ->
+                if (dropped.isNotEmpty()) viewModel.onIntent(ImportCenterIntent.ImportFiles(dropped))
+            },
+        )
 
         if (state.isImporting) {
             Surface(

@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.material.icons.filled.Book
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Restore
@@ -134,6 +135,7 @@ internal fun DecisionStep(
     state: GuidedTuningExperimentState,
     viewModel: GuidedTuningExperimentViewModel,
     onOpenAdvancedProfiles: () -> Unit,
+    onLogExperimentToNotebook: ((com.ares.analytics.service.tuning.GuidedTuningExperiment) -> Unit)? = null,
 ) {
     val experiment = state.experiment ?: return
     var note by remember(experiment.uid, experiment.decisionNote) { mutableStateOf(experiment.decisionNote) }
@@ -192,16 +194,28 @@ internal fun DecisionStep(
                 colors = ButtonDefaults.buttonColors(containerColor = AresCyan, contentColor = AresOnAccent),
             ) { Text("Start revised one-change experiment") }
         }
-        OutlinedButton(
-            onClick = {
-                chooseExperimentReportFile(experiment.uid)?.let {
-                    viewModel.onIntent(GuidedTuningExperimentIntent.ExportReport(it))
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            OutlinedButton(
+                onClick = {
+                    chooseExperimentReportFile(experiment.uid)?.let {
+                        viewModel.onIntent(GuidedTuningExperimentIntent.ExportReport(it))
+                    }
+                },
+            ) {
+                Icon(Icons.Default.Download, contentDescription = null, modifier = Modifier.size(16.dp))
+                Spacer(Modifier.width(5.dp))
+                Text("Export mentor/student engineering report")
+            }
+            if (onLogExperimentToNotebook != null) {
+                Button(
+                    onClick = { onLogExperimentToNotebook(experiment) },
+                    colors = ButtonDefaults.buttonColors(containerColor = AresCyan, contentColor = AresOnAccent),
+                ) {
+                    Icon(Icons.Default.Book, contentDescription = null, modifier = Modifier.size(16.dp))
+                    Spacer(Modifier.width(5.dp))
+                    Text("Log Experiment to Notebook")
                 }
-            },
-        ) {
-            Icon(Icons.Default.Download, contentDescription = null, modifier = Modifier.size(16.dp))
-            Spacer(Modifier.width(5.dp))
-            Text("Export mentor/student engineering report")
+            }
         }
     }
 }
