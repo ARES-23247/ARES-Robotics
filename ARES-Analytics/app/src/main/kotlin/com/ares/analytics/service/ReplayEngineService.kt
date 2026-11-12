@@ -74,6 +74,10 @@ class ReplayEngineService internal constructor(
     val sessionStartTimestampMs: StateFlow<Long> = _sessionStartTimestampMs.asStateFlow()
     private val _sessionDurationMs = MutableStateFlow(0L)
     val sessionDurationMs: StateFlow<Long> = _sessionDurationMs.asStateFlow()
+    private val _sliceInTimestampMs = MutableStateFlow<Long?>(null)
+    val sliceInTimestampMs: StateFlow<Long?> = _sliceInTimestampMs.asStateFlow()
+    private val _sliceOutTimestampMs = MutableStateFlow<Long?>(null)
+    val sliceOutTimestampMs: StateFlow<Long?> = _sliceOutTimestampMs.asStateFlow()
     private val _cacheMetrics = MutableStateFlow(ReplayCacheMetrics())
     val cacheMetrics: StateFlow<ReplayCacheMetrics> = _cacheMetrics.asStateFlow()
 
@@ -228,7 +232,13 @@ class ReplayEngineService internal constructor(
                 _state.value = ReplayState.ENDED
                 return
             }
-            if (currentPlayheadMs >= endTimestampMs) {
+            val activeSlice = activeLoopSliceLocked()
+            if (activeSlice != null) {
+                if (currentPlayheadMs < activeSlice.first || currentPlayheadMs >= activeSlice.second) {
+                    currentPlayheadMs = activeSlice.first
+                    commitOrLoadLocked()
+                }
+            } else if (currentPlayheadMs >= endTimestampMs) {
                 currentPlayheadMs = startTimestampMs
                 commitOrLoadLocked()
             }
@@ -248,10 +258,23 @@ class ReplayEngineService internal constructor(
         }
     }
 
+    private fun activeLoopSliceLocked(): Pair<Long, Long>? {
+        if (!_looping.value || timestamps.isEmpty()) return null
+        val inMs = _sliceInTimestampMs.value?.coerceIn(startTimestampMs, endTimestampMs) ?: return null
+        val outMs = _sliceOutTimestampMs.value?.coerceIn(startTimestampMs, endTimestampMs) ?: return null
+        return if (outMs > inMs) inMs to outMs else null
+    }
+
     private fun advancePlaybackLocked(): Boolean {
         try {
+            val activeSlice = activeLoopSliceLocked()
+            val boundStart = activeSlice?.first ?: startTimestampMs
+            val boundEnd = activeSlice?.second ?: endTimestampMs
+            if (currentPlayheadMs !in boundStart..boundEnd) {
+                currentPlayheadMs = currentPlayheadMs.coerceIn(boundStart, boundEnd)
+            }
             currentPlayheadMs = playbackTime.advance(clock.nowMs(), currentPlayheadMs,
-                startTimestampMs, endTimestampMs, _speed.value, _looping.value)
+                boundStart, boundEnd, _speed.value, _looping.value)
             if (playbackTime.advanced) commitOrLoadLocked()
             if (playbackTime.ended) {
                 _state.value = ReplayState.ENDED
@@ -346,6 +369,85 @@ class ReplayEngineService internal constructor(
         }
     }
 
+    fun setSliceIn(timestampMs: Long = _playheadTimestampMs.value) = synchronized(lock) {
+        if (disposed || timestamps.isEmpty()) return@synchronized
+        val clamped = timestampMs.coerceIn(startTimestampMs, endTimestampMs)
+        _sliceInTimestampMs.value = clamped
+        if (_sliceOutTimestampMs.value != null && _sliceOutTimestampMs.value!! <= clamped) {
+            _sliceOutTimestampMs.value = null
+        }
+    }
+
+    fun setSliceOut(timestampMs: Long = _playheadTimestampMs.value) = synchronized(lock) {
+        if (disposed || timestamps.isEmpty()) return@synchronized
+        val clamped = timestampMs.coerceIn(startTimestampMs, endTimestampMs)
+        val existingIn = _sliceInTimestampMs.value
+        if (existingIn == null) {
+            _sliceInTimestampMs.value = startTimestampMs
+            _sliceOutTimestampMs.value = clamped.takeIf { it > startTimestampMs }
+        } else if (clamped < existingIn) {
+            _sliceInTimestampMs.value = clamped
+            _sliceOutTimestampMs.value = existingIn
+        } else if (clamped > existingIn) {
+            _sliceOutTimestampMs.value = clamped
+        }
+    }
+
+    fun clearSlice() = synchronized(lock) {
+        _sliceInTimestampMs.value = null
+        _sliceOutTimestampMs.value = null
+    }
+
+    suspend fun addPlayheadAnnotation(
+        text: String,
+        authorId: String? = null,
+        playheadMs: Long? = null,
+    ): SessionAnnotation? {
+        val trimmed = text.trim()
+        require(trimmed.isNotBlank()) { "Annotation text must not be blank" }
+        val (sessionId, anchorMs) = synchronized(lock) {
+            if (disposed || currentSessionId.isBlank()) return null
+            val rawAnchor = playheadMs ?: currentPlayheadMs
+            val clamped = if (timestamps.isNotEmpty()) rawAnchor.coerceIn(startTimestampMs, endTimestampMs) else rawAnchor
+            currentSessionId to clamped
+        }
+        val createdEpoch = clock.nowMs().takeIf { it > 0L } ?: System.currentTimeMillis()
+        val annotation = SessionAnnotation(
+            annotationId = java.util.UUID.randomUUID().toString(),
+            sessionId = sessionId,
+            text = trimmed,
+            createdAt = createdEpoch,
+            authorId = authorId,
+            playheadMs = anchorMs,
+        )
+        val updated = withContext(windowDispatcher) {
+            databaseService.insertAnnotation(annotation)
+            databaseService.getAnnotations(sessionId)
+        }
+        synchronized(lock) {
+            if (!disposed && currentSessionId == sessionId) {
+                _sessionAnnotations.value = updated
+            }
+        }
+        return annotation
+    }
+
+    suspend fun deleteAnnotation(annotationId: String) {
+        val sessionId = synchronized(lock) {
+            if (disposed || currentSessionId.isBlank()) return
+            currentSessionId
+        }
+        val updated = withContext(windowDispatcher) {
+            databaseService.deleteAnnotation(annotationId)
+            databaseService.getAnnotations(sessionId)
+        }
+        synchronized(lock) {
+            if (!disposed && currentSessionId == sessionId) {
+                _sessionAnnotations.value = updated
+            }
+        }
+    }
+
     /** Clears any loaded session without disposing the replay service across workspace switches. */
     fun clearSession() = synchronized(lock) {
         if (!disposed) {
@@ -418,6 +520,8 @@ class ReplayEngineService internal constructor(
         _telemetryDensity.value = emptyList()
         _sessionStartTimestampMs.value = 0L
         _sessionDurationMs.value = 0L
+        _sliceInTimestampMs.value = null
+        _sliceOutTimestampMs.value = null
         _playheadTimestampMs.value = 0L
         _progress.value = 0.0
         _isSeeking.value = false

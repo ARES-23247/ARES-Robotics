@@ -346,6 +346,7 @@ class DatabaseService(
     suspend fun deleteTelemetryFrames(sessionId: String) = telemetryRepo.deleteTelemetryFrames(sessionId)
     suspend fun pruneTelemetryFrames(sessionId: String, cutoffMs: Long) = telemetryRepo.pruneTelemetryFrames(sessionId, cutoffMs)
     suspend fun insertAnnotation(annotation: SessionAnnotation) = sessionMetadataRepo.insertAnnotation(annotation)
+    suspend fun deleteAnnotation(annotationId: String) = sessionMetadataRepo.deleteAnnotation(annotationId)
     suspend fun getAnnotations(sessionId: String): List<SessionAnnotation> = sessionMetadataRepo.getAnnotations(sessionId)
     suspend fun updateSessionTags(sessionId: String, tags: List<String>) = sessionMetadataRepo.updateSessionTags(sessionId, tags)
     suspend fun updateSessionMatchDetails(sessionId: String, matchNumber: Int?, allianceColor: String?) = sessionMetadataRepo.updateSessionMatchDetails(sessionId, matchNumber, allianceColor)

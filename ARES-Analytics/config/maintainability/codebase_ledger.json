@@ -2,7 +2,7 @@
   "schemaVersion": 2,
   "scope": "Tracked production Kotlin file sizes; no review or test coverage claim.",
   "summary": {
-    "totalProductionKotlinFiles": 1186,
+    "totalProductionKotlinFiles": 1192,
     "grandfatheredFiles": 24,
     "violationsOverLimit": 0,
     "microfilesRemaining": 20,
@@ -123,6 +123,36 @@
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/di/ServiceRegistry.kt",
       "product": "ARES-Analytics",
       "lines": 469,
+      "lineLimit": 750,
+      "effectiveLimit": 750,
+      "grandfathered": false,
+      "compliant": true,
+      "isMicrofile": false
+    },
+    {
+      "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/domain/analysis/MatchDebriefReportBuilder.kt",
+      "product": "ARES-Analytics",
+      "lines": 352,
+      "lineLimit": 750,
+      "effectiveLimit": 750,
+      "grandfathered": false,
+      "compliant": true,
+      "isMicrofile": false
+    },
+    {
+      "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/domain/analysis/MatchStrategyAnalyzer.kt",
+      "product": "ARES-Analytics",
+      "lines": 693,
+      "lineLimit": 750,
+      "effectiveLimit": 750,
+      "grandfathered": false,
+      "compliant": true,
+      "isMicrofile": false
+    },
+    {
+      "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/domain/analysis/MatchStrategyModels.kt",
+      "product": "ARES-Analytics",
+      "lines": 102,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -462,7 +492,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/DatabaseService.kt",
       "product": "ARES-Analytics",
-      "lines": 508,
+      "lines": 509,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -602,7 +632,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/ExportService.kt",
       "product": "ARES-Analytics",
-      "lines": 396,
+      "lines": 468,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -992,7 +1022,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/ReplayEngineService.kt",
       "product": "ARES-Analytics",
-      "lines": 639,
+      "lines": 743,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -1482,7 +1512,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/db/DatabaseBackupExporter.kt",
       "product": "ARES-Analytics",
-      "lines": 568,
+      "lines": 570,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -1492,7 +1522,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/db/DatabaseSchemaInitializer.kt",
       "product": "ARES-Analytics",
-      "lines": 296,
+      "lines": 303,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -1562,7 +1592,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/db/SessionMetadataRepository.kt",
       "product": "ARES-Analytics",
-      "lines": 410,
+      "lines": 425,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -3332,7 +3362,17 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/dashboard/ReplayTimelineScrubber.kt",
       "product": "ARES-Analytics",
-      "lines": 701,
+      "lines": 502,
+      "lineLimit": 750,
+      "effectiveLimit": 750,
+      "grandfathered": false,
+      "compliant": true,
+      "isMicrofile": false
+    },
+    {
+      "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/dashboard/ReplayTimelineSliceAndNotes.kt",
+      "product": "ARES-Analytics",
+      "lines": 647,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -4712,7 +4752,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/screens/HardwareSelfTestWizard.kt",
       "product": "ARES-Analytics",
-      "lines": 293,
+      "lines": 573,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -4822,7 +4862,17 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/screens/MainScreenScopes.kt",
       "product": "ARES-Analytics",
-      "lines": 260,
+      "lines": 263,
+      "lineLimit": 750,
+      "effectiveLimit": 750,
+      "grandfathered": false,
+      "compliant": true,
+      "isMicrofile": false
+    },
+    {
+      "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/screens/MatchStrategyComponents.kt",
+      "product": "ARES-Analytics",
+      "lines": 395,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -4832,7 +4882,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/screens/MatchStrategyScreen.kt",
       "product": "ARES-Analytics",
-      "lines": 215,
+      "lines": 523,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -4863,6 +4913,16 @@
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/screens/PathPlannerScreen.kt",
       "product": "ARES-Analytics",
       "lines": 514,
+      "lineLimit": 750,
+      "effectiveLimit": 750,
+      "grandfathered": false,
+      "compliant": true,
+      "isMicrofile": false
+    },
+    {
+      "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/screens/PitReadinessInspector.kt",
+      "product": "ARES-Analytics",
+      "lines": 552,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -5072,7 +5132,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/screens/WorkspaceRouteHost.kt",
       "product": "ARES-Analytics",
-      "lines": 294,
+      "lines": 316,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -6412,7 +6472,7 @@
     {
       "path": "ARES-Analytics/shared/src/main/kotlin/com/ares/analytics/shared/models/SessionTelemetryModels.kt",
       "product": "ARES-Analytics",
-      "lines": 207,
+      "lines": 211,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,

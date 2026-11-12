@@ -94,8 +94,12 @@ data class SessionAnnotation(
     val sessionId: String,
     val text: String,
     val createdAt: Long,
-    val authorId: String? = null
-)
+    val authorId: String? = null,
+    /** Optional session-timeline playhead anchor (ms); falls back to [createdAt] for legacy notes. */
+    val playheadMs: Long? = null,
+) {
+    fun effectiveTimestampMs(): Long = playheadMs ?: createdAt
+}
 
 /**
  * One topic update on a session timeline.

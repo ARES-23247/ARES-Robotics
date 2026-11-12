@@ -350,7 +350,7 @@ class DatabaseBackupExporter(
             statement.executeBatch()
         }
         conn.prepareStatement(
-            "INSERT INTO session_annotations (annotation_id, session_id, text, created_at, author_id) VALUES (?, ?, ?, ?, ?)"
+            "INSERT INTO session_annotations (annotation_id, session_id, text, created_at, author_id, playhead_ms) VALUES (?, ?, ?, ?, ?, ?)"
         ).use { statement ->
             data.annotations.forEach { annotation ->
                 statement.setString(1, annotation.annotationId)
@@ -358,6 +358,8 @@ class DatabaseBackupExporter(
                 statement.setString(3, annotation.text)
                 statement.setLong(4, annotation.createdAt)
                 statement.setString(5, annotation.authorId)
+                annotation.playheadMs?.let { statement.setLong(6, it) }
+                    ?: statement.setNull(6, java.sql.Types.BIGINT)
                 statement.addBatch()
             }
             statement.executeBatch()

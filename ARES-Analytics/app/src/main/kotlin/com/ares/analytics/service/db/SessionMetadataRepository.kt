@@ -211,19 +211,31 @@ internal class SessionMetadataRepository(
     }
 
     suspend fun insertAnnotation(annotation: SessionAnnotation) = withDbLock {
-        conn.prepareStatement("INSERT OR REPLACE INTO session_annotations (annotation_id, session_id, text, created_at, author_id) VALUES (?, ?, ?, ?, ?)").use { ps ->
+        conn.prepareStatement(
+            "INSERT OR REPLACE INTO session_annotations (annotation_id, session_id, text, created_at, author_id, playhead_ms) VALUES (?, ?, ?, ?, ?, ?)"
+        ).use { ps ->
             ps.setString(1, annotation.annotationId)
             ps.setString(2, annotation.sessionId)
             ps.setString(3, annotation.text)
             ps.setLong(4, annotation.createdAt)
             ps.setString(5, annotation.authorId)
+            annotation.playheadMs?.let { ps.setLong(6, it) } ?: ps.setNull(6, java.sql.Types.BIGINT)
+            ps.executeUpdate()
+        }
+    }
+
+    suspend fun deleteAnnotation(annotationId: String) = withDbLock {
+        conn.prepareStatement("DELETE FROM session_annotations WHERE annotation_id = ?").use { ps ->
+            ps.setString(1, annotationId)
             ps.executeUpdate()
         }
     }
 
     suspend fun getAnnotations(sessionId: String): List<SessionAnnotation> = withReadLock {
         val list = mutableListOf<SessionAnnotation>()
-        readConn.prepareStatement("SELECT * FROM session_annotations WHERE session_id = ? ORDER BY created_at ASC, annotation_id ASC").use { ps ->
+        readConn.prepareStatement(
+            "SELECT * FROM session_annotations WHERE session_id = ? ORDER BY COALESCE(playhead_ms, created_at) ASC, created_at ASC, annotation_id ASC"
+        ).use { ps ->
             ps.setString(1, sessionId)
             ps.executeQuery().use { rs ->
                 while (rs.next()) list.add(rs.toSessionAnnotation())
@@ -369,12 +381,15 @@ internal class SessionMetadataRepository(
     }
 
     private fun ResultSet.toSessionAnnotation(): SessionAnnotation {
+        val rawPlayhead = getLong("playhead_ms")
+        val playheadFinal = if (wasNull()) null else rawPlayhead
         return SessionAnnotation(
             annotationId = getString("annotation_id"),
             sessionId = getString("session_id"),
             text = getString("text"),
             createdAt = getLong("created_at"),
-            authorId = getString("author_id")
+            authorId = getString("author_id"),
+            playheadMs = playheadFinal,
         )
     }
 

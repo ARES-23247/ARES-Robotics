@@ -240,6 +240,78 @@ class ExportService(private val databaseService: DatabaseService) {
         }
     }
 
+    /**
+     * Streams a bounded `[startTimestampMs, endTimestampMs]` replay slice to a canonical lossless CSV list.
+     * When [selectedKeys] is null or empty, all topics recorded inside the slice window are exported.
+     */
+    suspend fun exportWindowToCsvList(
+        sessionId: String,
+        startTimestampMs: Long,
+        endTimestampMs: Long,
+        destinationFile: File,
+        selectedKeys: List<String>? = null,
+    ) = withContext(Dispatchers.IO) {
+        require(sessionId.isNotBlank()) { "Export sessionId must not be blank" }
+        require(startTimestampMs >= 0L && endTimestampMs >= startTimestampMs) {
+            "Slice export requires 0 <= startTimestampMs <= endTimestampMs"
+        }
+        val keyFilter = selectedKeys
+            ?.map(TelemetryMetricCatalog::normalizeTopic)
+            ?.filter(String::isNotEmpty)
+            ?.toSet()
+            ?.takeIf { it.isNotEmpty() }
+
+        writeFileAtomicallySuspending(destinationFile, beforeAtomicReplace) { temporary ->
+            Files.newBufferedWriter(temporary.toPath(), StandardCharsets.UTF_8).use { writer ->
+                writer.writeLine(
+                    "key,timestamp_ms,timestamp_us,sample_order,value_type,numeric_value,string_value",
+                )
+                var cursor: TelemetryExportCursor? = null
+                var written = 0L
+                while (true) {
+                    val page = databaseService.getTelemetryWindowPageAfter(
+                        sessionId = sessionId,
+                        startMs = startTimestampMs,
+                        endMs = endTimestampMs,
+                        after = cursor,
+                        limit = EXPORT_PAGE_SIZE,
+                    )
+                    if (page.isEmpty()) break
+                    for (frame in page) {
+                        val normalizedKey = TelemetryMetricCatalog.normalizeTopic(frame.key)
+                        if (keyFilter != null && normalizedKey !in keyFilter) continue
+                        written++
+                        require(written <= maximumSourceFrames.toLong()) {
+                            "Slice export exceeds the $maximumSourceFrames-frame safety limit"
+                        }
+                        val valueType = if (frame.stringValue == null) "double" else "string"
+                        writer.write(csvCell(normalizedKey, neutralizeFormula = false))
+                        writer.write(",${frame.timestampMs},${frame.timestampUs},${frame.sampleOrder},$valueType,")
+                        writer.write(frame.value.toString())
+                        writer.write(','.code)
+                        writer.write(frame.stringValue?.let { csvCell(it, neutralizeFormula = false) }.orEmpty())
+                        writer.newLine()
+                    }
+                    val last = page.last()
+                    cursor = TelemetryExportCursor(last.timestampUs, last.sampleOrder, last.key)
+                    if (page.size < EXPORT_PAGE_SIZE) break
+                }
+            }
+        }
+    }
+
+    /** Atomically writes a UTF-8 text artifact (Markdown, HTML, or Pit Receipt) to [destinationFile]. */
+    suspend fun writeTextReportAtomically(
+        destinationFile: File,
+        content: String,
+    ) = withContext(Dispatchers.IO) {
+        writeFileAtomicallySuspending(destinationFile, beforeAtomicReplace) { temporary ->
+            Files.newBufferedWriter(temporary.toPath(), StandardCharsets.UTF_8).use { writer ->
+                writer.write(content)
+            }
+        }
+    }
+
     private suspend fun preflight(
         sessionId: String,
         keys: List<String>,
