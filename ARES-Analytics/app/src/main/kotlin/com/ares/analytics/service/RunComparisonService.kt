@@ -475,7 +475,7 @@ class RunComparisonService(
         val normalized = clean.normalizedMarkerLabel()
         if (normalized.isBlank()) return null
         val id = "annotation:$normalized"
-        return id to Marker(createdAt, "Annotation · $clean")
+        return id to Marker(effectiveTimestampMs(), "Annotation · $clean")
     }
 
     private companion object {

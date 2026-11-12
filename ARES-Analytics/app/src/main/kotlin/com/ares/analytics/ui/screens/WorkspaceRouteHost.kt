@@ -3,12 +3,15 @@ package com.ares.analytics.ui.screens
 import androidx.compose.runtime.Composable
 import com.ares.analytics.service.AcademyPracticeIdentity
 import com.ares.analytics.service.AcademyPracticeWorkflowService
+import com.ares.analytics.service.ExportService
 import com.ares.analytics.service.LearningProgressService
 import com.ares.analytics.service.MatchInfo
 import com.ares.analytics.service.Nt4ClientService
 import com.ares.analytics.service.SimulatorProcessService
+import com.ares.analytics.service.hardware.HardwareSetupService
 import com.ares.analytics.service.isLoopbackDriveControlHost
 import com.ares.analytics.service.project.ProjectExecutionCommand
+import com.ares.analytics.service.project.ProjectSession
 import com.ares.analytics.shared.models.ForensicsResponse
 import com.ares.analytics.shared.models.WorkspaceConfig
 import com.ares.analytics.domain.navigation.NavigationTarget
@@ -42,6 +45,9 @@ internal data class WorkspaceRouteFeatureScope(
     val workspaceServices: WorkspaceServicesFeatureScope,
     val nt4: Nt4ClientService,
     val simulator: SimulatorProcessService,
+    val export: ExportService,
+    val projectSession: ProjectSession,
+    val hardwareSetup: HardwareSetupService,
 )
 
 internal data class WorkspaceRouteState(
@@ -213,8 +219,24 @@ internal fun WorkspaceRouteHost(
         }
 
         NavigationTarget.KDOC_VIEWER -> KDocViewerScreen()
-        NavigationTarget.PIT_DIAGNOSTICS -> HardwareSelfTestWizard(nt4ClientService = scope.nt4)
-        NavigationTarget.MATCH_STRATEGY -> MatchStrategyScreen()
+        NavigationTarget.PIT_DIAGNOSTICS -> HardwareSelfTestWizard(
+            nt4ClientService = scope.nt4,
+            workspace = workspace,
+            projectSession = scope.projectSession,
+            hardwareSetupService = scope.hardwareSetup,
+            exportService = scope.export,
+        )
+        NavigationTarget.MATCH_STRATEGY -> MatchStrategyScreen(
+            databaseService = scope.runData.database,
+            exportService = scope.export,
+            workspace = workspace,
+            reloadTrigger = state.runsReloadTrigger,
+            onOpenReplay = { sessionId, timestampMs ->
+                scope.dashboard.onIntent(DashboardIntent.SelectPrimarySession(sessionId, timestampMs))
+                actions.navigate(NavigationTarget.DASHBOARD)
+            },
+            onOpenImports = { actions.navigate(NavigationTarget.IMPORT_CENTER) },
+        )
         NavigationTarget.TUNING -> TuningScreen(
             viewModel = scope.tuning,
             sysIdViewModel = scope.sysId,

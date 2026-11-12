@@ -173,6 +173,9 @@ internal fun rememberWorkspaceRouteFeatureScope(
         ),
         nt4 = services.nt4ClientService,
         simulator = services.simulatorProcessService,
+        export = services.exportService,
+        projectSession = services.projectSession,
+        hardwareSetup = services.hardwareSetupService,
     )
 }
 

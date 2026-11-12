@@ -111,8 +111,10 @@ class DatabaseSchemaInitializer(
                     session_id VARCHAR NOT NULL,
                     text VARCHAR NOT NULL,
                     created_at BIGINT NOT NULL,
-                    author_id VARCHAR
+                    author_id VARCHAR,
+                    playhead_ms BIGINT
                 );
+                ALTER TABLE session_annotations ADD COLUMN IF NOT EXISTS playhead_ms BIGINT;
 
                 CREATE TABLE IF NOT EXISTS alerts (
                     alert_id VARCHAR PRIMARY KEY,
@@ -234,6 +236,11 @@ class DatabaseSchemaInitializer(
             targetConn,
             "telemetry_frames",
             setOf("timestamp_ms", "session_id", "key", "value", "string_value", "timestamp_us", "sample_order"),
+        )
+        requireCurrentColumns(
+            targetConn,
+            "session_annotations",
+            setOf("annotation_id", "session_id", "text", "created_at", "author_id", "playhead_ms"),
         )
     }
 
