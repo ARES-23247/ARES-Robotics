@@ -152,6 +152,7 @@ fun MainScreen(services: ServiceRegistry) {
                 projectHistoryInitializer = NewProjectHistoryInitializer { stagedProjectPath ->
                     services.projectVersionControlService.initializeNewProject(stagedProjectPath)
                 },
+                initialProjectParentPath = defaultProjectsParentDirectory(),
                 scope = scope,
             ) { loaded ->
                 mainViewModel.onIntent(MainIntent.SaveConfig(loaded))
@@ -441,7 +442,7 @@ fun MainScreen(services: ServiceRegistry) {
                 val isCtrl = keyEvent.isCtrlPressed
                 if (keyEvent.type == KeyEventType.KeyDown && isCtrl) {
                     when (keyEvent.key) {
-                        Key.B -> {
+                        Key.B -> if (activeNav == NavigationTarget.ROBOT_STUDIO && !keyEvent.isShiftPressed) false else {
                             if (robotStudioShellState.canRunBuild && !isBuildRunning) {
                                 executeProjectCommand(ProjectExecutionCommand.VERIFY_AND_BUILD)
                             }
@@ -584,6 +585,9 @@ fun MainScreen(services: ServiceRegistry) {
                             requestedLessonId = lessonId
                             mainViewModel.onIntent(MainIntent.SetActiveNav(NavigationTarget.ACADEMY))
                         },
+                        nt4ClientService = services.nt4ClientService,
+                        dashboardHealthService = services.dashboardHealthService,
+                        isRobotLinkConnected = isRobotLinkConnected,
                     )
 
                     if (

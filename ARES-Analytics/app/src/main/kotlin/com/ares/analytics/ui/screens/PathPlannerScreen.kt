@@ -42,7 +42,10 @@ import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.isCtrlPressed
 import androidx.compose.ui.input.key.isShiftPressed
 import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
+import androidx.compose.ui.input.pointer.isShiftPressed as isPointerShiftPressed
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -74,7 +77,12 @@ import com.ares.analytics.ui.components.dashboard.DashboardMissionSnapshot
 import com.ares.analytics.ui.components.layout.UpdateNotificationBanner
 import com.ares.analytics.ui.components.pathplanner.FieldCanvas
 import com.ares.analytics.ui.components.pathplanner.IndicatorLightRenderState
+import com.ares.analytics.ui.components.pathplanner.PathPlannerCanvasHud
 import com.ares.analytics.ui.components.pathplanner.Waypoint
+import com.ares.analytics.ui.components.pathplanner.WaypointHistoryStack
+import com.ares.analytics.ui.components.pathplanner.computePolylineLengthMeters
+import com.ares.analytics.ui.components.pathplanner.drawMirroredAlliancePreview
+import com.ares.analytics.ui.components.pathplanner.mirrorWaypointsAcrossAlliance
 import com.ares.analytics.ui.components.routine.RoutineBuilderPane
 import com.ares.analytics.ui.components.routine.RoutineBuilderResponsiveBody
 import com.ares.analytics.ui.components.routine.RoutineEditorPanel
@@ -205,8 +213,51 @@ fun PathPlannerScreen(
         lightingPreviewModel.compile(state.previewActions)
     }
     val lightingPreview = lightingTimeline.at(state.playbackTime)
+    val historyStack = remember(projectPath, state.routine.documentId) { WaypointHistoryStack() }
+    var cursorPose by remember { mutableStateOf<Waypoint?>(null) }
+    var showAllianceMirror by remember { mutableStateOf(false) }
+    val isShiftSnapActive = LocalWindowInfo.current.keyboardModifiers.isPointerShiftPressed
+    val arcLengthMeters = remember(previewPath, routineWaypoints) {
+        computePolylineLengthMeters(previewPath.ifEmpty { routineWaypoints })
+    }
+    val etaSeconds = state.estimatedDuration.takeIf { it > 0.0 }
+        ?: state.trajectory?.states?.lastOrNull()?.timeSeconds
+        ?: 0.0
+    val selectedHeadingDeg = routineWaypoints.lastOrNull()?.let { wp ->
+        wp.rotationDeg ?: wp.headingRad?.let(Math::toDegrees)
+    }
+    val performUndo: () -> Unit = {
+        historyStack.undo(routineWaypoints)?.let { restored ->
+            viewModel.onIntent(PathPlannerIntent.UpdateRoutineFieldWaypoints(restored, state.activeLeague))
+        }
+    }
+    val performRedo: () -> Unit = {
+        historyStack.redo(routineWaypoints)?.let { restored ->
+            viewModel.onIntent(PathPlannerIntent.UpdateRoutineFieldWaypoints(restored, state.activeLeague))
+        }
+    }
 
-    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+    BoxWithConstraints(
+        modifier = Modifier
+            .fillMaxSize()
+            .onPreviewKeyEvent { keyEvent ->
+                if (keyEvent.type == KeyEventType.KeyDown && keyEvent.isCtrlPressed) {
+                    when {
+                        keyEvent.key == Key.Z && !keyEvent.isShiftPressed && historyStack.canUndo -> {
+                            performUndo()
+                            true
+                        }
+                        (keyEvent.key == Key.Y || (keyEvent.key == Key.Z && keyEvent.isShiftPressed)) && historyStack.canRedo -> {
+                            performRedo()
+                            true
+                        }
+                        else -> false
+                    }
+                } else {
+                    false
+                }
+            },
+    ) {
         val presentation = routineBuilderLayoutPresentation(maxWidth.value, AresThemeSettings.largeTextMode)
         val highlightEditor = state.tourStep?.target == AutonomousTourTarget.EDITOR
         val highlightCanvas = state.tourStep?.target == AutonomousTourTarget.CANVAS
@@ -241,6 +292,7 @@ fun PathPlannerScreen(
             com.ares.analytics.ui.components.routine.AutonomousStarterRecipeBar(
                 state = state,
                 onApplyRecipe = { recipe ->
+                    historyStack.clear()
                     viewModel.onIntent(PathPlannerIntent.ApplyStarterRecipe(recipe))
                 },
             )
@@ -287,8 +339,13 @@ fun PathPlannerScreen(
                             actualPath = previewPath,
                             contextPath = null,
                             contextWaypoints = null,
-                            onWaypointsChanged = {
-                                viewModel.onIntent(PathPlannerIntent.UpdateRoutineFieldWaypoints(it, state.activeLeague))
+                            onWaypointsChanged = { nextWaypoints ->
+                                historyStack.record(
+                                    previous = routineWaypoints,
+                                    next = nextWaypoints,
+                                    timestampMs = System.currentTimeMillis(),
+                                )
+                                viewModel.onIntent(PathPlannerIntent.UpdateRoutineFieldWaypoints(nextWaypoints, state.activeLeague))
                             },
                             projectPath = projectPath,
                             showPathControls = false,
@@ -310,7 +367,52 @@ fun PathPlannerScreen(
                             },
                             autoGoalMode = true,
                             robotDimensions = state.robotDimensions,
+                            fieldOverlay = if (showAllianceMirror && routineWaypoints.isNotEmpty()) {
+                                { w, h, fieldWidthM, fieldHeightM ->
+                                    val mirroredWps = mirrorWaypointsAcrossAlliance(
+                                        waypoints = routineWaypoints,
+                                        league = state.activeLeague,
+                                        fieldWidthM = fieldWidthM,
+                                        fieldHeightM = fieldHeightM,
+                                    )
+                                    val mirroredPath = mirrorWaypointsAcrossAlliance(
+                                        waypoints = previewPath,
+                                        league = state.activeLeague,
+                                        fieldWidthM = fieldWidthM,
+                                        fieldHeightM = fieldHeightM,
+                                    )
+                                    drawMirroredAlliancePreview(
+                                        mirroredWaypoints = mirroredWps,
+                                        mirroredPath = mirroredPath,
+                                        robotDimensions = state.robotDimensions,
+                                        w = w,
+                                        h = h,
+                                        fieldWidthM = fieldWidthM,
+                                        fieldHeightM = fieldHeightM,
+                                        league = state.activeLeague,
+                                    )
+                                }
+                            } else {
+                                null
+                            },
+                            onCursorMoved = { cursorPose = it },
                             showToolbar = false,
+                        )
+                        PathPlannerCanvasHud(
+                            cursorPose = cursorPose,
+                            selectedHeadingDeg = selectedHeadingDeg,
+                            pathLengthMeters = arcLengthMeters,
+                            etaSeconds = etaSeconds,
+                            isShiftSnapActive = isShiftSnapActive,
+                            showAllianceMirror = showAllianceMirror,
+                            canUndo = historyStack.canUndo,
+                            canRedo = historyStack.canRedo,
+                            onUndo = performUndo,
+                            onRedo = performRedo,
+                            onToggleAllianceMirror = { showAllianceMirror = !showAllianceMirror },
+                            modifier = Modifier
+                                .align(Alignment.TopEnd)
+                                .padding(10.dp),
                         )
                     }
                 },

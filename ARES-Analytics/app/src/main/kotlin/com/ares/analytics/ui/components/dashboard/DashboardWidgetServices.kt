@@ -13,6 +13,7 @@ import com.ares.analytics.service.Nt4ClientService
 import com.ares.analytics.service.ReplayEngineService
 import com.ares.analytics.service.VideoSyncService
 import com.ares.analytics.service.XrpLinkService
+import com.ares.analytics.service.tuning.TuningProposalInbox
 
 /** Live robot/simulator dependencies available to dashboard widget renderers. */
 data class DashboardLiveWidgetServices(
@@ -30,6 +31,7 @@ data class DashboardAnalysisWidgetServices(
     val aiDiagnosticsService: AiDiagnosticsService,
     val driverAnalysisService: DriverAnalysisService,
     val diagnosticCoachService: DiagnosticCoachService,
+    val tuningProposalInbox: TuningProposalInbox? = null,
 )
 
 /** Replay dependency kept separate so live-only widgets do not acquire replay internals. */

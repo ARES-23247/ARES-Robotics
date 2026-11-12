@@ -78,9 +78,11 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.platform.LocalDensity
 import com.ares.analytics.service.DatabaseService
 import com.ares.analytics.service.Nt4ClientService
 import com.ares.analytics.service.ReplayFrame
+import com.ares.analytics.service.analysis.OverlayAlignmentMode
 import com.ares.analytics.service.dashboard.BuiltInDashboardLayoutProfiles
 import com.ares.analytics.service.dashboard.DashboardLayoutProfile
 import com.ares.analytics.service.layoutProfileNameError
@@ -112,6 +114,10 @@ fun TelemetryChartPanel(
     modifier: Modifier = Modifier,
     isFullscreen: Boolean = false,
     onToggleFullscreen: (() -> Unit)? = null,
+    widgetId: String = "telemetry_chart",
+    primarySessionId: String? = null,
+    compareSessionId: String? = null,
+    crosshairCoordinator: DashboardCrosshairCoordinator? = null,
 ) {
     var parentWindowOffset by remember { mutableStateOf(Offset.Zero) }
     var draggedKey by remember { mutableStateOf<String?>(null) }
@@ -335,6 +341,34 @@ fun TelemetryChartPanel(
             )
         }
         val chartPaths = remember { List(8) { Path() } }
+        val compareReusablePath = remember { Path() }
+        val compareDashEffect = remember { androidx.compose.ui.graphics.PathEffect.dashPathEffect(floatArrayOf(9f, 6f), 0f) }
+        var alignmentMode by remember { mutableStateOf(OverlayAlignmentMode.FIRST_MOTION_OR_ENABLE) }
+        var manualOffsetMs by remember { mutableStateOf(0L) }
+        val activePrimarySessionId = currentFrame?.sessionId ?: primarySessionId
+        val compareOverlay = rememberCompareChartOverlayData(
+            databaseService = databaseService,
+            primarySessionId = activePrimarySessionId,
+            compareSessionId = compareSessionId,
+            selectedKeys = selectedKeySnapshot,
+            alignmentMode = alignmentMode,
+            manualOffsetMs = manualOffsetMs,
+        )
+        val hoverState = crosshairCoordinator?.hover?.collectAsState()?.value
+        val density = LocalDensity.current
+        var plotContainerWidthPx by remember { mutableStateOf(1f) }
+        val minPlotX = liveTime - (selectedWindowSec * 1_000L)
+        val maxPlotX = liveTime
+
+        if (!compareSessionId.isNullOrBlank() && !activePrimarySessionId.isNullOrBlank()) {
+            TelemetryChartCompareBar(
+                compareSessionId = compareSessionId,
+                mode = alignmentMode,
+                manualOffsetMs = manualOffsetMs,
+                onSelectMode = { alignmentMode = it },
+                onAdjustManualOffset = { manualOffsetMs = it },
+            )
+        }
 
         Row(
             modifier = Modifier
@@ -394,7 +428,16 @@ fun TelemetryChartPanel(
                     .fillMaxHeight()
                     .onGloballyPositioned { coordinates ->
                         canvasWindowBounds = coordinates.boundsInWindow()
+                        plotContainerWidthPx = coordinates.size.width.toFloat().coerceAtLeast(1f)
                     }
+                    .telemetryChartHoverSync(
+                        widgetId = widgetId,
+                        crosshairCoordinator = crosshairCoordinator,
+                        minTimestampMs = minPlotX,
+                        maxTimestampMs = maxPlotX,
+                        horizontalInsetPx = with(density) { 48.dp.toPx() },
+                        plotContainerWidthPx = plotContainerWidthPx,
+                    )
             ) {
                 if (selectedKeys.isEmpty()) {
                     TelemetryChartEmptyState(
@@ -475,7 +518,29 @@ fun TelemetryChartPanel(
                             }
                         }
                     }
+
+                    drawCompareSeriesAndCrosshair(
+                        snapshot = chartSnapshot,
+                        selectedKeys = selectedKeySnapshot,
+                        comparePointsByKey = compareOverlay.alignedComparePointsByKey,
+                        channelColors = channelColors,
+                        minX = minPlotX,
+                        maxX = maxPlotX,
+                        hoverTimestampMs = hoverState?.timestampMs,
+                        comparePath = compareReusablePath,
+                        dashEffect = compareDashEffect,
+                    )
                 }
+
+                TelemetryChartHoverReadout(
+                    hoverTimestampMs = hoverState?.timestampMs,
+                    minX = minPlotX,
+                    maxX = maxPlotX,
+                    snapshot = chartSnapshot,
+                    selectedKeys = selectedKeySnapshot,
+                    comparePointsByKey = compareOverlay.alignedComparePointsByKey,
+                    channelColors = channelColors,
+                )
 
                 // Overlay Y-axis labels
                 Column(

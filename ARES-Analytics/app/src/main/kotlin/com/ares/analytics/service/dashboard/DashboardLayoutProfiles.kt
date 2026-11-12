@@ -71,7 +71,7 @@ fun dashboardLayoutValidationErrors(
 object BuiltInDashboardLayoutProfiles : DashboardLayoutProfileCatalog {
     private const val GRID_COLUMNS = 12
     private val selectableOrder = listOf(
-        "Student", "Driver", "Builder", "Autonomous", "Analyst", "Mentor", "Standard",
+        "Student", "Driver", "Builder", "Autonomous", "Analyst", "Engineering Lab", "Mentor", "Standard",
         "Driver Coach", "Programmer", "Pit Crew", "Match Review", "Pit Diagnostics",
         "Driver Practice", "Replay",
     )
@@ -130,6 +130,18 @@ object BuiltInDashboardLayoutProfiles : DashboardLayoutProfileCatalog {
             widget("trends_card", 8, 6, 5, 6),
             summary = "Multi-session comparison, recorded runs list, cycle statistics, and multi-run trends.",
             roleTag = "Data & Scouting",
+        ),
+        profile(
+            "Engineering Lab",
+            widget("runs_index", 0, 0, 3, 12),
+            widget("empirical_sysid", 3, 0, 5, 6),
+            widget("signal_spectrum", 3, 6, 5, 6),
+            widget("xy_scatter", 8, 0, 5, 6),
+            widget("cycle_splits", 8, 6, 5, 6),
+            widget("telemetry_chart", 13, 0, 5, 7),
+            widget("field_viewer", 13, 7, 5, 5),
+            summary = "Empirical OLS SysId, Hann FFT spectrum, XY scatter & battery R_int, A/B cycle splits, and synchronized hover replay.",
+            roleTag = "Engineering",
         ),
         profile(
             "Mentor",

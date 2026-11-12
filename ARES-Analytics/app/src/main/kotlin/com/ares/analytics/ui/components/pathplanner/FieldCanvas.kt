@@ -26,6 +26,7 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.PointerButton
+import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.isShiftPressed
 import androidx.compose.ui.input.pointer.pointerInput
@@ -99,6 +100,7 @@ fun FieldCanvas(
     autoGoalMode: Boolean = false,
     robotDimensions: RobotDimensions = RobotDimensions.defaultFor(league),
     fieldOverlay: (androidx.compose.ui.graphics.drawscope.DrawScope.(Float, Float, Double, Double) -> Unit)? = null,
+    onCursorMoved: ((Waypoint?) -> Unit)? = null,
     showAllianceStations: Boolean = true,
     modifier: Modifier = Modifier
 ) {
@@ -289,6 +291,36 @@ fun FieldCanvas(
                     modifier = Modifier
                         .fillMaxSize()
                         .background(AresSurface)
+                        .pointerInput(fieldWidthM, fieldHeightM, league, zoomScale, panOffset, viewRotation, onCursorMoved != null) {
+                            if (onCursorMoved != null) {
+                                awaitPointerEventScope {
+                                    while (true) {
+                                        val event = awaitPointerEvent(PointerEventPass.Main)
+                                        when (event.type) {
+                                            PointerEventType.Move, PointerEventType.Enter, PointerEventType.Press -> {
+                                                event.changes.firstOrNull()?.position?.let { pos ->
+                                                    onCursorMoved(
+                                                        getRobotCoordFromScreen(
+                                                            pos,
+                                                            size.width.toFloat(),
+                                                            size.height.toFloat(),
+                                                            fieldWidthM,
+                                                            fieldHeightM,
+                                                            league,
+                                                            zoomScale,
+                                                            panOffset,
+                                                            viewRotation,
+                                                        )
+                                                    )
+                                                }
+                                            }
+                                            PointerEventType.Exit -> onCursorMoved(null)
+                                            else -> Unit
+                                        }
+                                    }
+                                }
+                            }
+                        }
                         .fieldCanvasGestures(
                             autoGoalMode = autoGoalMode,
                             editorMode = editorMode,

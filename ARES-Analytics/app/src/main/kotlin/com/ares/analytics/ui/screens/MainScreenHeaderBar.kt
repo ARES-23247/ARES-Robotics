@@ -15,7 +15,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ares.analytics.domain.learning.LearningCatalog
 import com.ares.analytics.domain.navigation.NavigationTarget
+import com.ares.analytics.service.DashboardHealthService
+import com.ares.analytics.service.Nt4ClientService
 import com.ares.analytics.shared.models.WorkspaceConfig
+import com.ares.analytics.ui.components.PitVitalsHeaderBadge
 import com.ares.analytics.ui.components.QuickNavigationMenu
 import com.ares.analytics.ui.components.SectionNavigationBar
 import com.ares.analytics.ui.components.WorkspaceSelector
@@ -64,9 +67,12 @@ internal fun MainScreenHeaderBar(
     onStopAll: () -> Unit,
     onOpenCoach: () -> Unit,
     onOpenLessonHelp: (String) -> Unit,
+    nt4ClientService: Nt4ClientService? = null,
+    dashboardHealthService: DashboardHealthService? = null,
+    isRobotLinkConnected: Boolean = false,
 ) {
     BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
-        val compactShell = maxWidth < 1450.dp
+        val compactShell = maxWidth < 1360.dp
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(if (compactShell) 6.dp else 10.dp),
@@ -116,6 +122,15 @@ internal fun MainScreenHeaderBar(
                     onNavigate = onNavigate,
                     modifier = Modifier.weight(1f)
                 )
+                if (nt4ClientService != null && dashboardHealthService != null) {
+                    PitVitalsHeaderBadge(
+                        nt4ClientService = nt4ClientService,
+                        dashboardHealthService = dashboardHealthService,
+                        isRobotLinkConnected = isRobotLinkConnected,
+                        compact = compactShell,
+                        onClick = { onNavigate(NavigationTarget.DASHBOARD) },
+                    )
+                }
             }
 
             ExecutionToolbar(

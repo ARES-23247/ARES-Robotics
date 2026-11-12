@@ -267,7 +267,7 @@ internal fun Modifier.fieldCanvasGestures(
                     accumulatedDragPx += dragAmount
                     change.consume()
 
-                    fun snap(v: Double) = if (isShiftPressed) kotlin.math.round(v * 10.0) / 10.0 else v
+                    fun snap(v: Double) = if (isShiftPressed) snapCoordinateMeters(v, 0.05) else v
                     val totalDelta = getDragDeltaInFieldCoords(accumulatedDragPx, w, h, fieldWidthM, fieldHeightM, league, zoomScale, viewRotation)
 
                     when (val target = dragTarget) {
@@ -279,7 +279,8 @@ internal fun Modifier.fieldCanvasGestures(
 
                             when {
                                 target.heading -> {
-                                    val angle = kotlin.math.atan2(dy, dx)
+                                    val rawAngle = kotlin.math.atan2(dy, dx)
+                                    val angle = if (isShiftPressed) snapHeadingRadians(rawAngle, 15.0) else rawAngle
                                     val mag = kotlin.math.sqrt(dx * dx + dy * dy)
                                     onWaypointsChanged(
                                         currentWaypoints.toMutableList().apply {
@@ -289,11 +290,12 @@ internal fun Modifier.fieldCanvasGestures(
                                 }
                                 target.previousHeading -> {
                                     val angle = kotlin.math.atan2(dy, dx) - Math.PI
-                                    val normalizedAngle = wrapAngle(angle)
+                                    val rawNormalized = wrapAngle(angle)
+                                    val normalizedAngle = if (isShiftPressed) snapHeadingRadians(rawNormalized, 15.0) else rawNormalized
                                     val mag = kotlin.math.sqrt(dx * dx + dy * dy)
                                     onWaypointsChanged(
                                         currentWaypoints.toMutableList().apply {
-                                            set(target.index, wp.copy(headingRad = normalizedAngle, nextControlLength = if (isShiftPressed) snap(mag) else mag, prevControlLength = if (isShiftPressed) snap(mag) else mag))
+                                            set(target.index, wp.copy(headingRad = normalizedAngle, rotationDeg = Math.toDegrees(normalizedAngle), nextControlLength = if (isShiftPressed) snap(mag) else mag, prevControlLength = if (isShiftPressed) snap(mag) else mag))
                                         }
                                     )
                                 }
@@ -354,8 +356,13 @@ internal fun Modifier.fieldCanvasGestures(
                                         val degrees = Math.toDegrees(angle)
                                         val targetHeading = -degrees - 90.0
                                         val normalizedHeading = ((targetHeading + 180.0) % 360.0 + 360.0) % 360.0 - 180.0
+                                        val snappedHeadingDeg = if (isShiftPressed) {
+                                            Math.toDegrees(snapHeadingRadians(Math.toRadians(normalizedHeading), 15.0))
+                                        } else {
+                                            normalizedHeading
+                                        }
                                         updateFieldWaypoints(currentActiveFieldWaypoints.map { wp ->
-                                            if (wp.id == target.id) wp.copy(headingDegrees = if (isShiftPressed) snap(normalizedHeading) else normalizedHeading) else wp
+                                            if (wp.id == target.id) wp.copy(headingDegrees = snappedHeadingDeg) else wp
                                         })
                                     }
                                     target.position -> {

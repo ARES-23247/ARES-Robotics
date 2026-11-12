@@ -9,18 +9,25 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ares.analytics.service.Nt4ClientService
-import com.ares.analytics.ui.theme.*
-import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.launch
+import com.ares.analytics.service.ReplayFrame
 import com.ares.analytics.ui.components.core.*
+import com.ares.analytics.ui.theme.*
+import kotlinx.coroutines.launch
 
 internal data class PowerCurrentTopic(val channelName: String?, val isTotal: Boolean)
+
+internal data class PowerDistributionSnapshot(
+    val channelDraws: Map<String, Double>,
+    val reportedTotalAmps: Double?,
+) {
+    val displayedTotalAmps: Double?
+        get() = reportedTotalAmps ?: channelDraws.values.sum().takeIf { channelDraws.isNotEmpty() }
+}
 
 private val MOTOR_CURRENT_TOPIC = Regex("^Hardware/Motors/([^/]+)/Current(?:Amps)?$", RegexOption.IGNORE_CASE)
 private val DRIVE_MOTOR_CURRENT_TOPIC = Regex("^Drive/MotorCurrent_([^/]+)$", RegexOption.IGNORE_CASE)
@@ -45,16 +52,32 @@ internal fun parsePowerCurrentTopic(rawKey: String): PowerCurrentTopic? {
     return PowerCurrentTopic(channelName = channel, isTotal = false)
 }
 
+internal fun extractReplayPowerDistribution(frame: ReplayFrame): PowerDistributionSnapshot {
+    val channels = LinkedHashMap<String, Double>()
+    var reportedTotal: Double? = null
+    for ((key, value) in frame.values) {
+        if (key in frame.stringValues || !value.isFinite() || value < 0.0) continue
+        val parsed = parsePowerCurrentTopic(key) ?: continue
+        if (parsed.isTotal) {
+            reportedTotal = value
+        } else {
+            parsed.channelName?.let { channels[it] = value }
+        }
+    }
+    return PowerDistributionSnapshot(channelDraws = channels, reportedTotalAmps = reportedTotal)
+}
+
 @Composable
 fun PowerDistributionCard(
     nt4ClientService: Nt4ClientService,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    replayFrame: ReplayFrame? = null,
 ) {
-    // Map of channel name to current in amps
     val currentDraws = remember(nt4ClientService) { mutableStateMapOf<String, Double>() }
     var reportedTotalCurrent by remember(nt4ClientService) { mutableStateOf<Double?>(null) }
 
-    LaunchedEffect(nt4ClientService) {
+    LaunchedEffect(nt4ClientService, replayFrame != null) {
+        if (replayFrame != null) return@LaunchedEffect
         launch {
             nt4ClientService.isConnected.collect { connected ->
                 if (!connected) {
@@ -78,16 +101,23 @@ fun PowerDistributionCard(
             }
         }
     }
-    val displayedTotalCurrent = reportedTotalCurrent ?: currentDraws.values
-        .sum()
-        .takeIf { currentDraws.isNotEmpty() }
+
+    val replaySnapshot = remember(replayFrame?.sequence) {
+        replayFrame?.let(::extractReplayPowerDistribution)
+    }
+    val activeDraws = replaySnapshot?.channelDraws ?: currentDraws
+    val displayedTotalCurrent = if (replaySnapshot != null) {
+        replaySnapshot.displayedTotalAmps
+    } else {
+        reportedTotalCurrent ?: currentDraws.values.sum().takeIf { currentDraws.isNotEmpty() }
+    }
 
     AresCard(
         modifier = modifier.fillMaxWidth(),
         backgroundColor = AresSurfaceElevated
     ) {
         CardHeader(
-            title = "Power Distribution",
+            title = if (replayFrame != null) "Power Distribution · Replay" else "Power Distribution",
             icon = Icons.Default.ElectricBolt,
             iconTint = AresGold,
             trailingContent = {
@@ -101,55 +131,53 @@ fun PowerDistributionCard(
             }
         )
 
-            if (currentDraws.isEmpty()) {
-                Box(
-                    modifier = Modifier.fillMaxWidth().height(100.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text("No current draw telemetry detected.", color = AresTextTertiary, fontSize = 12.sp)
-                }
-            } else {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    currentDraws.toList().sortedByDescending { it.second }.take(6).forEach { (channel, amps) ->
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = channel.take(12),
-                                color = AresTextSecondary,
-                                fontSize = 11.sp,
-                                modifier = Modifier.width(80.dp),
-                                maxLines = 1
-                            )
+        if (activeDraws.isEmpty()) {
+            Box(
+                modifier = Modifier.fillMaxWidth().height(100.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text("No current draw telemetry detected.", color = AresTextTertiary, fontSize = 12.sp)
+            }
+        } else {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                activeDraws.entries.sortedByDescending { it.value }.take(6).forEach { (channel, amps) ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = channel.take(12),
+                            color = AresTextSecondary,
+                            fontSize = 11.sp,
+                            modifier = Modifier.width(80.dp),
+                            maxLines = 1
+                        )
 
-                            // Visual bar
-                            Box(modifier = Modifier.weight(1f).height(12.dp).background(AresSurface, RoundedCornerShape(4.dp))) {
-                                val fraction = (amps / 40.0).coerceIn(0.0, 1.0).toFloat()
-                                val barColor = when {
-                                    amps > 30.0 -> AresError
-                                    amps > 20.0 -> AresGold
-                                    else -> AresCyan
-                                }
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxHeight()
-                                        .fillMaxWidth(fraction)
-                                        .background(barColor, RoundedCornerShape(4.dp))
-                                )
+                        Box(modifier = Modifier.weight(1f).height(12.dp).background(AresSurface, RoundedCornerShape(4.dp))) {
+                            val fraction = (amps / 40.0).coerceIn(0.0, 1.0).toFloat()
+                            val barColor = when {
+                                amps > 30.0 -> AresError
+                                amps > 20.0 -> AresGold
+                                else -> AresCyan
                             }
-
-                            Text(
-                                text = String.format("%5.1f A", amps),
-                                color = AresTextPrimary,
-                                fontSize = 12.sp,
-                                fontFamily = FontFamily.Monospace,
-                                modifier = Modifier.width(60.dp).padding(start = 8.dp)
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxHeight()
+                                    .fillMaxWidth(fraction)
+                                    .background(barColor, RoundedCornerShape(4.dp))
                             )
                         }
+
+                        Text(
+                            text = String.format("%5.1f A", amps),
+                            color = AresTextPrimary,
+                            fontSize = 12.sp,
+                            fontFamily = FontFamily.Monospace,
+                            modifier = Modifier.width(60.dp).padding(start = 8.dp)
+                        )
                     }
                 }
             }
         }
     }
-
+}

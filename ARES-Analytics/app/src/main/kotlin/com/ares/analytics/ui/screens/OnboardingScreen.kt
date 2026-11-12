@@ -57,6 +57,7 @@ import com.ares.analytics.viewmodel.OnboardingIntent
 import com.ares.analytics.viewmodel.ProjectSetupMode
 import com.ares.analytics.viewmodel.OnboardingStep
 import com.ares.analytics.viewmodel.OnboardingViewModel
+import com.ares.analytics.viewmodel.canSelectOnboardingStep
 import com.ares.analytics.ui.util.DesktopFileChoosers
 
 /** Novice-first, four-stage workspace setup. */
@@ -115,7 +116,11 @@ fun OnboardingScreen(
                     .fillMaxHeight(),
                 verticalArrangement = Arrangement.spacedBy(18.dp),
             ) {
-                WelcomeStep(state.currentStep)
+                WelcomeStep(
+                    currentStep = state.currentStep,
+                    canSelectStep = { canSelectOnboardingStep(state, it) },
+                    onSelectStep = { viewModel.handleIntent(OnboardingIntent.SelectStep(it)) },
+                )
                 HorizontalDivider(color = AresBorder)
 
                 Box(
@@ -267,9 +272,15 @@ fun OnboardingScreen(
                 onboardingReadinessHint(state)?.takeIf { state.errorMessage == null && !state.isSaving }?.let { hint ->
                     Text(hint, color = AresTextSecondary, style = MaterialTheme.typography.bodySmall)
                 }
+                val isStepReady = when (state.currentStep) {
+                    OnboardingStep.PROJECT -> state.isProjectReady
+                    OnboardingStep.ROBOT -> state.isRobotReady
+                    OnboardingStep.OPTIONAL, OnboardingStep.REVIEW -> true
+                }
                 HorizontalDivider(color = AresBorder)
                 NavigationButtons(
                     step = state.currentStep,
+                    isStepReady = isStepReady,
                     isSaving = state.isSaving,
                     isDetectingProject = state.isDetectingProject,
                     finishLabel = onboardingFinishLabel(state.projectSetupMode),
@@ -305,6 +316,7 @@ internal fun onboardingBuildToolsMessage(state: com.ares.analytics.viewmodel.Onb
 @Composable
 private fun NavigationButtons(
     step: OnboardingStep,
+    isStepReady: Boolean,
     isSaving: Boolean,
     isDetectingProject: Boolean,
     finishLabel: String,
@@ -329,13 +341,16 @@ private fun NavigationButtons(
             ) { Text("Cancel", color = AresTextPrimary) }
         }
 
+        val buttonContainer = if (isStepReady) AresCyan else AresCyan.copy(alpha = 0.45f)
         Button(
             onClick = if (step == OnboardingStep.REVIEW) onFinish else onNext,
             enabled = !isSaving && !isDetectingProject,
             modifier = Modifier.weight(2f),
             colors = ButtonDefaults.buttonColors(
-                    containerColor = AresCyan,
-                    contentColor = AresOnAccent, disabledContainerColor = AresBorder),
+                containerColor = buttonContainer,
+                contentColor = AresOnAccent,
+                disabledContainerColor = AresBorder,
+            ),
         ) {
             if (isSaving) {
                 CircularProgressIndicator(modifier = Modifier.size(20.dp), color = AresOnAccent, strokeWidth = 2.dp)

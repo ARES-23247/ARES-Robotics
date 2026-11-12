@@ -370,6 +370,7 @@ val consumerRoundtripClasses = listOf(
 )
 val appUnitTests = tasks.named<Test>("test") {
     exclude(consumerRoundtripClasses)
+    maxHeapSize = "2g"
 }
 tasks.withType<Test>().configureEach {
     testLogging.exceptionFormat = TestExceptionFormat.FULL

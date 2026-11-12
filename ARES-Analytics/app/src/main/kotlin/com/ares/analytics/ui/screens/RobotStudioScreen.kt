@@ -28,27 +28,43 @@ import com.ares.analytics.service.GamepadState
 import com.ares.analytics.service.drivebase.toCanonicalDrivebase
 import com.ares.analytics.shared.models.WorkspaceConfig
 import com.ares.analytics.ui.components.controls.ControlsEditorPanel
+import com.ares.analytics.ui.components.robotstudio.DEFAULT_HIERARCHY_WIDTH_DP
+import com.ares.analytics.ui.components.robotstudio.DEFAULT_INSPECTOR_WIDTH_DP
+import com.ares.analytics.ui.components.robotstudio.MAX_HIERARCHY_WIDTH_DP
+import com.ares.analytics.ui.components.robotstudio.MAX_INSPECTOR_WIDTH_DP
+import com.ares.analytics.ui.components.robotstudio.MIN_HIERARCHY_WIDTH_DP
+import com.ares.analytics.ui.components.robotstudio.MIN_INSPECTOR_WIDTH_DP
 import com.ares.analytics.ui.components.robotstudio.RobotContextInspector
 import com.ares.analytics.ui.components.robotstudio.RobotHierarchyTree
 import com.ares.analytics.ui.components.robotstudio.RobotProjectSpecModal
+import com.ares.analytics.ui.components.robotstudio.RobotStudioActionToast
+import com.ares.analytics.ui.components.robotstudio.RobotStudioDirtySummaryBar
 import com.ares.analytics.ui.components.robotstudio.RobotStudioSelection
+import com.ares.analytics.ui.components.robotstudio.RobotStudioVerticalSplitter
 import com.ares.analytics.ui.components.robotstudio.SubsystemTreeItem
 import com.ares.analytics.ui.components.robotstudio.buildRobotProjectSpecSnapshot
+import com.ares.analytics.ui.components.robotstudio.clampSplitPaneWidthDp
+import com.ares.analytics.ui.components.robotstudio.collectDirtyRobotStudioStages
+import com.ares.analytics.ui.components.robotstudio.robotStudioKeyboardShortcuts
 import com.ares.analytics.ui.components.robotstudio.robotStudioPanePresentation
 import com.ares.analytics.ui.components.robotstudio.robotStudioPersistedRevision
 import com.ares.analytics.ui.theme.AresBackground
 import com.ares.analytics.ui.theme.AresRed
 import com.ares.analytics.ui.theme.AresTextPrimary
 import com.ares.analytics.ui.theme.AresThemeSettings
+import com.ares.analytics.viewmodel.PathPlannerIntent
 import com.ares.analytics.viewmodel.PathPlannerViewModel
 import com.ares.analytics.viewmodel.SubsystemGeneratorViewModel
 import com.ares.analytics.viewmodel.SubsystemProblemSeverity
 import com.ares.analytics.viewmodel.controls.ControlsEditorState
 import com.ares.analytics.viewmodel.controls.ControlsEditorViewModel
+import com.ares.analytics.viewmodel.drivebase.DrivebaseBuilderIntent
 import com.ares.analytics.viewmodel.drivebase.DrivebaseBuilderViewModel
 import com.ares.analytics.viewmodel.hardware.HardwareSetupViewModel
 import com.ares.analytics.viewmodel.pathing.RobotDimensions
 import com.ares.analytics.viewmodel.project.ProjectIdentityViewModel
+import com.ares.analytics.viewmodel.project.projectIdentityChanges
+import com.ares.analytics.viewmodel.project.validateProjectIdentityDraft
 import com.ares.analytics.viewmodel.robotstudio.RobotStudioStageStatus
 import com.ares.analytics.viewmodel.robotstudio.RobotStudioState
 import com.ares.analytics.viewmodel.robotstudio.RobotStudioViewModel
@@ -197,6 +213,74 @@ fun RobotStudioScreen(
 
     var showProjectSpecModal by remember { mutableStateOf(false) }
 
+    val identityDirty = remember(identityState.loading, identityState.currentDocument, identityState.draft, config.league) {
+        if (identityState.loading || identityState.currentDocument == null) return@remember false
+        val validated = validateProjectIdentityDraft(config.league, identityState.draft).document ?: return@remember true
+        projectIdentityChanges(identityState.currentDocument, validated).isNotEmpty()
+    }
+    val dirtyStages = remember(
+        identityDirty,
+        drivebaseState.dirty,
+        subsystemState.dirty,
+        superstructureState.dirty,
+        controlsState.dirty,
+        pathPlannerState.routineDirty,
+    ) {
+        collectDirtyRobotStudioStages(
+            identityDirty = identityDirty,
+            drivebaseDirty = drivebaseState.dirty,
+            subsystemDirty = subsystemState.dirty,
+            superstructureDirty = superstructureState.dirty,
+            controlsDirty = controlsState.dirty,
+            routineDirty = pathPlannerState.routineDirty,
+        )
+    }
+
+    val handleSaveAll: () -> String? = {
+        val savedStages = mutableListOf<String>()
+        if (subsystemState.dirty && subsystemState.canSave) {
+            subsystemViewModel.save()
+            savedStages += "Subsystems"
+        }
+        if (controlsState.dirty && controlsState.canSave) {
+            controlsViewModel.save()
+            savedStages += "Controls"
+        }
+        if (pathPlannerState.routineDirty) {
+            pathPlannerViewModel.onIntent(PathPlannerIntent.SaveRoutine(config.projectPath))
+            savedStages += "Autonomous"
+        }
+        val reviewNeeded = when {
+            drivebaseState.dirty -> {
+                selection = RobotStudioSelection.Drivetrain
+                drivebaseViewModel.onIntent(DrivebaseBuilderIntent.ReviewSave)
+                "Drivetrain"
+            }
+            superstructureState.dirty -> {
+                selection = RobotStudioSelection.Superstructure
+                superstructureViewModel.reviewSave()
+                "Superstructure"
+            }
+            identityDirty -> {
+                selection = RobotStudioSelection.Identity
+                projectIdentityViewModel.review()
+                "Identity"
+            }
+            else -> null
+        }
+        when {
+            savedStages.isNotEmpty() && reviewNeeded != null ->
+                "Saved ${savedStages.joinToString(", ")}. Opened reviewed save confirmation for $reviewNeeded."
+            savedStages.isNotEmpty() ->
+                "Saved ${savedStages.joinToString(", ")}."
+            reviewNeeded != null ->
+                "Opened reviewed save confirmation for $reviewNeeded."
+            dirtyStages.isNotEmpty() ->
+                "Resolve validation errors in ${dirtyStages.joinToString(", ")} before saving."
+            else -> null
+        }
+    }
+
     RobotStudioWorkspace(
         state = state,
         subsystems = subsystemTreeItems,
@@ -217,6 +301,8 @@ fun RobotStudioScreen(
         onChooseStandaloneExport = onChooseStandaloneExport,
         onExportStandaloneProject = onExportStandaloneProject,
         onOpenProjectSpec = { showProjectSpecModal = true },
+        dirtyStages = dirtyStages,
+        onSaveAll = handleSaveAll,
     ) { selected ->
         when (selected) {
             RobotStudioSelection.Identity -> ProjectIdentityScreen(
@@ -317,22 +403,39 @@ internal fun RobotStudioWorkspace(
     onChooseStandaloneExport: (() -> File?)? = null,
     onExportStandaloneProject: (suspend (File) -> String)? = null,
     onOpenProjectSpec: (() -> Unit)? = null,
+    dirtyStages: List<String> = emptyList(),
+    onSaveAll: (() -> String?)? = null,
     modifier: Modifier = Modifier,
     centerContent: @Composable (RobotStudioSelection) -> Unit,
 ) {
-    BoxWithConstraints(modifier.fillMaxSize().background(AresBackground)) {
+    var leftCollapsedState by remember { mutableStateOf(false) }
+    var rightCollapsedState by remember { mutableStateOf(false) }
+    var leftWidthDp by remember { mutableStateOf(DEFAULT_HIERARCHY_WIDTH_DP) }
+    var rightWidthDp by remember { mutableStateOf(DEFAULT_INSPECTOR_WIDTH_DP) }
+    var ideMessage by remember(state.projectPath) { mutableStateOf<String?>(null) }
+
+    BoxWithConstraints(
+        modifier
+            .fillMaxSize()
+            .background(AresBackground)
+            .robotStudioKeyboardShortcuts(
+                onToggleHierarchy = { leftCollapsedState = !leftCollapsedState },
+                onToggleInspector = { rightCollapsedState = !rightCollapsedState },
+                onSaveAll = {
+                    val result = onSaveAll?.invoke()
+                    if (result != null) ideMessage = result
+                },
+            ),
+    ) {
         val presentation = robotStudioPanePresentation(maxWidth.value, AresThemeSettings.largeTextMode)
-        var leftCollapsed by remember { mutableStateOf(presentation.collapseTree) }
-        var rightCollapsed by remember { mutableStateOf(presentation.collapseInspector) }
 
         LaunchedEffect(presentation) {
-            leftCollapsed = presentation.collapseTree
-            rightCollapsed = presentation.collapseInspector
+            leftCollapsedState = presentation.collapseTree
+            rightCollapsedState = presentation.collapseInspector
         }
 
         Column(Modifier.fillMaxSize()) {
             if (onOpenProjectSpec != null || onOpenInIde != null || (onChooseStandaloneExport != null && onExportStandaloneProject != null)) {
-                var ideMessage by remember(state.projectPath) { mutableStateOf<String?>(null) }
                 var exportInProgress by remember(state.projectPath) { mutableStateOf(false) }
                 val actionScope = rememberCoroutineScope()
                 Row(
@@ -384,14 +487,21 @@ internal fun RobotStudioWorkspace(
                         }
                     }
                 }
-                ideMessage?.let { message ->
-                    Text(
-                        message,
-                        color = AresTextPrimary,
-                        fontSize = 11.sp,
-                        modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp),
-                    )
-                }
+            }
+            if (dirtyStages.isNotEmpty() && onSaveAll != null) {
+                RobotStudioDirtySummaryBar(
+                    dirtyStages = dirtyStages,
+                    onSaveAll = {
+                        val result = onSaveAll.invoke()
+                        if (result != null) ideMessage = result
+                    },
+                )
+            }
+            ideMessage?.let { message ->
+                RobotStudioActionToast(
+                    message = message,
+                    onDismiss = { ideMessage = null },
+                )
             }
             state.error?.let { error ->
                 Surface(color = AresRed.copy(alpha = 0.14f), modifier = Modifier.fillMaxWidth()) {
@@ -411,17 +521,43 @@ internal fun RobotStudioWorkspace(
                     selected = selection,
                     onSelect = onSelect,
                     onAddSubsystem = onAddSubsystem,
-                    isCollapsed = leftCollapsed,
-                    onToggleCollapse = { leftCollapsed = !leftCollapsed },
+                    isCollapsed = leftCollapsedState,
+                    onToggleCollapse = { leftCollapsedState = !leftCollapsedState },
+                    expandedWidth = leftWidthDp.dp,
                 )
+                if (!leftCollapsedState) {
+                    RobotStudioVerticalSplitter(
+                        onDragDeltaDp = { delta ->
+                            leftWidthDp = clampSplitPaneWidthDp(
+                                currentDp = leftWidthDp,
+                                deltaDp = delta,
+                                minDp = MIN_HIERARCHY_WIDTH_DP,
+                                maxDp = MAX_HIERARCHY_WIDTH_DP,
+                            )
+                        },
+                    )
+                }
                 Box(Modifier.weight(1f).fillMaxHeight()) {
                     centerContent(selection)
+                }
+                if (!rightCollapsedState) {
+                    RobotStudioVerticalSplitter(
+                        onDragDeltaDp = { delta ->
+                            rightWidthDp = clampSplitPaneWidthDp(
+                                currentDp = rightWidthDp,
+                                deltaDp = -delta,
+                                minDp = MIN_INSPECTOR_WIDTH_DP,
+                                maxDp = MAX_INSPECTOR_WIDTH_DP,
+                            )
+                        },
+                    )
                 }
                 RobotContextInspector(
                     selection = selection,
                     state = state,
-                    isCollapsed = rightCollapsed,
-                    onToggleCollapse = { rightCollapsed = !rightCollapsed },
+                    isCollapsed = rightCollapsedState,
+                    onToggleCollapse = { rightCollapsedState = !rightCollapsedState },
+                    expandedWidth = rightWidthDp.dp,
                 )
             }
         }

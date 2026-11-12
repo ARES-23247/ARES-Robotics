@@ -67,6 +67,10 @@ import com.ares.analytics.service.dashboard.DashboardWidgetType
 import com.ares.analytics.service.dashboard.allows
 import com.ares.analytics.shared.models.ForensicsResponse
 import com.ares.analytics.shared.models.WorkspaceConfig
+import com.ares.analytics.ui.components.dashboard.analysis.CycleSplitsWidget
+import com.ares.analytics.ui.components.dashboard.analysis.EmpiricalSysIdWidget
+import com.ares.analytics.ui.components.dashboard.analysis.SignalSpectrumWidget
+import com.ares.analytics.ui.components.dashboard.analysis.XyScatterWidget
 import com.ares.analytics.ui.components.forms.AresTextField
 import com.ares.analytics.ui.theme.*
 import com.ares.analytics.ui.theme.AresBorder
@@ -105,6 +109,9 @@ data class DashboardWidgetRenderContext(
     val controllerHealth: ControllerHealthObservation? = null,
     val fullscreenWidgetId: String? = null,
     val onToggleWidgetFullscreen: (String) -> Unit = {},
+    val crosshairCoordinator: DashboardCrosshairCoordinator? = null,
+    val onNavigateToTuning: () -> Unit = {},
+    val onSeekReplayTimestamp: (Long) -> Unit = {},
 ) {
     val liveServices: DashboardLiveWidgetServices
         get() = requireServiceGroup(DashboardWidgetServiceGroup.LIVE, services.live)
@@ -190,6 +197,9 @@ object DashboardWidgetRegistry : DashboardWidgetCatalog {
                 ),
                 properties = widget.properties,
                 onPropertiesChanged = { context.onUpdateProperties(widget, it) },
+                primarySessionId = context.dashboardState.primarySessionId,
+                compareSessionId = context.dashboardState.compareSessionId,
+                crosshairCoordinator = context.crosshairCoordinator,
                 modifier = modifier,
             )
         },
@@ -212,6 +222,10 @@ object DashboardWidgetRegistry : DashboardWidgetCatalog {
                 onToggleFullscreen = if (context.dashboardState.isLayoutEditing) null else {
                     { context.onToggleWidgetFullscreen(widget.id) }
                 },
+                widgetId = widget.id,
+                primarySessionId = context.dashboardState.primarySessionId,
+                compareSessionId = context.dashboardState.compareSessionId,
+                crosshairCoordinator = context.crosshairCoordinator,
                 modifier = modifier,
             )
         },
@@ -294,6 +308,59 @@ object DashboardWidgetRegistry : DashboardWidgetCatalog {
         definition("motor_health", "Motor Health", "Current draw, thermal risk, and stall warnings.", Icons.Default.ElectricBolt, DashboardWidgetCategory.ANALYSIS, 3, 4, capabilities = dataReplay) { _, context, modifier ->
             MotorHealthCard(context.analysisServices.databaseService, context.dashboardState.primarySessionId, modifier)
         },
+        definition(
+            "empirical_sysid", "Empirical SysId & Step", "OLS kS/kV/kA/kG identification, closed-loop step metrics, and 1-click Tuning staging.",
+            Icons.Default.Functions, DashboardWidgetCategory.ANALYSIS, 5, 6, recommended = true,
+            capabilities = liveReplay + DashboardWidgetCapability.DATABASE,
+        ) { _, context, modifier ->
+            EmpiricalSysIdWidget(
+                databaseService = context.analysisServices.databaseService,
+                primarySessionId = context.dashboardState.primarySessionId,
+                nt4ClientService = context.liveServices.nt4ClientService,
+                tuningDeclarations = context.tuningDeclarations,
+                tuningProposalInbox = context.analysisServices.tuningProposalInbox,
+                onNavigateToTuning = context.onNavigateToTuning,
+                modifier = modifier,
+            )
+        },
+        definition(
+            "signal_spectrum", "Derived Math & FFT", "Derivative, integral (mAh), channel delta, Savitzky-Golay smoothing, and Hann FFT spectrum.",
+            Icons.Default.GraphicEq, DashboardWidgetCategory.ANALYSIS, 5, 6,
+            capabilities = liveReplay + DashboardWidgetCapability.DATABASE,
+        ) { _, context, modifier ->
+            SignalSpectrumWidget(
+                databaseService = context.analysisServices.databaseService,
+                primarySessionId = context.dashboardState.primarySessionId,
+                nt4ClientService = context.liveServices.nt4ClientService,
+                modifier = modifier,
+            )
+        },
+        definition(
+            "xy_scatter", "XY Scatter & Battery R_int", "Time-gradient XY phase portraits, OLS trendlines, and DC battery internal resistance (mΩ).",
+            Icons.Default.ScatterPlot, DashboardWidgetCategory.ANALYSIS, 5, 6, recommended = true,
+            capabilities = liveReplay + DashboardWidgetCapability.DATABASE,
+        ) { _, context, modifier ->
+            XyScatterWidget(
+                databaseService = context.analysisServices.databaseService,
+                primarySessionId = context.dashboardState.primarySessionId,
+                league = context.workspace.league,
+                nt4ClientService = context.liveServices.nt4ClientService,
+                modifier = modifier,
+            )
+        },
+        definition(
+            "cycle_splits", "Cycle & Step Splits", "Autonomous routine step timings and TeleOp scoring cycle p50/p95 splits with A/B deltas.",
+            Icons.Default.Timer, DashboardWidgetCategory.ANALYSIS, 5, 6,
+            capabilities = dataReplay,
+        ) { _, context, modifier ->
+            CycleSplitsWidget(
+                databaseService = context.analysisServices.databaseService,
+                primarySessionId = context.dashboardState.primarySessionId,
+                compareSessionId = context.dashboardState.compareSessionId,
+                onSeekReplayTimestamp = context.onSeekReplayTimestamp,
+                modifier = modifier,
+            )
+        },
 
         definition("system_health", "Dashboard & Robot Health", "Ingest, query, cache, reconnect, loop, and battery health.", Icons.Default.Memory, DashboardWidgetCategory.DIAGNOSTICS, 3, 4, recommended = true, capabilities = liveReplay) { _, context, modifier ->
             SystemHealthCard(
@@ -314,23 +381,23 @@ object DashboardWidgetRegistry : DashboardWidgetCatalog {
         definition("battery_health", "Battery Diagnostics", "Voltage, state of charge, and brownout risk.", Icons.Default.BatteryChargingFull, DashboardWidgetCategory.DIAGNOSTICS, 3, 4, capabilities = dataReplay) { _, context, modifier ->
             BatteryHealthCard(context.analysisServices.databaseService, context.dashboardState.primarySessionId, modifier)
         },
-        definition("power_distribution", "Power Distribution", "Current draw by PDP or PDH channel.", Icons.Default.ElectricBolt, DashboardWidgetCategory.DIAGNOSTICS, 3, 4, capabilities = live) { _, context, modifier ->
-            PowerDistributionCard(context.liveServices.nt4ClientService, modifier)
+        definition("power_distribution", "Power Distribution", "Current draw by PDP or PDH channel.", Icons.Default.ElectricBolt, DashboardWidgetCategory.DIAGNOSTICS, 3, 4, capabilities = liveReplay) { _, context, modifier ->
+            PowerDistributionCard(context.liveServices.nt4ClientService, modifier, context.replayFrame)
         },
-        definition("brownout_protection", "Brownout Protection", "Battery-sag scaling and active protection state.", Icons.Default.BatteryAlert, DashboardWidgetCategory.DIAGNOSTICS, 3, 3, capabilities = live) { _, context, modifier ->
-            BrownoutProtectionCard(context.liveServices.nt4ClientService, modifier)
+        definition("brownout_protection", "Brownout Protection", "Battery-sag scaling and active protection state.", Icons.Default.BatteryAlert, DashboardWidgetCategory.DIAGNOSTICS, 3, 3, capabilities = liveReplay) { _, context, modifier ->
+            BrownoutProtectionCard(context.liveServices.nt4ClientService, modifier, context.replayFrame)
         },
-        definition("imu_visualizer", "IMU Visualizer", "Roll, pitch, yaw, and attitude health.", Icons.Default.CompassCalibration, DashboardWidgetCategory.DIAGNOSTICS, 4, 5, capabilities = live) { _, context, modifier ->
-            IMUVisualizerCard(context.liveServices.nt4ClientService, modifier)
+        definition("imu_visualizer", "IMU Visualizer", "Roll, pitch, yaw, and attitude health.", Icons.Default.CompassCalibration, DashboardWidgetCategory.DIAGNOSTICS, 4, 5, capabilities = liveReplay) { _, context, modifier ->
+            IMUVisualizerCard(context.liveServices.nt4ClientService, modifier, context.replayFrame)
         },
         definition("ekf_telemetry", "EKF Diagnostics", "Estimator drift, innovation, and covariance.", Icons.Default.QueryStats, DashboardWidgetCategory.DIAGNOSTICS, 4, 5, capabilities = liveReplay) { _, context, modifier ->
             EKFTelemetryCard(context.liveServices.nt4ClientService, modifier)
         },
-        definition("control_profiler", "Control Loop Profiler", "Target-versus-actual mechanism error and timing.", Icons.Default.Speed, DashboardWidgetCategory.DIAGNOSTICS, 4, 5, capabilities = live) { _, context, modifier ->
-            ControlLoopProfilerCard(context.liveServices.nt4ClientService, modifier)
+        definition("control_profiler", "Control Loop Profiler", "Target-versus-actual mechanism error and timing.", Icons.Default.Speed, DashboardWidgetCategory.DIAGNOSTICS, 4, 5, capabilities = liveReplay + DashboardWidgetCapability.DATABASE) { _, context, modifier ->
+            ControlLoopProfilerCard(context.liveServices.nt4ClientService, modifier, context.replayFrame, context.analysisServices.databaseService)
         },
-        definition("profiling_diagnostics", "Profiling Diagnostics", "Maximum and average loop/subsystem timings.", Icons.Default.HourglassEmpty, DashboardWidgetCategory.DIAGNOSTICS, 4, 5, capabilities = live) { _, context, modifier ->
-            ProfilingDiagnosticsCard(context.liveServices.nt4ClientService, modifier)
+        definition("profiling_diagnostics", "Profiling Diagnostics", "Maximum and average loop/subsystem timings.", Icons.Default.HourglassEmpty, DashboardWidgetCategory.DIAGNOSTICS, 4, 5, capabilities = liveReplay) { _, context, modifier ->
+            ProfilingDiagnosticsCard(context.liveServices.nt4ClientService, modifier, context.replayFrame)
         },
         definition("hardware_topology", "Hardware Topology", "Interactive CAN and REV hardware map tree with live telemetry.", Icons.Default.Hub, DashboardWidgetCategory.DIAGNOSTICS, 3, 3, recommended = true, capabilities = liveReplay + DashboardWidgetCapability.DATABASE) { _, context, modifier ->
             HardwareTopologyCard(
@@ -340,11 +407,11 @@ object DashboardWidgetRegistry : DashboardWidgetCatalog {
                 modifier,
             )
         },
-        definition("subsystem_health", "Subsystem Health", "Configuration, feedback, homing, calibration, current, and latched-fault status for every mechanism.", Icons.Default.HealthAndSafety, DashboardWidgetCategory.DIAGNOSTICS, 4, 5, recommended = true, capabilities = live) { _, context, modifier ->
-            SubsystemHealthCard(context.liveServices.nt4ClientService, modifier)
+        definition("subsystem_health", "Subsystem Health", "Configuration, feedback, homing, calibration, current, and latched-fault status for every mechanism.", Icons.Default.HealthAndSafety, DashboardWidgetCategory.DIAGNOSTICS, 4, 5, recommended = true, capabilities = liveReplay) { _, context, modifier ->
+            SubsystemHealthCard(context.liveServices.nt4ClientService, modifier, context.replayFrame)
         },
-        definition("state_tracker", "Subsystem State Tracker", "Current subsystem state-machine states.", Icons.Default.AccountTree, DashboardWidgetCategory.DIAGNOSTICS, 4, 5, capabilities = live) { _, context, modifier ->
-            StateMachineTrackerCard(context.liveServices.nt4ClientService, modifier)
+        definition("state_tracker", "Subsystem State Tracker", "Current subsystem state-machine states.", Icons.Default.AccountTree, DashboardWidgetCategory.DIAGNOSTICS, 4, 5, capabilities = liveReplay) { _, context, modifier ->
+            StateMachineTrackerCard(context.liveServices.nt4ClientService, modifier, context.replayFrame)
         },
 
         definition("runs_index", "Recorded Sessions", "Practice runs, match logs, comparisons, and tags.", Icons.Default.History, DashboardWidgetCategory.REPLAY, 4, 9, recommended = true, capabilities = dataReplay) { _, context, modifier ->

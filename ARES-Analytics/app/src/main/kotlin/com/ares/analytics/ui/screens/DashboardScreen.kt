@@ -316,6 +316,10 @@ internal fun DashboardScreen(
                 },
                 onLayoutChanged = { viewModel.onIntent(DashboardIntent.UpdateLayout(it)) },
                 onRemoveWidget = { viewModel.onIntent(DashboardIntent.RemoveWidget(it)) },
+                onNavigateToTuning = { onNavigate(NavigationTarget.TUNING) },
+                onSeekReplayTimestamp = { targetMs ->
+                    scope.launch { replayEngine.seekToTimestamp(targetMs) }
+                },
                 modifier = Modifier.weight(1f).fillMaxWidth(),
             )
         }

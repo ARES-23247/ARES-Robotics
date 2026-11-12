@@ -15,27 +15,29 @@ import kotlin.test.*
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class DashboardSourceRegressionTest {
-    @Test fun `replay cancels live gamepad writer and returning to live restores one subscriber`() = runTest {
+    @Test fun `replay cancels live gamepad writer and returning to live restores one subscriber`() {
         val frames = MutableSharedFlow<TelemetryFrame>()
         val service = mock(Nt4ClientService::class.java)
         `when`(service.uiTelemetryFlow).thenReturn(frames)
-        val replay = mutableStateOf<ReplayFrame?>(null)
-        val scene = ImageComposeScene(500, 300, coroutineContext = StandardTestDispatcher(testScheduler))
-        fun pump() { repeat(3) { runCurrent(); scene.render(testScheduler.currentTime * 1_000_000).close() } }
-        try {
-            scene.setContent {
-                AresTheme { SingleGamepadVisualizer("Gamepad", "Gamepad1", replay.value, service, false, null, null) }
-            }
-            pump()
-            assertEquals(1, frames.subscriptionCount.value)
-            replay.value = ReplayFrame(10L, mapOf("Gamepad1/A" to 1.0))
-            pump()
-            assertEquals(0, frames.subscriptionCount.value, "Live telemetry must not overwrite the replay source")
-            replay.value = null
-            pump()
-            assertEquals(1, frames.subscriptionCount.value)
-        } finally { scene.close(); runCurrent() }
-        assertEquals(0, frames.subscriptionCount.value)
+        runTest {
+            val replay = mutableStateOf<ReplayFrame?>(null)
+            val scene = ImageComposeScene(500, 300, coroutineContext = StandardTestDispatcher(testScheduler))
+            fun pump() { repeat(3) { runCurrent(); scene.render(testScheduler.currentTime * 1_000_000).close() } }
+            try {
+                scene.setContent {
+                    AresTheme { SingleGamepadVisualizer("Gamepad", "Gamepad1", replay.value, service, false, null, null) }
+                }
+                pump()
+                assertEquals(1, frames.subscriptionCount.value)
+                replay.value = ReplayFrame(10L, mapOf("Gamepad1/A" to 1.0))
+                pump()
+                assertEquals(0, frames.subscriptionCount.value, "Live telemetry must not overwrite the replay source")
+                replay.value = null
+                pump()
+                assertEquals(1, frames.subscriptionCount.value)
+            } finally { scene.close(); runCurrent() }
+            assertEquals(0, frames.subscriptionCount.value)
+        }
     }
 
     @Test fun `same sized console buffer and replay replacements invalidate filtered snapshots`() = runTest {

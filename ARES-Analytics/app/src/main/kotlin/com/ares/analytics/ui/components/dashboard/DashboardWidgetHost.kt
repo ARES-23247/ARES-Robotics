@@ -49,7 +49,12 @@ fun DashboardWidgetHost(
     onRemoveWidget: (String) -> Unit,
     modifier: Modifier = Modifier,
     controllerHealth: ControllerHealthObservation? = null,
+    onNavigateToTuning: () -> Unit = {},
+    onSeekReplayTimestamp: (Long) -> Unit = {},
 ) {
+    val crosshairCoordinator = remember(workspace.id, workspace.projectPath) {
+        DashboardCrosshairCoordinator()
+    }
     // Presentation state only: expanding a card never rewrites the user's saved grid.
     var fullscreenWidgetId by remember(workspace.id, workspace.projectPath, dashboardState.currentRoleProfile) {
         mutableStateOf<String?>(null)
@@ -83,6 +88,9 @@ fun DashboardWidgetHost(
         onToggleWidgetFullscreen = { id ->
             fullscreenWidgetId = if (fullscreenWidgetId == id) null else id
         },
+        crosshairCoordinator = crosshairCoordinator,
+        onNavigateToTuning = onNavigateToTuning,
+        onSeekReplayTimestamp = onSeekReplayTimestamp,
     )
     val builders: Map<String, @Composable (WidgetConfig, Modifier) -> Unit> =
         DashboardWidgetRegistry.definitions.associate { definition ->

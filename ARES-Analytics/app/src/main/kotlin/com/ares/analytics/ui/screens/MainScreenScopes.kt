@@ -92,6 +92,7 @@ internal fun rememberDashboardFeatureServices(
                 aiDiagnosticsService = services.aiDiagnosticsService,
                 driverAnalysisService = services.driverAnalysisService,
                 diagnosticCoachService = services.diagnosticCoachService,
+                tuningProposalInbox = services.tuningProposalInbox,
             ),
             replay = DashboardReplayWidgetServices(
                 replayEngineService = services.replayEngineService,

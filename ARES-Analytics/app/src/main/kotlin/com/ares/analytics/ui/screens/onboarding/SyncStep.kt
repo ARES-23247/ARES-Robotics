@@ -15,6 +15,8 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
@@ -231,10 +233,21 @@ private fun ProjectSelection(
                     value = projectParentPath,
                     onValueChange = onProjectParentPathChange,
                     label = "Create inside this folder",
-                    placeholder = platformPathPlaceholder("Robots"),
+                    placeholder = platformPathPlaceholder("ARESStudioProjects"),
                     buttonLabel = "Choose parent folder",
                     onBrowse = onBrowseProjectParent,
                 )
+                if (projectParentPath.isBlank()) {
+                    val suggestedParent = com.ares.analytics.viewmodel.defaultProjectsParentDirectory()
+                    if (suggestedParent.isNotBlank()) {
+                        TextButton(
+                            onClick = { onProjectParentPathChange(suggestedParent) },
+                            contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp),
+                        ) {
+                            Text("Use default folder ($suggestedParent)", color = AresCyan, fontSize = 12.sp)
+                        }
+                    }
+                }
                 AresTextField(
                     value = projectFolderName,
                     onValueChange = onProjectFolderNameChange,
@@ -245,7 +258,9 @@ private fun ProjectSelection(
                 FieldMessage(error)
             }
             if (projectPath.isNotBlank() && error == null) {
-                Text("New project: $projectPath", color = AresGreen, style = MaterialTheme.typography.bodySmall)
+                Text("New project destination: $projectPath", color = AresGreen, style = MaterialTheme.typography.bodySmall)
+            } else if (projectParentPath.isNotBlank() && projectFolderName.isBlank() && error == null) {
+                Text("Destination preview: ${File(projectParentPath.trim(), "<project-folder>").path}", color = AresTextSecondary, style = MaterialTheme.typography.bodySmall)
             }
             creationMessage?.let { Text(it, color = AresGreen, style = MaterialTheme.typography.bodySmall) }
 
@@ -442,10 +457,11 @@ private fun PathChooser(
             onClick = onBrowse,
             colors = ButtonDefaults.buttonColors(containerColor = AresBorder),
             shape = RoundedCornerShape(8.dp),
-            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
+            contentPadding = PaddingValues(horizontal = 14.dp, vertical = 12.dp),
         ) {
-            Icon(Icons.Default.FolderOpen, contentDescription = null, tint = AresTextPrimary)
-            Text(buttonLabel, color = AresTextPrimary)
+            Icon(Icons.Default.FolderOpen, contentDescription = null, tint = AresTextPrimary, modifier = Modifier.size(18.dp))
+            Spacer(Modifier.width(8.dp))
+            Text(buttonLabel, color = AresTextPrimary, maxLines = 1)
         }
     }
 }
