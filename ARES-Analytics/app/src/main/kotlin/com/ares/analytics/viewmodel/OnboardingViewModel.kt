@@ -121,6 +121,7 @@ sealed class OnboardingIntent {
         val existingFolderReference: String? = null,
         val sharedDriveId: String? = null,
     ) : OnboardingIntent()
+    data class SelectStep(val step: OnboardingStep) : OnboardingIntent()
     object DetectLeague : OnboardingIntent()
     object NextStep : OnboardingIntent()
     object PreviousStep : OnboardingIntent()
@@ -147,11 +148,13 @@ class OnboardingViewModel(
     private val managedToolchainService: ManagedToolchainService,
     private val projectHistoryInitializer: NewProjectHistoryInitializer = NewProjectHistoryInitializer.NONE,
     private val scope: CoroutineScope,
+    initialProjectParentPath: String = "",
     private val onConfigured: (WorkspaceConfig) -> Unit,
 ) {
     private val initialTemplate = projectTemplateService.templateFor(League.FTC)
     private val _state = MutableStateFlow(
         OnboardingState(
+            projectParentPath = initialProjectParentPath.trim(),
             projectTemplateName = initialTemplate.displayName,
             projectTemplateVersion = initialTemplate.artifactVersion,
         ),
@@ -281,6 +284,13 @@ class OnboardingViewModel(
                 is OnboardingIntent.SetAdvancedSetupExpanded -> _state.update { it.copy(advancedSetupExpanded = intent.expanded) }
                 is OnboardingIntent.ConfigureDriveDestination -> configureDriveDestination(intent)
                 is OnboardingIntent.FetchCloudRobots -> fetchCloudRobots()
+                is OnboardingIntent.SelectStep -> {
+                    val current = _state.value
+                    if (canSelectOnboardingStep(current, intent.step) && intent.step != current.currentStep) {
+                        projectDetection.invalidate()
+                        _state.update { it.copy(currentStep = intent.step, errorMessage = null) }
+                    }
+                }
                 OnboardingIntent.DetectLeague -> projectDetection.request(immediate = true)
                 OnboardingIntent.NextStep -> moveNext()
                 OnboardingIntent.PreviousStep -> {
@@ -419,9 +429,10 @@ class OnboardingViewModel(
         _state.update { it.copy(isSaving = true, errorMessage = null, projectCreationMessage = null) }
         try {
             if (current.projectSetupMode.createsProject) {
+                val parentDir = File(current.projectParentPath.trim()).apply { mkdirs() }
                 val result = projectTemplateService.create(
                     request = RobotProjectCreationRequest(
-                        parentDirectory = File(current.projectParentPath.trim()),
+                        parentDirectory = parentDir,
                         folderName = current.projectFolderName.trim(),
                         league = current.league,
                         teamId = current.teamId.trim(),

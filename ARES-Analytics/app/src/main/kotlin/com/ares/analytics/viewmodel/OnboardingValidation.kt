@@ -3,6 +3,39 @@ package com.ares.analytics.viewmodel
 import com.ares.analytics.service.project.RobotProjectTemplateService
 import java.io.File
 
+internal fun defaultProjectsParentDirectory(
+    userHome: String = System.getProperty("user.home").orEmpty(),
+): String {
+    val trimmed = userHome.trim()
+    return if (trimmed.isBlank()) "" else File(trimmed, "ARESStudioProjects").path
+}
+
+internal fun isCreatableProjectsParentDirectory(path: String): Boolean {
+    val trimmed = path.trim()
+    if (trimmed.isBlank()) return false
+    val dir = File(trimmed)
+    return dir.isDirectory || (!dir.exists() && dir.parentFile?.isDirectory == true)
+}
+
+internal fun canSelectOnboardingStep(
+    state: OnboardingState,
+    target: OnboardingStep,
+): Boolean {
+    if (state.isSaving || state.isDetectingProject) return false
+    if (target.ordinal <= state.currentStep.ordinal) {
+        if (state.projectSetupMode.isExample && (target == OnboardingStep.ROBOT || target == OnboardingStep.OPTIONAL)) {
+            return false
+        }
+        return true
+    }
+    return when (target) {
+        OnboardingStep.PROJECT -> true
+        OnboardingStep.ROBOT -> !state.projectSetupMode.isExample && state.isProjectReady
+        OnboardingStep.OPTIONAL -> !state.projectSetupMode.isExample && state.isProjectReady && state.isRobotReady
+        OnboardingStep.REVIEW -> if (state.projectSetupMode.isExample) state.isProjectReady else state.isProjectReady && state.isRobotReady
+    }
+}
+
 internal fun plannedProjectPath(state: OnboardingState): String {
     val parent = state.projectParentPath.trim()
     val name = state.projectFolderName.trim()
@@ -66,7 +99,7 @@ internal fun validateOnboardingFields(
             !state.projectSetupMode.createsProject && state.fieldErrors.projectPath != null -> state.fieldErrors.projectPath
             state.projectSetupMode.createsProject && state.projectParentPath.isBlank() ->
                 "Choose where ARES should create the robot project."
-            state.projectSetupMode.createsProject && !File(state.projectParentPath.trim()).isDirectory ->
+            state.projectSetupMode.createsProject && !isCreatableProjectsParentDirectory(state.projectParentPath) ->
                 "The parent folder does not exist or cannot be opened."
             state.projectSetupMode.createsProject ->
                 RobotProjectTemplateService.projectFolderNameError(state.projectFolderName.trim())

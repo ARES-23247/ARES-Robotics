@@ -45,6 +45,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ares.analytics.ui.theme.AresAmber
@@ -89,10 +90,11 @@ fun RobotHierarchyTree(
     isCollapsed: Boolean,
     onToggleCollapse: () -> Unit,
     modifier: Modifier = Modifier,
+    expandedWidth: Dp = 220.dp,
 ) {
     Surface(
         modifier = modifier
-            .width(if (isCollapsed) 56.dp else 220.dp)
+            .width(if (isCollapsed) 56.dp else expandedWidth)
             .fillMaxHeight(),
         color = AresSurface,
         border = BorderStroke(1.dp, AresBorder),
