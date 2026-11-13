@@ -11,6 +11,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -25,6 +26,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ares.analytics.domain.analysis.*
+import com.ares.analytics.domain.pit.EventScheduleCodec
+import com.ares.analytics.service.MatchInfo
+import com.ares.analytics.service.toScheduledMatchItem
+import com.ares.analytics.shared.models.Session
 import com.ares.analytics.ui.theme.*
 import java.util.Locale
 
@@ -390,6 +395,78 @@ private fun heatmapColorFor(mode: StrategyHeatmapMode, intensity: Float): Color 
             AresGold.copy(alpha = alpha)
         } else {
             AresError.copy(alpha = alpha)
+        }
+    }
+}
+
+@Composable
+internal fun TournamentScheduleContextCard(
+    matches: List<MatchInfo>,
+    teamId: String,
+    sessions: List<Session>,
+    selectedSession: Session?,
+    onOpenPitOps: (() -> Unit)?,
+) {
+    if (matches.isEmpty()) return
+    val rows = EventScheduleCodec.buildQueueRows(
+        items = matches.map { it.toScheduledMatchItem("cache") },
+        teamId = teamId,
+        sessions = sessions,
+    )
+    val selectedRow = selectedSession?.matchNumber?.let { num ->
+        rows.firstOrNull { it.item.matchNumber == num }
+    }
+    val nextRow = rows.firstOrNull { it.isNextUnplayedForTeam } ?: rows.firstOrNull()
+    val displayRow = selectedRow ?: nextRow ?: return
+    val allianceColor = when (displayRow.ourAlliance) {
+        "red" -> AresRed
+        "blue" -> AresCyan
+        else -> AresGold
+    }
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = AresSurface),
+        shape = RoundedCornerShape(10.dp),
+        border = BorderStroke(1.dp, allianceColor.copy(alpha = 0.55f)),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 10.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Row(
+                modifier = Modifier.weight(1f),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                Icon(Icons.Default.Schedule, contentDescription = null, tint = allianceColor, modifier = Modifier.size(18.dp))
+                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    val headerLabel = if (selectedRow != null) {
+                        "Scheduled Match Context · ${displayRow.item.compLevel.uppercase(Locale.US)} #${displayRow.item.matchNumber}"
+                    } else {
+                        "Next Queued Match · ${displayRow.item.compLevel.uppercase(Locale.US)} #${displayRow.item.matchNumber}"
+                    }
+                    Text(headerLabel, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = AresTextPrimary)
+                    val partnerText = if (displayRow.partnerTeams.isEmpty()) "Solo/Unlisted" else displayRow.partnerTeams.joinToString(", ")
+                    val oppText = if (displayRow.opponentTeams.isEmpty()) "Unlisted" else displayRow.opponentTeams.joinToString(", ")
+                    val rolePrefix = displayRow.ourAlliance?.uppercase(Locale.US)?.let { "$it ALLIANCE · " } ?: "Teams · "
+                    Text(
+                        "${rolePrefix}Partner: $partnerText | Opponents: $oppText",
+                        fontSize = 11.sp,
+                        color = AresTextSecondary,
+                    )
+                }
+            }
+            if (onOpenPitOps != null) {
+                OutlinedButton(
+                    onClick = onOpenPitOps,
+                    shape = RoundedCornerShape(8.dp),
+                    border = BorderStroke(1.dp, AresCyan.copy(alpha = 0.65f)),
+                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                ) {
+                    Text("Pit Match Queue", fontSize = 11.sp, color = AresCyan, fontWeight = FontWeight.SemiBold)
+                }
+            }
         }
     }
 }

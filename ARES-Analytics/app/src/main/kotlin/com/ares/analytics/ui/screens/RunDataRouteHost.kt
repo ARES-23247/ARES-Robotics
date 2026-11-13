@@ -1,6 +1,8 @@
 package com.ares.analytics.ui.screens
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.mutableStateOf
 import com.ares.analytics.domain.navigation.NavigationTarget
 import com.ares.analytics.service.AiDiagnosticsService
 import com.ares.analytics.service.DatabaseService
@@ -23,6 +25,7 @@ internal data class RunDataFeatureScope(
     val sync: SyncEngineService,
     val aiDiagnostics: AiDiagnosticsService,
     val notebookCapture: EngineeringNotebookCaptureService,
+    val pendingTagFilter: MutableState<String?> = mutableStateOf(null),
 )
 
 internal data class RunDataRouteActions(
@@ -93,6 +96,8 @@ internal fun RunDataRouteHost(
             workspace = workspace,
             reloadTrigger = reloadTrigger,
             notebookCaptureService = scope.notebookCapture,
+            initialTagFilter = scope.pendingTagFilter.value,
+            onConsumeInitialTagFilter = { scope.pendingTagFilter.value = null },
             onOpenImports = { actions.navigate(NavigationTarget.IMPORT_CENTER) },
             onOpenHelp = { actions.navigate(NavigationTarget.ACADEMY) },
             onOpenReplay = { sessionId -> actions.openDashboardReplay(sessionId, null) },

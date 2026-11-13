@@ -76,6 +76,7 @@ fun MainScreen(services: ServiceRegistry) {
             keybindingParserService = services.keybindingParserService,
             scope = scope,
             beforeWorkspaceChange = services::releaseWorkspaceOwnership,
+            eventScheduleStore = services.eventScheduleStore,
         )
     }
     val mainState by mainViewModel.state.collectAsState()

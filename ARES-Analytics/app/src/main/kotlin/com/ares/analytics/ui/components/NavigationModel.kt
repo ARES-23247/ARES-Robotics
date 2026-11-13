@@ -134,7 +134,10 @@ fun NavigationTarget.searchTerms(): Set<String> = when (this) {
         "academy", "robot academy", "training", "classroom", "mentor", "lesson",
     )
     NavigationTarget.KDOC_VIEWER -> setOf("api", "code reference", "kdoc", "source", "architecture", "units")
-    NavigationTarget.PIT_DIAGNOSTICS -> setOf("hardware", "readiness", "pit", "self test", "freshness")
+    NavigationTarget.PIT_DIAGNOSTICS -> setOf(
+        "hardware", "readiness", "pit", "pit ops", "pit self-test", "self test", "freshness",
+        "battery", "battery fleet", "internal resistance", "match queue", "schedule", "thresholds", "alerts", "brownout",
+    )
     NavigationTarget.MATCH_STRATEGY -> setOf("match", "strategy", "heatmap", "debrief", "coaching", "cycle", "preview")
     NavigationTarget.GUIDED_RUN_ANALYSIS -> setOf("analyze", "evidence", "possible cause", "safe next step", "guided review", "compare runs")
     NavigationTarget.RUN_HISTORY -> setOf("replay", "review", "compare", "past run", "session", "cohort", "distribution")

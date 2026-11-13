@@ -58,6 +58,10 @@ sealed class MainIntent {
     object AddNewWorkspace : MainIntent()
 
     object CancelAddNewWorkspace : MainIntent()
+
+    object RefreshEventSchedule : MainIntent()
+
+    data class UpdateCachedMatches(val matches: List<MatchInfo>) : MainIntent()
 }
 
 /** Top-level navigation and workspace state shared by the desktop application's screens. */
@@ -67,6 +71,7 @@ class MainViewModel(
     private val keybindingParserService: KeybindingParserService,
     private val scope: CoroutineScope,
     private val beforeWorkspaceChange: suspend () -> Unit = {},
+    private val eventScheduleStore: com.ares.analytics.service.EventScheduleStore = com.ares.analytics.service.EventScheduleStore(),
 ) {
     private val _state = MutableStateFlow(MainState())
     val state: StateFlow<MainState> = _state.asStateFlow()
@@ -172,18 +177,36 @@ class MainViewModel(
                         loadMatchSchedule(active)
                     }
                 }
+                is MainIntent.RefreshEventSchedule -> {
+                    _state.value.config?.let { loadMatchSchedule(it) }
+                }
+                is MainIntent.UpdateCachedMatches -> {
+                    val active = _state.value.config
+                    if (active != null) {
+                        val saved = runCatching { eventScheduleStore.saveMatches(active, intent.matches) }
+                            .getOrDefault(intent.matches)
+                        _state.update { it.copy(matches = saved) }
+                    } else {
+                        _state.update { it.copy(matches = intent.matches) }
+                    }
+                }
             }
         }
     }
 
     private suspend fun loadMatchSchedule(currentConf: WorkspaceConfig) {
         val generation = scheduleGeneration.incrementAndGet()
+        val cached = runCatching { eventScheduleStore.loadCachedMatches(currentConf) }.getOrDefault(emptyList())
+        if (scheduleGeneration.get() == generation && _state.value.config?.id == currentConf.id) {
+            _state.update { it.copy(matches = cached) }
+        }
         val eventCode = currentConf.eventCode
         if (!eventCode.isNullOrEmpty()) {
-            val list = try {
+            val fetched = try {
                 if (currentConf.league == League.FTC) {
                     val apiKey = currentConf.toaApiKey ?: ""
-                    eventApiService.fetchFtcEventSchedule(eventCode, apiKey)
+                    val year = Regex("(20\\d{2})").find(currentConf.seasonId)?.value?.toIntOrNull()
+                    eventApiService.fetchFtcEventSchedule(eventCode, apiKey, seasonYear = year)
                 } else {
                     val apiKey = currentConf.tbaApiKey ?: ""
                     eventApiService.fetchFrcEventSchedule(eventCode, apiKey)
@@ -193,11 +216,11 @@ class MainViewModel(
             } catch (_: Exception) {
                 emptyList()
             }
-            if (scheduleGeneration.get() == generation && _state.value.config?.id == currentConf.id) {
-                _state.update { it.copy(matches = list) }
+            if (fetched.isNotEmpty() && scheduleGeneration.get() == generation && _state.value.config?.id == currentConf.id) {
+                val persisted = runCatching { eventScheduleStore.saveMatches(currentConf, fetched, source = "api") }
+                    .getOrDefault(fetched)
+                _state.update { it.copy(matches = persisted) }
             }
-        } else if (scheduleGeneration.get() == generation && _state.value.config?.id == currentConf.id) {
-            _state.update { it.copy(matches = emptyList()) }
         }
     }
 }

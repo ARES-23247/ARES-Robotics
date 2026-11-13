@@ -18,6 +18,7 @@ import androidx.compose.ui.unit.sp
 import com.ares.analytics.domain.analysis.*
 import com.ares.analytics.service.DatabaseService
 import com.ares.analytics.service.ExportService
+import com.ares.analytics.service.MatchInfo
 import com.ares.analytics.shared.models.*
 import com.ares.analytics.ui.theme.*
 import com.ares.analytics.ui.util.DesktopFileChoosers
@@ -61,9 +62,11 @@ fun MatchStrategyScreen(
     notebookCaptureService: com.ares.analytics.service.integration.EngineeringNotebookCaptureService? = null,
     workspace: WorkspaceConfig? = null,
     reloadTrigger: Int = 0,
+    matches: List<MatchInfo> = emptyList(),
     onOpenReplay: (String, Long?) -> Unit = { _, _ -> },
     onOpenImports: () -> Unit = {},
     onOpenNotebookEntry: ((String) -> Unit)? = null,
+    onOpenPitOps: (() -> Unit)? = null,
 ) {
     val scope = rememberCoroutineScope()
     val league = workspace?.league ?: League.FTC
@@ -380,6 +383,15 @@ fun MatchStrategyScreen(
         }
 
         if (sessions.isEmpty()) {
+            if (matches.isNotEmpty()) {
+                TournamentScheduleContextCard(
+                    matches = matches,
+                    teamId = workspace?.teamId.orEmpty(),
+                    sessions = sessions,
+                    selectedSession = null,
+                    onOpenPitOps = onOpenPitOps,
+                )
+            }
             Card(
                 modifier = Modifier.fillMaxWidth().weight(1f),
                 colors = CardDefaults.cardColors(containerColor = AresSurface),
@@ -417,13 +429,23 @@ fun MatchStrategyScreen(
             return@Column
         }
 
+        val snap = activeSnapshot
+        if (matches.isNotEmpty()) {
+            TournamentScheduleContextCard(
+                matches = matches,
+                teamId = workspace?.teamId.orEmpty(),
+                sessions = sessions,
+                selectedSession = snap?.session,
+                onOpenPitOps = onOpenPitOps,
+            )
+        }
+
         EventProgressionStrip(
             seriesList = progressionSeries,
             selectedSessionId = selectedSessionId,
             onSelectSession = { selectedSessionId = it },
         )
 
-        val snap = activeSnapshot
         Row(
             modifier = Modifier.fillMaxWidth().weight(1f),
             horizontalArrangement = Arrangement.spacedBy(16.dp),

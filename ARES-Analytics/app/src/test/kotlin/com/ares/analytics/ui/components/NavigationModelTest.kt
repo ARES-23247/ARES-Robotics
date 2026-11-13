@@ -62,6 +62,9 @@ class NavigationModelTest {
         assertEquals(listOf(NavigationTarget.DRIVEBASE_BUILDER), filterNavigationTargets("mecanum", false))
         assertEquals(listOf(NavigationTarget.ROBOT_STUDIO), filterNavigationTargets("build robot", false))
         assertEquals(listOf(NavigationTarget.PROJECT_IDENTITY), filterNavigationTargets("robot dimensions", false))
+        assertTrue(filterNavigationTargets("battery fleet", false).contains(NavigationTarget.PIT_DIAGNOSTICS))
+        assertTrue(filterNavigationTargets("match queue", false).contains(NavigationTarget.PIT_DIAGNOSTICS))
+        assertTrue(filterNavigationTargets("thresholds", false).contains(NavigationTarget.PIT_DIAGNOSTICS))
     }
 
     @Test

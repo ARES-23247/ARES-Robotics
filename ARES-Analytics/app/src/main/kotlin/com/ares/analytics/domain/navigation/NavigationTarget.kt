@@ -9,7 +9,7 @@ enum class NavigationTarget(val label: String) {
     FIELD_EDITOR("Field Editor"),
     ACADEMY("Help & Learn"),
     KDOC_VIEWER("Developer Reference"),
-    PIT_DIAGNOSTICS("Pit Self-Test"),
+    PIT_DIAGNOSTICS("Pit Operations"),
     MATCH_STRATEGY("Match Strategy"),
     GUIDED_RUN_ANALYSIS("Guided Run Review"),
     RUN_HISTORY("Run History"),

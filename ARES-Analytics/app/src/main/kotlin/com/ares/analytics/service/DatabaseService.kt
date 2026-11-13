@@ -115,6 +115,7 @@ class DatabaseService(
     private val runEvidenceRepo: RunEvidenceRepository
     private val backupExporter: DatabaseBackupExporter
     private val integrationRepository: IntegrationRepository
+    private val batteryFleetRepo: BatteryFleetRepository
 
     val integrations: IntegrationStore
         get() = integrationRepository
@@ -184,6 +185,7 @@ class DatabaseService(
             runEvidenceRepo = RunEvidenceRepository(transactionCoordinator, sessionMetadataRepo)
             backupExporter = DatabaseBackupExporter(conn, dbMutex)
             integrationRepository = IntegrationRepository(conn, dbMutex)
+            batteryFleetRepo = BatteryFleetRepository(transactionCoordinator)
             integrationEvents = IntegrationEventRecorder(integrationRepository, integrationRouting)
 
             schemaInitializer.initialize()
@@ -253,6 +255,33 @@ class DatabaseService(
         if (commitRange == null) integrationEvents.notebookDraftReady(entry, externalUpdatesAllowed)
         else integrationEvents.softwareDigestReady(entry, commitRange)
     }
+    suspend fun upsertBatterySpec(spec: com.ares.analytics.domain.pit.BatterySpecRecord) =
+        batteryFleetRepo.upsertBatterySpec(spec)
+    suspend fun updateBatteryPoolStatus(
+        teamId: String,
+        seasonId: String,
+        robotId: String,
+        batteryId: String,
+        status: com.ares.analytics.domain.pit.BatteryPoolStatus,
+        updatedAtMs: Long,
+    ) = batteryFleetRepo.updateBatteryPoolStatus(teamId, seasonId, robotId, batteryId, status, updatedAtMs)
+    suspend fun listBatterySpecsForWorkspace(
+        teamId: String,
+        seasonId: String,
+        robotId: String,
+    ): List<com.ares.analytics.domain.pit.BatterySpecRecord> =
+        batteryFleetRepo.listBatterySpecsForWorkspace(teamId, seasonId, robotId)
+    suspend fun deleteBatterySpecFromWorkspace(teamId: String, seasonId: String, robotId: String, batteryId: String) =
+        batteryFleetRepo.deleteBatterySpecFromWorkspace(teamId, seasonId, robotId, batteryId)
+    suspend fun recordBatteryCheckin(checkin: com.ares.analytics.domain.pit.BatteryCheckinRecord) =
+        batteryFleetRepo.recordBatteryCheckin(checkin)
+    suspend fun listBatteryCheckinsForWorkspace(
+        teamId: String,
+        seasonId: String,
+        robotId: String,
+        limit: Int = 500,
+    ): List<com.ares.analytics.domain.pit.BatteryCheckinRecord> =
+        batteryFleetRepo.listBatteryCheckinsForWorkspace(teamId, seasonId, robotId, limit)
     override suspend fun getSessionSummary(sessionId: String): SessionSummary? = sessionMetadataRepo.getSessionSummary(sessionId)
     override suspend fun getAllSessionSummaries(): List<SessionSummary> = sessionMetadataRepo.getAllSessionSummaries()
     suspend fun insertTelemetryFrames(frames: List<TelemetryFrame>) = telemetryRepo.insertTelemetryFrames(frames)

@@ -1,10 +1,12 @@
 package com.ares.analytics.service
 
 import com.ares.analytics.shared.TelemetryMetricCatalog
+import com.ares.analytics.shared.models.League
 import com.ares.analytics.shared.models.ThresholdRule
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import java.io.File
 import java.io.IOException
 import java.nio.ByteBuffer
 import java.nio.charset.CharacterCodingException
@@ -82,20 +84,72 @@ internal object AlertRuleConfiguration {
         val rules = try { json.decodeFromString<List<ThresholdRule>>(text.removePrefix("\uFEFF")) }
         catch (_: SerializationException) { throw InvalidRules("Threshold JSON is invalid or contains unsupported fields.") }
         if (rules.size > MAX_RULES) throw InvalidRules("The threshold file exceeds 4096 rules.")
+        validateRules(rules)?.let { throw InvalidRules(it) }
+        return rules
+    }
+
+    /** Validates a rule set using the same invariants enforced on `thresholds.json` startup load. */
+    fun validateRules(rules: List<ThresholdRule>): String? {
+        if (rules.size > MAX_RULES) return "Rule list exceeds $MAX_RULES rules."
         val keys = HashSet<String>()
         rules.forEachIndexed { index, rule ->
             val row = index + 1
             val key = TelemetryMetricCatalog.normalizeTopic(rule.key)
-            if (key.isBlank() || rule.key.any { it.isISOControl() }) throw InvalidRules("Rule $row has an invalid topic key.")
-            if (rule.displayName.isBlank() || rule.displayName.any { it.isISOControl() }) throw InvalidRules("Rule $row has an invalid display name.")
-            val minimum = rule.minValue; val maximum = rule.maxValue
-            if ((minimum != null && !minimum.isFinite()) || (maximum != null && !maximum.isFinite()))
-                throw InvalidRules("Rule $row has a nonfinite bound.")
-            if (minimum != null && maximum != null && minimum > maximum) throw InvalidRules("Rule $row has reversed bounds.")
-            if (!keys.add(key)) throw InvalidRules("Rule $row duplicates a normalized topic key.")
-            AlertRuleSemantics.configurationProblem(key, rule)?.let { throw InvalidRules("Rule $row: $it") }
+            if (key.isBlank() || rule.key.any { it.isISOControl() }) return "Rule $row has an invalid topic key."
+            if (rule.displayName.isBlank() || rule.displayName.any { it.isISOControl() }) return "Rule $row has an invalid display name."
+            val minimum = rule.minValue
+            val maximum = rule.maxValue
+            if ((minimum != null && !minimum.isFinite()) || (maximum != null && !maximum.isFinite())) {
+                return "Rule $row has a nonfinite bound."
+            }
+            if (minimum != null && maximum != null && minimum > maximum) {
+                return "Rule $row has reversed bounds."
+            }
+            if (!keys.add(key)) return "Rule $row duplicates normalized topic key '$key'."
+            AlertRuleSemantics.configurationProblem(key, rule)?.let { return "Rule $row: $it" }
         }
-        return rules
+        return null
+    }
+
+    /** Atomically writes validated threshold rules to [path]. */
+    fun saveAtomically(path: String, rules: List<ThresholdRule>) {
+        validateRules(rules)?.let { throw IllegalArgumentException(it) }
+        val target = Path.of(path).toFile()
+        val encoded = json.encodeToString(rules).toByteArray(Charsets.UTF_8)
+        writeFileAtomically(target) { tmp -> tmp.writeBytes(encoded) }
+    }
+
+    fun defaultRulesForLeague(league: League = League.FTC): List<ThresholdRule> {
+        val batteryFloor = when (league) {
+            League.FRC -> 9.5
+            League.FTC -> 10.5
+            League.XRP -> 4.3
+        }
+        val motorNames = listOf("fl", "fr", "rl", "rr", "bl", "br")
+        val core = listOf(
+            ThresholdRule(
+                TelemetryMetricCatalog.BATTERY_VOLTAGE.canonicalKey,
+                "Low Battery Voltage (<${batteryFloor}V)",
+                minValue = batteryFloor,
+                audibleAlert = true,
+            ),
+            ThresholdRule("Drive/EKF_Drift_X", "High EKF X Drift (>0.20m)", maxValue = 0.20, audibleAlert = true),
+            ThresholdRule("Drive/EKF_Drift_Y", "High EKF Y Drift (>0.20m)", maxValue = 0.20, audibleAlert = true),
+            ThresholdRule(
+                TelemetryMetricCatalog.LOOP_TIME.canonicalKey,
+                "Robot Loop Time Spike (>25ms)",
+                maxValue = LoopOverrunWindow.MODERATE_THRESHOLD_MS,
+                audibleAlert = false,
+            ),
+            ScalarDiagnosticRules.defaultRule(ScalarDiagnosticKind.I2C_TIMEOUTS, ScalarDiagnosticRules.I2C_KEY),
+        )
+        val motorRules = motorNames.flatMap { motor ->
+            listOf(
+                ThresholdRule("Hardware/Motors/$motor/Stall", "CRITICAL: Motor '$motor' Mechanical Binding / Stall!", maxValue = 0.5, audibleAlert = true),
+                ThresholdRule("Hardware/Motors/$motor/Disconnected", "WARNING: Motor '$motor' Cable Disconnected!", maxValue = 0.5, audibleAlert = true),
+            )
+        }
+        return core + motorRules
     }
 
     private fun fallback(defaults: List<ThresholdRule>, reason: String) =
