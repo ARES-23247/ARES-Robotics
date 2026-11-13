@@ -1,5 +1,3 @@
-@file:OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
-
 package com.ares.analytics.ui.components
 
 import androidx.compose.foundation.BorderStroke
@@ -8,330 +6,82 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.AccountTree
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.BatteryChargingFull
 import androidx.compose.material.icons.filled.Book
 import androidx.compose.material.icons.filled.Build
-import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.RadioButtonUnchecked
 import androidx.compose.material.icons.filled.Route
-import androidx.compose.material.icons.filled.School
+import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.SettingsInputComponent
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEvent
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.ares.analytics.domain.learning.LearningCatalog
-import com.ares.analytics.domain.learning.LearningCheckpoint
-import com.ares.analytics.domain.learning.LearningCheckpointAction
-import com.ares.analytics.domain.learning.LearningJourneyEvaluator
 import com.ares.analytics.domain.navigation.NavigationTarget
-import com.ares.analytics.domain.notebook.NotebookSectionParser
-import com.ares.analytics.service.LearningProgressService
-import com.ares.analytics.service.project.AresProjectDocuments
-import com.ares.analytics.shared.models.EngineeringNotebookEntry
-import com.ares.analytics.shared.models.League
-import com.ares.analytics.shared.models.Session
-import com.ares.analytics.shared.models.WorkspaceConfig
-import com.ares.analytics.ui.help.GlossaryCatalog
-import com.ares.analytics.ui.theme.AresBackground
+import com.ares.analytics.domain.navigation.PitOperationsSubTab
+import com.ares.analytics.ui.theme.AresAmber
 import com.ares.analytics.ui.theme.AresBorder
 import com.ares.analytics.ui.theme.AresCyan
-import com.ares.analytics.ui.theme.AresError
+import com.ares.analytics.ui.theme.AresCyanGlow
 import com.ares.analytics.ui.theme.AresGold
 import com.ares.analytics.ui.theme.AresGreen
-import com.ares.analytics.ui.theme.AresOnAccent
 import com.ares.analytics.ui.theme.AresSurface
 import com.ares.analytics.ui.theme.AresSurfaceElevated
 import com.ares.analytics.ui.theme.AresTextPrimary
 import com.ares.analytics.ui.theme.AresTextSecondary
 import com.ares.analytics.ui.theme.AresTextTertiary
-import kotlinx.coroutines.launch
-
-enum class CommandPaletteProjectCategory(val label: String) {
-    STAGE("Robot Studio Stage"),
-    SUBSYSTEM("Subsystem"),
-    SUPERSTRUCTURE("Superstructure"),
-    ROUTINE("Autonomous Routine"),
-}
-
-data class CommandPaletteProjectItem(
-    val id: String,
-    val label: String,
-    val subtitle: String,
-    val category: CommandPaletteProjectCategory,
-    val target: NavigationTarget,
-    val keywords: List<String> = emptyList(),
-)
-
-data class CommandPaletteRunItem(
-    val sessionId: String,
-    val label: String,
-    val subtitle: String,
-    val keywords: List<String> = emptyList(),
-)
-
-data class CommandPaletteNotebookItem(
-    val entryId: String,
-    val title: String,
-    val subtitle: String,
-    val keywords: List<String> = emptyList(),
-)
-
-fun buildCommandPaletteRunItems(sessions: List<Session>): List<CommandPaletteRunItem> =
-    sessions.sortedByDescending(Session::createdAt).map { session ->
-        val runTitle = session.matchNumber?.let { "Match #$it" } ?: "Run ${session.sessionId.take(8)}"
-        val alliancePart = session.allianceColor?.uppercase() ?: "Practice"
-        val tagsPart = if (session.tags.isEmpty()) "untagged" else session.tags.joinToString(", ")
-        val matchTerms = session.matchNumber?.let { listOf("match $it", "match #$it", "m#$it", "$it") }.orEmpty()
-        CommandPaletteRunItem(
-            sessionId = session.sessionId,
-            label = "$runTitle ($alliancePart)",
-            subtitle = "Session ${session.sessionId.take(12)} · Tags: $tagsPart",
-            keywords = listOf("run", "replay", "session", session.sessionId, alliancePart) + matchTerms + session.tags,
-        )
-    }
-
-fun buildCommandPaletteNotebookItems(entries: List<EngineeringNotebookEntry>): List<CommandPaletteNotebookItem> =
-    entries.sortedByDescending(EngineeringNotebookEntry::updatedAtMs).map { entry ->
-        val parsed = NotebookSectionParser.parseMarkdown(entry.markdownBody)
-        val title = parsed.title.ifBlank { entry.entryId }
-        val tagsText = if (parsed.tags.isEmpty()) entry.entryType.name else parsed.tags.joinToString(", ")
-        CommandPaletteNotebookItem(
-            entryId = entry.entryId,
-            title = title,
-            subtitle = "${entry.entryId} · r${entry.revision} (${entry.reviewState.name}) · $tagsText",
-            keywords = listOf(
-                "notebook",
-                "note",
-                "portfolio",
-                entry.entryId,
-                entry.entryType.name,
-                entry.reviewState.name,
-                entry.markdownBody.take(400),
-            ) + parsed.tags + listOfNotNull(entry.humanAuthorId) + entry.evidence.map { it.referenceId },
-        )
-    }
-
-fun filterCommandPaletteRuns(
-    query: String,
-    items: List<CommandPaletteRunItem>,
-): List<CommandPaletteRunItem> {
-    val normalized = query.trim().lowercase()
-    if (normalized.isEmpty()) return emptyList()
-    return items.filter { item ->
-        item.label.lowercase().contains(normalized) ||
-            item.subtitle.lowercase().contains(normalized) ||
-            item.keywords.any { it.lowercase().contains(normalized) }
-    }.take(8)
-}
-
-fun filterCommandPaletteNotebookEntries(
-    query: String,
-    items: List<CommandPaletteNotebookItem>,
-): List<CommandPaletteNotebookItem> {
-    val normalized = query.trim().lowercase()
-    if (normalized.isEmpty()) return emptyList()
-    return items.filter { item ->
-        item.title.lowercase().contains(normalized) ||
-            item.subtitle.lowercase().contains(normalized) ||
-            item.keywords.any { it.lowercase().contains(normalized) }
-    }.take(8)
-}
-
-fun defaultRobotStudioStageItems(): List<CommandPaletteProjectItem> = listOf(
-    CommandPaletteProjectItem(
-        id = "stage:identity",
-        label = "1. Robot Identity & Dimensions",
-        subtitle = "Robot Studio Stage 1 · Team, season, and bumper footprint",
-        category = CommandPaletteProjectCategory.STAGE,
-        target = NavigationTarget.PROJECT_IDENTITY,
-        keywords = listOf("identity", "dimensions", "footprint", "bumper", "stage 1"),
-    ),
-    CommandPaletteProjectItem(
-        id = "stage:drivetrain",
-        label = "2. Drivetrain Builder",
-        subtitle = "Robot Studio Stage 2 · Swerve, mecanum, differential, and localization",
-        category = CommandPaletteProjectCategory.STAGE,
-        target = NavigationTarget.DRIVEBASE_BUILDER,
-        keywords = listOf("drivetrain", "drivebase", "swerve", "mecanum", "localization", "stage 2"),
-    ),
-    CommandPaletteProjectItem(
-        id = "stage:subsystems",
-        label = "3. Mechanisms / Subsystems",
-        subtitle = "Robot Studio Stage 3 · Hardware, stateflow, PID, and commissioning",
-        category = CommandPaletteProjectCategory.STAGE,
-        target = NavigationTarget.SUBSYSTEM_GEN,
-        keywords = listOf("subsystem", "mechanism", "arm", "elevator", "intake", "shooter", "stage 3"),
-    ),
-    CommandPaletteProjectItem(
-        id = "stage:wiring",
-        label = "4. Hardware Ports & Pit Wiring",
-        subtitle = "Robot Studio Stage 4 · CAN buses, REV Hub ports, and conflict audit",
-        category = CommandPaletteProjectCategory.STAGE,
-        target = NavigationTarget.HARDWARE_SETUP,
-        keywords = listOf("wiring", "ports", "can", "expansion hub", "control hub", "stage 4"),
-    ),
-    CommandPaletteProjectItem(
-        id = "stage:superstructure",
-        label = "5. Superstructure Coordinator",
-        subtitle = "Robot Studio Stage 5 · Multi-subsystem postures, interlocks, and simulation lab",
-        category = CommandPaletteProjectCategory.STAGE,
-        target = NavigationTarget.SUPERSTRUCTURE_STUDIO,
-        keywords = listOf("superstructure", "posture", "interlock", "coordinator", "stage 5"),
-    ),
-    CommandPaletteProjectItem(
-        id = "stage:controls",
-        label = "6. TeleOp Controls",
-        subtitle = "Robot Studio Stage 6 · Driver and operator gamepad bindings",
-        category = CommandPaletteProjectCategory.STAGE,
-        target = NavigationTarget.CONTROLS,
-        keywords = listOf("controls", "gamepad", "controller", "teleop", "bindings", "stage 6"),
-    ),
-    CommandPaletteProjectItem(
-        id = "stage:autonomous",
-        label = "7. Autonomous Routines",
-        subtitle = "Robot Studio Stage 7 · Trajectories, action timeline, and scrubber",
-        category = CommandPaletteProjectCategory.STAGE,
-        target = NavigationTarget.PATH_PLANNER,
-        keywords = listOf("autonomous", "routine", "path", "trajectory", "stage 7"),
-    ),
-    CommandPaletteProjectItem(
-        id = "stage:verification",
-        label = "8. Verify & Build Readiness",
-        subtitle = "Robot Studio Stage 8 · Codegen, safety checks, and Gradle verification",
-        category = CommandPaletteProjectCategory.STAGE,
-        target = NavigationTarget.ROBOT_STUDIO,
-        keywords = listOf("verify", "build", "readiness", "codegen", "stage 8"),
-    ),
-)
-
-fun discoverProjectCommandPaletteItems(projectPath: String): List<CommandPaletteProjectItem> {
-    val stages = defaultRobotStudioStageItems()
-    if (projectPath.isBlank()) return stages
-    val loaded = runCatching { AresProjectDocuments().load(projectPath).query }.getOrNull()
-        ?: return stages
-
-    val subsystemItems = loaded.subsystems.map { doc ->
-        CommandPaletteProjectItem(
-            id = "subsystem:${doc.documentId}",
-            label = "Subsystem: ${doc.displayName}",
-            subtitle = ".ares/subsystems/${doc.documentId}.aressubsystem · ${doc.template.name}",
-            category = CommandPaletteProjectCategory.SUBSYSTEM,
-            target = NavigationTarget.SUBSYSTEM_GEN,
-            keywords = listOf(doc.documentId, doc.displayName, doc.template.name, "subsystem", "mechanism"),
-        )
-    }
-
-    val superstructureItems = loaded.superstructures.map { doc ->
-        CommandPaletteProjectItem(
-            id = "superstructure:${doc.superstructureId}",
-            label = "Superstructure: ${doc.displayName}",
-            subtitle = ".ares/superstructures/${doc.superstructureId}.aressuperstructure · ${doc.states.size} postures",
-            category = CommandPaletteProjectCategory.SUPERSTRUCTURE,
-            target = NavigationTarget.SUPERSTRUCTURE_STUDIO,
-            keywords = listOf(doc.superstructureId, doc.displayName, "superstructure", "coordinator") +
-                doc.states.map { it.displayName },
-        )
-    }
-
-    val routineItems = loaded.routines.map { doc ->
-        CommandPaletteProjectItem(
-            id = "routine:${doc.documentId}",
-            label = "Routine: ${doc.name}",
-            subtitle = ".ares/routines/${doc.documentId}.aresroutine · ${doc.steps.size} steps",
-            category = CommandPaletteProjectCategory.ROUTINE,
-            target = NavigationTarget.PATH_PLANNER,
-            keywords = listOf(doc.documentId, doc.name, "routine", "autonomous", "auto"),
-        )
-    }
-
-    return stages + subsystemItems + superstructureItems + routineItems
-}
-
-fun filterCommandPaletteProjectItems(
-    query: String,
-    items: List<CommandPaletteProjectItem>,
-): List<CommandPaletteProjectItem> {
-    val normalized = query.trim().lowercase()
-    if (normalized.isEmpty()) {
-        return items.filter { it.category == CommandPaletteProjectCategory.STAGE }
-    }
-    return items.filter { item ->
-        item.label.lowercase().contains(normalized) ||
-            item.subtitle.lowercase().contains(normalized) ||
-            item.category.label.lowercase().contains(normalized) ||
-            item.keywords.any { it.lowercase().contains(normalized) }
-    }
-}
-
-fun filterNavigationTargets(query: String, developerMode: Boolean): List<NavigationTarget> {
-    val normalized = query.trim().lowercase()
-    return availablePaletteTargets(developerMode).filter { target ->
-        normalized.isEmpty() ||
-            target.label.lowercase().contains(normalized) ||
-            target.groupLabel().lowercase().contains(normalized) ||
-            target.searchTerms().any { it.contains(normalized) }
-    }
-}
 
 @Composable
 fun CommandPalette(
     developerMode: Boolean,
     projectPath: String = "",
     projectItems: List<CommandPaletteProjectItem>? = null,
+    recentTargets: List<NavigationTarget> = emptyList(),
+    pitTabItems: List<CommandPalettePitTabItem> = defaultPitOperationsTabItems(),
+    batteryItems: List<CommandPaletteBatteryItem> = emptyList(),
+    matchItems: List<CommandPaletteMatchItem> = emptyList(),
     runItems: List<CommandPaletteRunItem> = emptyList(),
     notebookItems: List<CommandPaletteNotebookItem> = emptyList(),
     onDismiss: () -> Unit,
@@ -339,160 +89,288 @@ fun CommandPalette(
     onOpenGlossaryTerm: (String) -> Unit = {},
     onOpenRun: (String) -> Unit = {},
     onOpenNotebookEntry: (String) -> Unit = {},
+    onOpenProjectItem: ((CommandPaletteProjectItem) -> Unit)? = null,
+    onOpenPitTab: (PitOperationsSubTab) -> Unit = { onNavigate(NavigationTarget.PIT_DIAGNOSTICS) },
+    onOpenBattery: (String) -> Unit = { onNavigate(NavigationTarget.PIT_DIAGNOSTICS) },
+    onOpenScheduledMatch: (Int) -> Unit = { onNavigate(NavigationTarget.PIT_DIAGNOSTICS) },
 ) {
-    var query by remember { mutableStateOf("") }
-    val focusRequester = remember { FocusRequester() }
-    val allProjectItems = remember(projectPath, projectItems) {
-        projectItems ?: discoverProjectCommandPaletteItems(projectPath)
-    }
-    val matchingProjectItems = remember(query, allProjectItems) {
-        filterCommandPaletteProjectItems(query, allProjectItems)
-    }
-    val matchingRuns = remember(query, runItems) {
-        filterCommandPaletteRuns(query, runItems)
-    }
-    val matchingNotebookEntries = remember(query, notebookItems) {
-        filterCommandPaletteNotebookEntries(query, notebookItems)
-    }
-    val results = remember(query, developerMode) { filterNavigationTargets(query, developerMode) }
-    val glossaryResults = remember(query) {
-        if (query.isBlank()) emptyList() else GlossaryCatalog.search(query).take(5)
-    }
-    LaunchedEffect(Unit) { focusRequester.requestFocus() }
-
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text("Go anywhere", color = AresTextPrimary, fontWeight = FontWeight.Bold, fontSize = 20.sp)
                 Text(
-                    "Search screens, recorded runs, notebook entries, Robot Studio stages, mechanisms, routines, or glossary terms.",
+                    "Jump to screens, recent runs, notebook entries, battery packs (BAT-xx), matches, pit tabs, subsystems, routines, or glossary terms.",
                     color = AresTextSecondary,
-                    fontSize = 12.sp
+                    fontSize = 12.sp,
                 )
             }
         },
         text = {
-            Column(Modifier.width(580.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                OutlinedTextField(
-                    value = query,
-                    onValueChange = { query = it },
-                    modifier = Modifier.fillMaxWidth().focusRequester(focusRequester),
-                    singleLine = true,
-                    placeholder = { Text("Search screens, runs (Match #), notebook entries, subsystems, routines...") },
-                    leadingIcon = { Icon(Icons.Default.Search, null) }
-                )
-                HorizontalDivider(color = AresBorder)
-                if (
-                    matchingProjectItems.isEmpty() &&
-                    matchingRuns.isEmpty() &&
-                    matchingNotebookEntries.isEmpty() &&
-                    results.isEmpty() &&
-                    glossaryResults.isEmpty()
-                ) {
-                    Box(Modifier.fillMaxWidth().heightIn(min = 180.dp), contentAlignment = Alignment.Center) {
-                        Text("No matching screens, runs, notebook entries, or project entities", color = AresTextSecondary)
-                    }
-                } else {
-                    LazyColumn(Modifier.fillMaxWidth().heightIn(max = 430.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                        items(matchingRuns, key = { "run-${it.sessionId}" }) { run ->
-                            Row(
-                                Modifier.fillMaxWidth().clickable {
-                                    onOpenRun(run.sessionId)
-                                    onDismiss()
-                                }.background(AresSurfaceElevated, RoundedCornerShape(8.dp)).padding(horizontal = 12.dp, vertical = 10.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Icon(Icons.Default.PlayArrow, null, tint = AresCyan, modifier = Modifier.size(20.dp))
-                                Column(Modifier.padding(start = 10.dp).weight(1f)) {
-                                    Text(run.label, color = AresTextPrimary, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                                    Text(run.subtitle, color = AresTextTertiary, fontSize = 10.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                                }
-                                Text("Replay Run", color = AresCyan, fontSize = 10.sp, fontWeight = FontWeight.SemiBold)
-                            }
-                        }
-                        items(matchingNotebookEntries, key = { "note-${it.entryId}" }) { note ->
-                            Row(
-                                Modifier.fillMaxWidth().clickable {
-                                    onOpenNotebookEntry(note.entryId)
-                                    onDismiss()
-                                }.background(AresSurfaceElevated, RoundedCornerShape(8.dp)).padding(horizontal = 12.dp, vertical = 10.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Icon(Icons.Default.Book, null, tint = AresGold, modifier = Modifier.size(20.dp))
-                                Column(Modifier.padding(start = 10.dp).weight(1f)) {
-                                    Text(note.title, color = AresTextPrimary, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                                    Text(note.subtitle, color = AresTextTertiary, fontSize = 10.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                                }
-                                Text("Notebook", color = AresGold, fontSize = 10.sp, fontWeight = FontWeight.SemiBold)
-                            }
-                        }
-                        items(matchingProjectItems, key = { "project-${it.id}" }) { item ->
-                            val icon = when (item.category) {
-                                CommandPaletteProjectCategory.STAGE -> Icons.Default.SettingsInputComponent
-                                CommandPaletteProjectCategory.SUBSYSTEM -> Icons.Default.Build
-                                CommandPaletteProjectCategory.SUPERSTRUCTURE -> Icons.Default.AccountTree
-                                CommandPaletteProjectCategory.ROUTINE -> Icons.Default.Route
-                            }
-                            Row(
-                                Modifier.fillMaxWidth().clickable {
-                                    onNavigate(item.target)
-                                    onDismiss()
-                                }.background(AresSurfaceElevated, RoundedCornerShape(8.dp)).padding(horizontal = 12.dp, vertical = 10.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Icon(icon, null, tint = AresGreen, modifier = Modifier.size(20.dp))
-                                Column(Modifier.padding(start = 10.dp).weight(1f)) {
-                                    Text(item.label, color = AresTextPrimary, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                                    Text(item.subtitle, color = AresTextTertiary, fontSize = 10.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                                }
-                                Text(item.category.label, color = AresGreen, fontSize = 10.sp, fontWeight = FontWeight.SemiBold)
-                            }
-                        }
-                        items(results, key = { it.name }) { target ->
-                            Row(
-                                Modifier.fillMaxWidth().clickable {
-                                    onNavigate(target)
-                                    onDismiss()
-                                }.background(AresSurfaceElevated, RoundedCornerShape(8.dp)).padding(horizontal = 12.dp, vertical = 10.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Icon(target.icon, null, tint = AresCyan, modifier = Modifier.size(20.dp))
-                                Column(Modifier.padding(start = 10.dp).weight(1f)) {
-                                    Text(target.label, color = AresTextPrimary, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                                    Text(target.groupLabel(), color = AresTextTertiary, fontSize = 10.sp)
-                                }
-                                Text("Open", color = AresTextSecondary, fontSize = 11.sp)
-                            }
-                        }
-                        items(glossaryResults, key = { "glossary-${it.term}" }) { entry ->
-                            Row(
-                                Modifier.fillMaxWidth().clickable {
-                                    onOpenGlossaryTerm(entry.term)
-                                    onDismiss()
-                                }.background(AresSurfaceElevated, RoundedCornerShape(8.dp)).padding(horizontal = 12.dp, vertical = 10.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Icon(Icons.AutoMirrored.Filled.MenuBook, null, tint = AresCyan, modifier = Modifier.size(20.dp))
-                                Column(Modifier.padding(start = 10.dp).weight(1f)) {
-                                    Text(entry.term, color = AresTextPrimary, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                                    Text(
-                                        entry.definition,
-                                        color = AresTextTertiary,
-                                        fontSize = 10.sp,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis,
-                                    )
-                                }
-                                Text("Glossary", color = AresTextSecondary, fontSize = 11.sp)
-                            }
-                        }
-                    }
-                }
-            }
+            CommandPaletteSurfaceContent(
+                developerMode = developerMode,
+                projectPath = projectPath,
+                projectItems = projectItems,
+                recentTargets = recentTargets,
+                pitTabItems = pitTabItems,
+                batteryItems = batteryItems,
+                matchItems = matchItems,
+                runItems = runItems,
+                notebookItems = notebookItems,
+                onDismiss = onDismiss,
+                onNavigate = onNavigate,
+                onOpenGlossaryTerm = onOpenGlossaryTerm,
+                onOpenRun = onOpenRun,
+                onOpenNotebookEntry = onOpenNotebookEntry,
+                onOpenProjectItem = onOpenProjectItem,
+                onOpenPitTab = onOpenPitTab,
+                onOpenBattery = onOpenBattery,
+                onOpenScheduledMatch = onOpenScheduledMatch,
+            )
         },
         confirmButton = {},
         containerColor = AresSurface,
-        shape = RoundedCornerShape(14.dp)
+        shape = RoundedCornerShape(14.dp),
     )
+}
+
+@Composable
+internal fun CommandPaletteSurfaceContent(
+    developerMode: Boolean,
+    projectPath: String = "",
+    projectItems: List<CommandPaletteProjectItem>? = null,
+    recentTargets: List<NavigationTarget> = emptyList(),
+    pitTabItems: List<CommandPalettePitTabItem> = defaultPitOperationsTabItems(),
+    batteryItems: List<CommandPaletteBatteryItem> = emptyList(),
+    matchItems: List<CommandPaletteMatchItem> = emptyList(),
+    runItems: List<CommandPaletteRunItem> = emptyList(),
+    notebookItems: List<CommandPaletteNotebookItem> = emptyList(),
+    onDismiss: () -> Unit,
+    onNavigate: (NavigationTarget) -> Unit,
+    onOpenGlossaryTerm: (String) -> Unit = {},
+    onOpenRun: (String) -> Unit = {},
+    onOpenNotebookEntry: (String) -> Unit = {},
+    onOpenProjectItem: ((CommandPaletteProjectItem) -> Unit)? = null,
+    onOpenPitTab: (PitOperationsSubTab) -> Unit = { onNavigate(NavigationTarget.PIT_DIAGNOSTICS) },
+    onOpenBattery: (String) -> Unit = { onNavigate(NavigationTarget.PIT_DIAGNOSTICS) },
+    onOpenScheduledMatch: (Int) -> Unit = { onNavigate(NavigationTarget.PIT_DIAGNOSTICS) },
+) {
+    var query by remember { mutableStateOf("") }
+    var selectedIndex by remember { mutableStateOf(0) }
+    val focusRequester = remember { FocusRequester() }
+    val listState = rememberLazyListState()
+
+    val allProjectItems = remember(projectPath, projectItems) {
+        projectItems ?: discoverProjectCommandPaletteItems(projectPath)
+    }
+    val entries = remember(
+        query,
+        developerMode,
+        recentTargets,
+        allProjectItems,
+        pitTabItems,
+        batteryItems,
+        matchItems,
+        runItems,
+        notebookItems,
+    ) {
+        buildUnifiedCommandPaletteEntries(
+            query = query,
+            developerMode = developerMode,
+            recentTargets = recentTargets,
+            projectItems = allProjectItems,
+            pitTabItems = pitTabItems,
+            batteryItems = batteryItems,
+            matchItems = matchItems,
+            runItems = runItems,
+            notebookItems = notebookItems,
+        )
+    }
+
+    LaunchedEffect(query, entries.size) {
+        selectedIndex = 0
+        if (entries.isNotEmpty()) {
+            listState.scrollToItem(0)
+        }
+    }
+    LaunchedEffect(selectedIndex, entries.size) {
+        if (entries.isNotEmpty() && selectedIndex in entries.indices) {
+            listState.animateScrollToItem(selectedIndex)
+        }
+    }
+    LaunchedEffect(Unit) { focusRequester.requestFocus() }
+
+    val activateEntry: (CommandPaletteUnifiedEntry) -> Unit = { entry ->
+        when (entry) {
+            is CommandPaletteUnifiedEntry.RecentDestination -> onNavigate(entry.target)
+            is CommandPaletteUnifiedEntry.PitTab -> onOpenPitTab(entry.item.tab)
+            is CommandPaletteUnifiedEntry.BatteryPack -> onOpenBattery(entry.item.batteryId)
+            is CommandPaletteUnifiedEntry.ScheduledMatch -> onOpenScheduledMatch(entry.item.matchNumber)
+            is CommandPaletteUnifiedEntry.RunReplay -> onOpenRun(entry.item.sessionId)
+            is CommandPaletteUnifiedEntry.NotebookNote -> onOpenNotebookEntry(entry.item.entryId)
+            is CommandPaletteUnifiedEntry.ProjectEntity -> {
+                if (onOpenProjectItem != null) onOpenProjectItem(entry.item)
+                else onNavigate(entry.item.target)
+            }
+            is CommandPaletteUnifiedEntry.ScreenDestination -> onNavigate(entry.target)
+            is CommandPaletteUnifiedEntry.GlossaryEntry -> onOpenGlossaryTerm(entry.term)
+        }
+        onDismiss()
+    }
+
+    val handleKeyEvent: (KeyEvent) -> Boolean = { event ->
+        if (event.type != KeyEventType.KeyDown) {
+            false
+        } else {
+            when (event.key) {
+                Key.DirectionDown -> {
+                    if (entries.isNotEmpty()) {
+                        selectedIndex = (selectedIndex + 1).coerceAtMost(entries.lastIndex)
+                    }
+                    true
+                }
+                Key.DirectionUp -> {
+                    if (entries.isNotEmpty()) {
+                        selectedIndex = (selectedIndex - 1).coerceAtLeast(0)
+                    }
+                    true
+                }
+                Key.Enter, Key.NumPadEnter -> {
+                    entries.getOrNull(selectedIndex)?.let(activateEntry)
+                    entries.isNotEmpty()
+                }
+                Key.Escape -> {
+                    onDismiss()
+                    true
+                }
+                else -> false
+            }
+        }
+    }
+
+    Column(
+        modifier = Modifier
+            .width(580.dp)
+            .onPreviewKeyEvent(handleKeyEvent),
+        verticalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        OutlinedTextField(
+            value = query,
+            onValueChange = {
+                query = it
+                selectedIndex = 0
+            },
+            modifier = Modifier
+                .fillMaxWidth()
+                .focusRequester(focusRequester)
+                .testTag("command-palette-search"),
+            singleLine = true,
+            placeholder = { Text("Search screens, BAT-01, Match #12, runs, notebook, subsystems...") },
+            leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                if (query.isBlank()) "Recent & Recommended Destinations" else "${entries.size} matching results",
+                color = AresTextTertiary,
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Medium,
+            )
+            Text(
+                "↑/↓ Select · Enter Open · Esc Close",
+                color = AresTextTertiary,
+                fontSize = 11.sp,
+            )
+        }
+        HorizontalDivider(color = AresBorder)
+        if (entries.isEmpty()) {
+            Box(Modifier.fillMaxWidth().heightIn(min = 180.dp), contentAlignment = Alignment.Center) {
+                Text("No matching screens, batteries, matches, runs, notebook entries, or project entities", color = AresTextSecondary)
+            }
+        } else {
+            LazyColumn(
+                state = listState,
+                modifier = Modifier.fillMaxWidth().heightIn(max = 430.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                itemsIndexed(entries, key = { _, entry -> entry.key }) { index, entry ->
+                    CommandPaletteEntryRow(
+                        entry = entry,
+                        isSelected = index == selectedIndex,
+                        onClick = { activateEntry(entry) },
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun CommandPaletteEntryRow(
+    entry: CommandPaletteUnifiedEntry,
+    isSelected: Boolean,
+    onClick: () -> Unit,
+) {
+    val (icon, tint) = paletteEntryVisuals(entry)
+    val bgColor = if (isSelected) AresCyanGlow else AresSurfaceElevated
+    val shape = RoundedCornerShape(8.dp)
+    val borderModifier = if (isSelected) Modifier.border(BorderStroke(1.dp, AresCyan), shape) else Modifier
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .then(borderModifier)
+            .background(bgColor, shape)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 12.dp, vertical = 10.dp)
+            .testTag("palette-entry-${entry.key}")
+            .semantics {
+                stateDescription = if (isSelected) "selected" else "unselected"
+            },
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        Icon(icon, contentDescription = null, tint = tint, modifier = Modifier.size(20.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                entry.title,
+                color = AresTextPrimary,
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Text(
+                entry.subtitle,
+                color = AresTextTertiary,
+                fontSize = 10.sp,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+        Text(
+            entry.badge,
+            color = tint,
+            fontSize = 10.sp,
+            fontWeight = FontWeight.SemiBold,
+        )
+    }
+}
+
+private fun paletteEntryVisuals(entry: CommandPaletteUnifiedEntry): Pair<ImageVector, Color> = when (entry) {
+    is CommandPaletteUnifiedEntry.RecentDestination -> Icons.Default.History to AresCyan
+    is CommandPaletteUnifiedEntry.PitTab -> Icons.Default.SettingsInputComponent to AresAmber
+    is CommandPaletteUnifiedEntry.BatteryPack -> Icons.Default.BatteryChargingFull to AresGreen
+    is CommandPaletteUnifiedEntry.ScheduledMatch -> Icons.Default.Schedule to AresGold
+    is CommandPaletteUnifiedEntry.RunReplay -> Icons.Default.PlayArrow to AresCyan
+    is CommandPaletteUnifiedEntry.NotebookNote -> Icons.Default.Book to AresGold
+    is CommandPaletteUnifiedEntry.ProjectEntity -> when (entry.item.category) {
+        CommandPaletteProjectCategory.STAGE -> Icons.Default.SettingsInputComponent to AresGreen
+        CommandPaletteProjectCategory.SUBSYSTEM -> Icons.Default.Build to AresGreen
+        CommandPaletteProjectCategory.SUPERSTRUCTURE -> Icons.Default.AccountTree to AresGreen
+        CommandPaletteProjectCategory.ROUTINE -> Icons.Default.Route to AresGreen
+    }
+    is CommandPaletteUnifiedEntry.ScreenDestination -> entry.target.icon to AresCyan
+    is CommandPaletteUnifiedEntry.GlossaryEntry -> Icons.AutoMirrored.Filled.MenuBook to AresTextSecondary
 }

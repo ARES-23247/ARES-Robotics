@@ -31,6 +31,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -86,8 +87,12 @@ fun HardwareStudioScreen(
     hardwareSetupViewModel: HardwareSetupViewModel,
     initialTab: HardwareStudioTab = HardwareStudioTab.DRIVETRAIN,
     onBackToStudio: () -> Unit,
+    onActiveTabChanged: (HardwareStudioTab) -> Unit = {},
 ) {
-    var activeTab by remember { mutableStateOf(initialTab) }
+    var activeTab by remember(initialTab) { mutableStateOf(initialTab) }
+    LaunchedEffect(activeTab) {
+        onActiveTabChanged(activeTab)
+    }
 
     Column(
         modifier = Modifier

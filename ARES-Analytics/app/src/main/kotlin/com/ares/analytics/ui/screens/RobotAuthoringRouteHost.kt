@@ -47,6 +47,7 @@ internal data class RobotAuthoringRouteActions(
     val exportStandaloneProject: suspend (File) -> String,
     val refreshRobotStudio: () -> Unit,
     val logVerificationToNotebook: ((com.ares.analytics.service.verification.RobotVerificationReport) -> Unit)? = null,
+    val updateSubContext: (String?) -> Unit = {},
 )
 
 /**
@@ -135,6 +136,11 @@ internal fun RobotAuthoringRouteHost(
             onBackToStudio = {
                 actions.refreshRobotStudio()
                 actions.navigate(NavigationTarget.ROBOT_STUDIO)
+            },
+            onActiveTabChanged = { tab ->
+                if (route == NavigationTarget.HARDWARE_STUDIO) {
+                    actions.updateSubContext(tab.label)
+                }
             },
         )
         true

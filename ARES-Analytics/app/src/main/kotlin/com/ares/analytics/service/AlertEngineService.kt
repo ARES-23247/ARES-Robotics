@@ -118,34 +118,72 @@ class AlertEngineService(
     private var engineJob: Job? = null
     private val platformThresholds = PlatformAlertThresholds()
 
-    val configurationWarning: String?
+    private val _configuredRules = MutableStateFlow<List<ThresholdRule>>(emptyList())
+    val configuredRules: StateFlow<List<ThresholdRule>> = _configuredRules.asStateFlow()
+
+    val configurationWarning: String? = loadRules()
+
+    private val _configurationWarning = MutableStateFlow(configurationWarning)
+    val configurationWarningFlow: StateFlow<String?> = _configurationWarning.asStateFlow()
 
     init {
-        configurationWarning = loadRules()
         startEngine()
     }
 
     private fun loadRules(): String? {
-        val defaultRules = listOf(
-            ThresholdRule(TelemetryMetricCatalog.BATTERY_VOLTAGE.canonicalKey, "Low Battery Voltage (<10.5V)", minValue = 10.5, audibleAlert = true),
-            ThresholdRule("Drive/EKF_Drift_X", "High EKF X Drift (>0.20m)", maxValue = 0.20, audibleAlert = true),
-            ThresholdRule("Drive/EKF_Drift_Y", "High EKF Y Drift (>0.20m)", maxValue = 0.20, audibleAlert = true),
-            ThresholdRule(TelemetryMetricCatalog.LOOP_TIME.canonicalKey, "Robot Loop Time Spike (>25ms)", maxValue = LoopOverrunWindow.MODERATE_THRESHOLD_MS, audibleAlert = false),
-            ScalarDiagnosticRules.defaultRule(ScalarDiagnosticKind.I2C_TIMEOUTS, ScalarDiagnosticRules.I2C_KEY)
-        )
-
-        val motorRules = motorNames.flatMap { motor ->
-            listOf(
-                ThresholdRule("Hardware/Motors/$motor/Stall", "CRITICAL: Motor '$motor' Mechanical Binding / Stall!", maxValue = 0.5, audibleAlert = true),
-                ThresholdRule("Hardware/Motors/$motor/Disconnected", "WARNING: Motor '$motor' Cable Disconnected!", maxValue = 0.5, audibleAlert = true)
-            )
-        }
-
-        val allDefaults = defaultRules + motorRules
+        val allDefaults = AlertRuleConfiguration.defaultRulesForLeague(League.FTC)
 
         val loaded = AlertRuleConfiguration.load(thresholdsPath, allDefaults)
         loaded.rules.forEach(::registerRule)
+        _configuredRules.value = loaded.rules.toList()
         return loaded.warning
+    }
+
+    /**
+     * Validates, optionally persists atomically to `thresholdsPath`, and hot-reloads the active
+     * threshold rules on the running telemetry evaluator.
+     */
+    suspend fun replaceRules(
+        newRules: List<ThresholdRule>,
+        persistToDisk: Boolean = true,
+    ): Result<List<ThresholdRule>> {
+        AlertRuleConfiguration.validateRules(newRules)?.let { problem ->
+            return Result.failure(IllegalArgumentException(problem))
+        }
+        return transitionMutex.withLock {
+            if (disposed) {
+                return@withLock Result.failure(IllegalStateException("AlertEngineService has been disposed."))
+            }
+            if (persistToDisk) {
+                val writeResult = withContext(Dispatchers.IO) {
+                    runCatching { AlertRuleConfiguration.saveAtomically(thresholdsPath, newRules) }
+                }
+                writeResult.exceptionOrNull()?.let { failure ->
+                    return@withLock Result.failure(failure)
+                }
+            }
+            rules.clear()
+            newRules.forEach(::registerRule)
+            motorDiagnostics.replaceAll { identity, binding ->
+                val motor = identity.key
+                val stallKey = normalizeTopic("Hardware/Motors/$motor/Stall")
+                val disconnectedKey = normalizeTopic("Hardware/Motors/$motor/Disconnected")
+                binding.copy(
+                    stall = rules[stallKey] ?: binding.stall,
+                    disconnected = rules[disconnectedKey] ?: binding.disconnected,
+                )
+            }
+            _alerts.update { current ->
+                current.filterValues { alert ->
+                    val norm = normalizeTopic(alert.ruleKey)
+                    rules.containsKey(norm) || norm in motorTemperatureKeys
+                }
+            }
+            val updated = newRules.toList()
+            _configuredRules.value = updated
+            _configurationWarning.value = null
+            Result.success(updated)
+        }
     }
 
     /**

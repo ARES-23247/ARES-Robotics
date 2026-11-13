@@ -11,6 +11,9 @@ import androidx.compose.foundation.draganddrop.dragAndDropTarget
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
+import com.ares.analytics.domain.pit.extractBatteryIdFromTags
+import com.ares.analytics.domain.pit.normalizeBatteryId
+import com.ares.analytics.domain.pit.replaceBatteryTag
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -186,6 +189,19 @@ fun ImportDropZoneAndMetadataCard(
                         label = { Text(label, fontSize = 11.sp) },
                     )
                 }
+                OutlinedTextField(
+                    value = extractBatteryIdFromTags(
+                        pendingTagsText.split(',', ';').map(String::trim).filter(String::isNotEmpty)
+                    ).orEmpty(),
+                    onValueChange = { raw ->
+                        val existing = pendingTagsText.split(',', ';').map(String::trim).filter(String::isNotEmpty)
+                        onTagsChange(replaceBatteryTag(existing, normalizeBatteryId(raw).take(20)).joinToString(", "))
+                    },
+                    label = { Text("Battery ID", fontSize = 10.sp) },
+                    placeholder = { Text("BAT-01", fontSize = 10.sp) },
+                    singleLine = true,
+                    modifier = Modifier.width(120.dp),
+                )
                 OutlinedTextField(
                     value = pendingTagsText,
                     onValueChange = onTagsChange,

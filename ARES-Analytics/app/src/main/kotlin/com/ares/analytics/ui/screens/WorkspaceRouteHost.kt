@@ -3,6 +3,8 @@ package com.ares.analytics.ui.screens
 import androidx.compose.runtime.Composable
 import com.ares.analytics.service.AcademyPracticeIdentity
 import com.ares.analytics.service.AcademyPracticeWorkflowService
+import com.ares.analytics.service.AlertEngineService
+import com.ares.analytics.service.EventScheduleStore
 import com.ares.analytics.service.ExportService
 import com.ares.analytics.service.GuidedRunAnalysisReport
 import com.ares.analytics.service.LearningProgressService
@@ -20,6 +22,7 @@ import com.ares.analytics.service.verification.RobotVerificationReport
 import com.ares.analytics.shared.models.ForensicsResponse
 import com.ares.analytics.shared.models.WorkspaceConfig
 import com.ares.analytics.domain.navigation.NavigationTarget
+import com.ares.analytics.domain.navigation.PitDeepLinkRequest
 import com.ares.analytics.ui.components.core.TargetSelection
 import com.ares.analytics.ui.components.dashboard.DashboardMissionSnapshot
 import com.ares.analytics.viewmodel.DashboardIntent
@@ -56,6 +59,8 @@ internal data class WorkspaceRouteFeatureScope(
     val export: ExportService,
     val projectSession: ProjectSession,
     val hardwareSetup: HardwareSetupService,
+    val alertEngine: AlertEngineService,
+    val eventScheduleStore: EventScheduleStore,
 )
 
 internal data class WorkspaceRouteState(
@@ -76,6 +81,7 @@ internal data class WorkspaceRouteState(
     val requestedLessonId: String?,
     val requestedCheckpointId: String?,
     val requestedGlossaryTerm: String?,
+    val pitDeepLink: PitDeepLinkRequest = PitDeepLinkRequest(),
 )
 
 internal data class WorkspaceRouteActions(
@@ -100,6 +106,9 @@ internal data class WorkspaceRouteActions(
     val logGuidedReviewToNotebook: (GuidedRunAnalysisReport, RunComparisonReport?) -> Unit,
     val logTuningExperimentToNotebook: (GuidedTuningExperiment) -> Unit,
     val logVerificationToNotebook: (RobotVerificationReport) -> Unit,
+    val refreshEventSchedule: () -> Unit = {},
+    val updateCachedMatches: (List<MatchInfo>) -> Unit = {},
+    val updateNavSubLabel: (String?) -> Unit = {},
 )
 
 /** Renders the selected workspace route from explicit feature capabilities and shell actions. */
@@ -239,6 +248,22 @@ internal fun WorkspaceRouteHost(
             projectSession = scope.projectSession,
             hardwareSetupService = scope.hardwareSetup,
             exportService = scope.export,
+            databaseService = scope.runData.database,
+            alertEngineService = scope.alertEngine,
+            eventScheduleStore = scope.eventScheduleStore,
+            notebookCaptureService = scope.notebookCapture,
+            matches = state.matches,
+            reloadTrigger = state.runsReloadTrigger,
+            onRefreshEventSchedule = actions.refreshEventSchedule,
+            onMatchesUpdated = actions.updateCachedMatches,
+            onOpenMatchStrategy = { actions.navigate(NavigationTarget.MATCH_STRATEGY) },
+            onOpenRunHistoryWithTag = { tag ->
+                scope.runData.pendingTagFilter.value = tag
+                actions.navigate(NavigationTarget.RUN_HISTORY)
+            },
+            onOpenNotebookEntry = actions.openNotebookEntry,
+            pitDeepLink = state.pitDeepLink,
+            onActiveTabChanged = { actions.updateNavSubLabel(it.label) },
         )
         NavigationTarget.MATCH_STRATEGY -> MatchStrategyScreen(
             databaseService = scope.runData.database,
@@ -246,12 +271,15 @@ internal fun WorkspaceRouteHost(
             notebookCaptureService = scope.notebookCapture,
             workspace = workspace,
             reloadTrigger = state.runsReloadTrigger,
+            matches = state.matches,
             onOpenReplay = { sessionId, timestampMs ->
                 scope.dashboard.onIntent(DashboardIntent.SelectPrimarySession(sessionId, timestampMs))
                 actions.navigate(NavigationTarget.DASHBOARD)
             },
             onOpenImports = { actions.navigate(NavigationTarget.IMPORT_CENTER) },
             onOpenNotebookEntry = actions.openNotebookEntry,
+            onOpenPitOps = { actions.navigate(NavigationTarget.PIT_DIAGNOSTICS) },
+            onSubContextChanged = actions.updateNavSubLabel,
         )
         NavigationTarget.ENGINEERING_NOTEBOOK -> EngineeringNotebookScreen(
             viewModel = scope.engineeringNotebook,
@@ -266,6 +294,7 @@ internal fun WorkspaceRouteHost(
                 actions.navigate(NavigationTarget.GUIDED_RUN_ANALYSIS)
             },
             onOpenIntegrations = { actions.navigate(NavigationTarget.INTEGRATIONS) },
+            onSubContextChanged = actions.updateNavSubLabel,
         )
         NavigationTarget.TUNING -> TuningScreen(
             viewModel = scope.tuning,
@@ -332,6 +361,7 @@ internal fun WorkspaceRouteHost(
                 exportStandaloneProject = actions.exportStandaloneProject,
                 refreshRobotStudio = scope.authoring.robotStudio::refresh,
                 logVerificationToNotebook = actions.logVerificationToNotebook,
+                updateSubContext = actions.updateNavSubLabel,
             ),
         )
 

@@ -102,12 +102,22 @@ fun EngineeringNotebookScreen(
     onOpenReplay: (String) -> Unit = {},
     onOpenGuidedReview: (String) -> Unit = {},
     onOpenIntegrations: () -> Unit = {},
+    onSubContextChanged: ((String?) -> Unit)? = null,
 ) {
     val state by viewModel.state.collectAsState()
     @Suppress("DEPRECATION") val clipboard = LocalClipboardManager.current
 
     LaunchedEffect(viewModel, reloadTrigger) {
         viewModel.refresh()
+    }
+    LaunchedEffect(state.selectedEntryId, state.isNewDraft, state.entries) {
+        val label = when {
+            state.isNewDraft -> "New Entry Draft"
+            else -> state.entries.firstOrNull { it.entryId == state.selectedEntryId }?.let { entry ->
+                NotebookSectionParser.parseMarkdown(entry.markdownBody).title.ifBlank { entry.entryId }
+            }
+        }
+        onSubContextChanged?.invoke(label)
     }
 
     BoxWithConstraints(Modifier.fillMaxSize().background(AresBackground).padding(16.dp)) {

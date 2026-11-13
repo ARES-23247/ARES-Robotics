@@ -36,11 +36,16 @@ data class PitMatchTag(
     val matchNumber: String = "",
     val alliance: PitAllianceColor = PitAllianceColor.UNASSIGNED,
     val inspectorInitials: String = "",
+    val batteryId: String = "",
 ) {
     fun summaryBadge(): String {
         val numPart = matchNumber.trim().takeIf(String::isNotEmpty)?.let { " #$it" }.orEmpty()
         val alliancePart = if (alliance != PitAllianceColor.UNASSIGNED) " · ${alliance.label.uppercase(Locale.US)}" else ""
-        return "${matchType.label}$numPart$alliancePart"
+        val batteryPart = com.ares.analytics.domain.pit.normalizeBatteryId(batteryId)
+            .takeIf(String::isNotEmpty)
+            ?.let { " · $it" }
+            .orEmpty()
+        return "${matchType.label}$numPart$alliancePart$batteryPart"
     }
 }
 
@@ -487,6 +492,7 @@ object PitReadinessInspector {
             appendLine("- **League**: `${profile.league.name}`")
         }
         appendLine("- **Match Tag**: `${matchTag.summaryBadge()}`" +
+            com.ares.analytics.domain.pit.normalizeBatteryId(matchTag.batteryId).takeIf(String::isNotEmpty)?.let { " · **Battery**: `$it`" }.orEmpty() +
             matchTag.inspectorInitials.trim().takeIf(String::isNotEmpty)?.let { " · **Inspector**: `$it`" }.orEmpty())
         appendLine("- **Project Profile**: ${profile.projectLabel}")
         appendLine("- **NT4 Link State**: ${when { !connected -> "OFFLINE"; streamLive -> "STREAM LIVE"; else -> "STREAM STALE" }}")

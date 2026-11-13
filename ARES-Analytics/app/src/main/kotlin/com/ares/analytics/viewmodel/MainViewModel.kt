@@ -4,6 +4,7 @@ import com.ares.analytics.service.EnvironmentService
 import com.ares.analytics.service.EventApiService
 import com.ares.analytics.service.MatchInfo
 import com.ares.analytics.shared.models.ForensicsResponse
+import com.ares.analytics.domain.navigation.NavigationHistoryStack
 import com.ares.analytics.domain.navigation.NavigationTarget
 import com.ares.analytics.shared.models.WorkspaceConfig
 import com.ares.analytics.shared.models.League
@@ -23,6 +24,7 @@ data class MainState(
     val config: WorkspaceConfig? = null,
     val workspaces: List<WorkspaceConfig> = emptyList(),
     val activeNav: NavigationTarget = NavigationTarget.DASHBOARD,
+    val navHistory: NavigationHistoryStack = NavigationHistoryStack(),
     val matches: List<MatchInfo> = emptyList(),
     val runsIndexReloadTrigger: Int = 0,
     val diagnosticsResponse: ForensicsResponse? = null,
@@ -35,7 +37,13 @@ sealed class MainIntent {
 
     object LoadConfig : MainIntent()
 
-    data class SetActiveNav(val nav: NavigationTarget) : MainIntent()
+    data class SetActiveNav(val nav: NavigationTarget, val subLabel: String? = null) : MainIntent()
+
+    data class UpdateNavSubLabel(val subLabel: String?) : MainIntent()
+
+    object NavigateBack : MainIntent()
+
+    object NavigateForward : MainIntent()
 
     data class SetMatches(val matches: List<MatchInfo>) : MainIntent()
 
@@ -58,6 +66,10 @@ sealed class MainIntent {
     object AddNewWorkspace : MainIntent()
 
     object CancelAddNewWorkspace : MainIntent()
+
+    object RefreshEventSchedule : MainIntent()
+
+    data class UpdateCachedMatches(val matches: List<MatchInfo>) : MainIntent()
 }
 
 /** Top-level navigation and workspace state shared by the desktop application's screens. */
@@ -67,6 +79,7 @@ class MainViewModel(
     private val keybindingParserService: KeybindingParserService,
     private val scope: CoroutineScope,
     private val beforeWorkspaceChange: suspend () -> Unit = {},
+    private val eventScheduleStore: com.ares.analytics.service.EventScheduleStore = com.ares.analytics.service.EventScheduleStore(),
 ) {
     private val _state = MutableStateFlow(MainState())
     val state: StateFlow<MainState> = _state.asStateFlow()
@@ -88,7 +101,27 @@ class MainViewModel(
                     }
                 }
                 is MainIntent.SetActiveNav -> {
-                    _state.update { it.copy(activeNav = intent.nav) }
+                    _state.update { current ->
+                        val nextHistory = current.navHistory.navigateTo(intent.nav, intent.subLabel)
+                        current.copy(activeNav = nextHistory.current.target, navHistory = nextHistory)
+                    }
+                }
+                is MainIntent.UpdateNavSubLabel -> {
+                    _state.update { current ->
+                        current.copy(navHistory = current.navHistory.updateCurrentSubLabel(intent.subLabel))
+                    }
+                }
+                is MainIntent.NavigateBack -> {
+                    _state.update { current ->
+                        val nextHistory = current.navHistory.goBack()
+                        current.copy(activeNav = nextHistory.current.target, navHistory = nextHistory)
+                    }
+                }
+                is MainIntent.NavigateForward -> {
+                    _state.update { current ->
+                        val nextHistory = current.navHistory.goForward()
+                        current.copy(activeNav = nextHistory.current.target, navHistory = nextHistory)
+                    }
                 }
                 is MainIntent.SetMatches -> {
                     _state.update { it.copy(matches = intent.matches) }
@@ -134,9 +167,16 @@ class MainViewModel(
                     val target = app.workspaces.find { it.id == intent.id }
                     if (target != null) {
                         val newApp = app.copy(activeWorkspaceId = target.id)
-                        if (_state.value.config?.id != target.id) beforeWorkspaceChange()
+                        val changed = _state.value.config?.id != target.id
+                        if (changed) beforeWorkspaceChange()
                         environmentService.saveWorkspaces(newApp)
-                        _state.update { it.copy(config = target, workspaces = app.workspaces) }
+                        _state.update { current ->
+                            current.copy(
+                                config = target,
+                                workspaces = app.workspaces,
+                                navHistory = if (changed) current.navHistory.reset(current.activeNav) else current.navHistory,
+                            )
+                        }
                         loadMatchSchedule(target)
                     }
                 }
@@ -149,10 +189,17 @@ class MainViewModel(
                         app.activeWorkspaceId
                     }
                     val newApp = com.ares.analytics.shared.models.AppWorkspaces(activeWorkspaceId = newActiveId, workspaces = newList)
-                    if (_state.value.config?.id == intent.id) beforeWorkspaceChange()
+                    val deletingActive = _state.value.config?.id == intent.id
+                    if (deletingActive) beforeWorkspaceChange()
                     environmentService.saveWorkspaces(newApp)
                     val newActiveConfig = newList.find { it.id == newActiveId }
-                    _state.update { it.copy(config = newActiveConfig, workspaces = newList) }
+                    _state.update { current ->
+                        current.copy(
+                            config = newActiveConfig,
+                            workspaces = newList,
+                            navHistory = if (deletingActive) current.navHistory.reset(current.activeNav) else current.navHistory,
+                        )
+                    }
                     if (newActiveConfig != null) {
                         loadMatchSchedule(newActiveConfig)
                     } else {
@@ -172,18 +219,36 @@ class MainViewModel(
                         loadMatchSchedule(active)
                     }
                 }
+                is MainIntent.RefreshEventSchedule -> {
+                    _state.value.config?.let { loadMatchSchedule(it) }
+                }
+                is MainIntent.UpdateCachedMatches -> {
+                    val active = _state.value.config
+                    if (active != null) {
+                        val saved = runCatching { eventScheduleStore.saveMatches(active, intent.matches) }
+                            .getOrDefault(intent.matches)
+                        _state.update { it.copy(matches = saved) }
+                    } else {
+                        _state.update { it.copy(matches = intent.matches) }
+                    }
+                }
             }
         }
     }
 
     private suspend fun loadMatchSchedule(currentConf: WorkspaceConfig) {
         val generation = scheduleGeneration.incrementAndGet()
+        val cached = runCatching { eventScheduleStore.loadCachedMatches(currentConf) }.getOrDefault(emptyList())
+        if (scheduleGeneration.get() == generation && _state.value.config?.id == currentConf.id) {
+            _state.update { it.copy(matches = cached) }
+        }
         val eventCode = currentConf.eventCode
         if (!eventCode.isNullOrEmpty()) {
-            val list = try {
+            val fetched = try {
                 if (currentConf.league == League.FTC) {
                     val apiKey = currentConf.toaApiKey ?: ""
-                    eventApiService.fetchFtcEventSchedule(eventCode, apiKey)
+                    val year = Regex("(20\\d{2})").find(currentConf.seasonId)?.value?.toIntOrNull()
+                    eventApiService.fetchFtcEventSchedule(eventCode, apiKey, seasonYear = year)
                 } else {
                     val apiKey = currentConf.tbaApiKey ?: ""
                     eventApiService.fetchFrcEventSchedule(eventCode, apiKey)
@@ -193,11 +258,11 @@ class MainViewModel(
             } catch (_: Exception) {
                 emptyList()
             }
-            if (scheduleGeneration.get() == generation && _state.value.config?.id == currentConf.id) {
-                _state.update { it.copy(matches = list) }
+            if (fetched.isNotEmpty() && scheduleGeneration.get() == generation && _state.value.config?.id == currentConf.id) {
+                val persisted = runCatching { eventScheduleStore.saveMatches(currentConf, fetched, source = "api") }
+                    .getOrDefault(fetched)
+                _state.update { it.copy(matches = persisted) }
             }
-        } else if (scheduleGeneration.get() == generation && _state.value.config?.id == currentConf.id) {
-            _state.update { it.copy(matches = emptyList()) }
         }
     }
 }

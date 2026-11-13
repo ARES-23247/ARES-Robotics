@@ -1,6 +1,7 @@
 package com.ares.analytics.ui.components
 
 import com.ares.analytics.domain.navigation.NavigationTarget
+import com.ares.analytics.domain.navigation.PitOperationsSubTab
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -62,6 +63,9 @@ class NavigationModelTest {
         assertEquals(listOf(NavigationTarget.DRIVEBASE_BUILDER), filterNavigationTargets("mecanum", false))
         assertEquals(listOf(NavigationTarget.ROBOT_STUDIO), filterNavigationTargets("build robot", false))
         assertEquals(listOf(NavigationTarget.PROJECT_IDENTITY), filterNavigationTargets("robot dimensions", false))
+        assertTrue(filterNavigationTargets("battery fleet", false).contains(NavigationTarget.PIT_DIAGNOSTICS))
+        assertTrue(filterNavigationTargets("match queue", false).contains(NavigationTarget.PIT_DIAGNOSTICS))
+        assertTrue(filterNavigationTargets("thresholds", false).contains(NavigationTarget.PIT_DIAGNOSTICS))
     }
 
     @Test
@@ -83,14 +87,25 @@ class NavigationModelTest {
         assertEquals(
             listOf(
                 NavigationTarget.ROBOT_STUDIO,
+                NavigationTarget.PIT_DIAGNOSTICS,
                 NavigationTarget.ACADEMY,
                 NavigationTarget.PATH_PLANNER,
+                NavigationTarget.MATCH_STRATEGY,
                 NavigationTarget.RUN_HISTORY,
+                NavigationTarget.ENGINEERING_NOTEBOOK,
                 NavigationTarget.IMPORT_CENTER,
                 NavigationTarget.TUNING,
             ),
             shellQuickDestinations,
         )
         assertEquals(shellQuickDestinations.size, shellQuickDestinations.distinct().size)
+    }
+
+    @Test
+    fun `pit operations sub-tabs resolve indices round-trip`() {
+        PitOperationsSubTab.entries.forEach { tab ->
+            assertEquals(tab, PitOperationsSubTab.fromIndex(tab.index))
+        }
+        assertEquals(PitOperationsSubTab.READINESS, PitOperationsSubTab.fromIndex(99))
     }
 }

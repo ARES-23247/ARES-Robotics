@@ -94,9 +94,18 @@ class EventApiService(
         }
     }
 
-    // Queries TOA (The Orange Alliance) API for FTC match schedules
-    suspend fun fetchFtcEventSchedule(eventKey: String, apiKey: String): List<MatchInfo> = withContext(Dispatchers.IO) {
+    // Queries TOA (The Orange Alliance) or FIRST FTC Events v2 API for FTC match schedules.
+    suspend fun fetchFtcEventSchedule(
+        eventKey: String,
+        apiKey: String,
+        seasonYear: Int? = null,
+    ): List<MatchInfo> = withContext(Dispatchers.IO) {
         if (apiKey.isEmpty()) return@withContext emptyList()
+        if (apiKey.contains(":")) {
+            val year = seasonYear ?: java.time.Year.now(java.time.ZoneOffset.UTC).value
+            val official = fetchFtcOfficialSchedule(year, eventKey, apiKey)
+            if (official.isNotEmpty()) return@withContext official
+        }
         try {
             httpClient.prepareGet("https://theorangealliance.org/api/event/$eventKey/matches") {
                 header("X-TOA-ApiKey", apiKey)
@@ -153,6 +162,49 @@ class EventApiService(
             e.printStackTrace()
             emptyList()
         }
+    }
+
+    /**
+     * Queries FIRST FTC Events API v2 (`https://ftc-api.firstinspires.org/v2.0/.../schedule/...`)
+     * accepting either `username:token` or pre-encoded Base64 Basic authorization tokens.
+     */
+    suspend fun fetchFtcOfficialSchedule(
+        seasonYear: Int,
+        eventCode: String,
+        rawAuth: String,
+    ): List<MatchInfo> = withContext(Dispatchers.IO) {
+        val cleanCode = eventCode.trim()
+        val cleanAuth = rawAuth.trim()
+        if (cleanCode.isEmpty() || cleanAuth.isEmpty()) return@withContext emptyList()
+        val basicToken = if (cleanAuth.contains(":")) {
+            java.util.Base64.getEncoder().encodeToString(cleanAuth.toByteArray(Charsets.UTF_8))
+        } else {
+            cleanAuth
+        }
+        val combined = mutableListOf<MatchInfo>()
+        for (level in listOf("qual" to "quals", "playoff" to "elims")) {
+            runCatching {
+                httpClient.prepareGet("https://ftc-api.firstinspires.org/v2.0/$seasonYear/schedule/$cleanCode?tournamentLevel=${level.first}") {
+                    header("Authorization", "Basic $basicToken")
+                    header("Accept", "application/json")
+                }.execute { response ->
+                    if (response.status != HttpStatusCode.OK) return@execute
+                    val root = response.body<JsonObject>()
+                    val array = root["schedule"]?.jsonArray ?: JsonArray(emptyList())
+                    val parsed = com.ares.analytics.domain.pit.EventScheduleCodec.parseJson(array.toString())
+                    parsed.forEach { item ->
+                        combined += MatchInfo(
+                            matchNumber = item.matchNumber,
+                            compLevel = level.second,
+                            redAlliance = item.redAlliance,
+                            blueAlliance = item.blueAlliance,
+                            scheduledTime = item.scheduledTimeMs,
+                        )
+                    }
+                }
+            }
+        }
+        combined.distinctBy { "${it.compLevel}:${it.matchNumber}" }
     }
 
     fun close() {

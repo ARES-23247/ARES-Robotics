@@ -14,21 +14,30 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.ares.analytics.domain.navigation.NavigationTarget
+import com.ares.analytics.domain.navigation.PitOperationsSubTab
+import com.ares.analytics.domain.pit.BatteryFleetAnalyzer
 import com.ares.analytics.service.DatabaseService
 import com.ares.analytics.service.DeployExecutionState
 import com.ares.analytics.service.LearningProgressService
+import com.ares.analytics.service.MatchInfo
 import com.ares.analytics.service.UpdateCheckerService
 import com.ares.analytics.service.integration.EngineeringNotebookCaptureService
 import com.ares.analytics.shared.models.League
+import com.ares.analytics.shared.models.Session
 import com.ares.analytics.shared.models.WorkspaceConfig
 import com.ares.analytics.ui.components.CommandPalette
+import com.ares.analytics.ui.components.CommandPaletteBatteryItem
 import com.ares.analytics.ui.components.CommandPaletteNotebookItem
+import com.ares.analytics.ui.components.CommandPaletteProjectItem
 import com.ares.analytics.ui.components.CommandPaletteRunItem
 import com.ares.analytics.ui.components.LearningCoachDrawer
+import com.ares.analytics.ui.components.buildCommandPaletteBatteryItems
+import com.ares.analytics.ui.components.buildCommandPaletteMatchItems
 import com.ares.analytics.ui.components.buildCommandPaletteNotebookItems
 import com.ares.analytics.ui.components.buildCommandPaletteRunItems
 import com.ares.analytics.ui.components.core.AresDialog
@@ -54,6 +63,14 @@ internal data class MainScreenOverlayState(
     val league: League,
     val updateState: UpdateCheckerService.UpdateState,
     val showUpdateBanner: Boolean,
+    val recentTargets: List<NavigationTarget> = emptyList(),
+    val matches: List<MatchInfo> = emptyList(),
+)
+
+private data class CommandPaletteIndexedEntities(
+    val runs: List<CommandPaletteRunItem> = emptyList(),
+    val notes: List<CommandPaletteNotebookItem> = emptyList(),
+    val batteries: List<CommandPaletteBatteryItem> = emptyList(),
 )
 
 internal data class MainScreenOverlayActions(
@@ -67,6 +84,10 @@ internal data class MainScreenOverlayActions(
     val openGlossaryTerm: (String) -> Unit,
     val openRunReplay: (String) -> Unit = {},
     val openNotebookEntry: (String) -> Unit = {},
+    val openProjectItem: (CommandPaletteProjectItem) -> Unit = {},
+    val openPitTab: (PitOperationsSubTab) -> Unit = {},
+    val openBatteryPack: (String) -> Unit = {},
+    val openScheduledMatch: (Int) -> Unit = {},
     val confirmWorkspaceDeletion: (String) -> Unit,
     val dismissWorkspaceDeletion: () -> Unit,
     val confirmDeploy: () -> Unit,
@@ -110,7 +131,7 @@ internal fun BoxScope.MainScreenOverlays(
 
     if (state.commandPaletteOpen) {
         val indexedEntities by produceState(
-            initialValue = emptyList<CommandPaletteRunItem>() to emptyList<CommandPaletteNotebookItem>(),
+            initialValue = CommandPaletteIndexedEntities(),
             workspace?.id,
             workspace?.teamId,
             workspace?.seasonId,
@@ -119,19 +140,47 @@ internal fun BoxScope.MainScreenOverlays(
             notebookCaptureService,
         ) {
             value = withContext(Dispatchers.IO) {
-                val runs = if (
-                    workspace != null &&
-                    databaseService != null &&
-                    workspace.teamId.isNotBlank() &&
-                    workspace.seasonId.isNotBlank() &&
-                    workspace.robotId.isNotBlank()
-                ) {
+                val ws = workspace
+                val db = databaseService
+                val canQueryWorkspace = ws != null &&
+                    db != null &&
+                    ws.teamId.isNotBlank() &&
+                    ws.seasonId.isNotBlank() &&
+                    ws.robotId.isNotBlank()
+                val sessions = if (canQueryWorkspace) {
                     runCatching {
-                        buildCommandPaletteRunItems(
-                            databaseService.getSessionsForWorkspace(
-                                workspace.teamId,
-                                workspace.seasonId,
-                                workspace.robotId,
+                        db.getSessionsForWorkspace(
+                            ws.teamId,
+                            ws.seasonId,
+                            ws.robotId,
+                        )
+                    }.getOrDefault(emptyList())
+                } else {
+                    emptyList()
+                }
+                val runs = buildCommandPaletteRunItems(sessions)
+                val batteries = if (canQueryWorkspace) {
+                    runCatching {
+                        val specs = db.listBatterySpecsForWorkspace(
+                            ws.teamId,
+                            ws.seasonId,
+                            ws.robotId,
+                        )
+                        val checkins = db.listBatteryCheckinsForWorkspace(
+                            ws.teamId,
+                            ws.seasonId,
+                            ws.robotId,
+                        )
+                        val sessionIds = sessions.mapTo(HashSet(), Session::sessionId)
+                        val summaries = if (sessionIds.isEmpty()) emptyList()
+                        else db.getAllSessionSummaries().filter { it.sessionId in sessionIds }
+                        buildCommandPaletteBatteryItems(
+                            BatteryFleetAnalyzer.analyzeFleet(
+                                league = ws.league,
+                                specs = specs,
+                                checkins = checkins,
+                                sessions = sessions,
+                                summaries = summaries,
                             )
                         )
                     }.getOrDefault(emptyList())
@@ -145,19 +194,29 @@ internal fun BoxScope.MainScreenOverlays(
                 } else {
                     emptyList()
                 }
-                runs to notes
+                CommandPaletteIndexedEntities(runs = runs, notes = notes, batteries = batteries)
             }
+        }
+        val matchItems = remember(state.matches, workspace?.teamId) {
+            buildCommandPaletteMatchItems(state.matches, workspace?.teamId.orEmpty())
         }
         CommandPalette(
             developerMode = state.developerMode,
             projectPath = state.projectPath,
-            runItems = indexedEntities.first,
-            notebookItems = indexedEntities.second,
+            recentTargets = state.recentTargets,
+            batteryItems = indexedEntities.batteries,
+            matchItems = matchItems,
+            runItems = indexedEntities.runs,
+            notebookItems = indexedEntities.notes,
             onDismiss = actions.dismissCommandPalette,
             onNavigate = actions.navigate,
             onOpenGlossaryTerm = actions.openGlossaryTerm,
             onOpenRun = actions.openRunReplay,
             onOpenNotebookEntry = actions.openNotebookEntry,
+            onOpenProjectItem = actions.openProjectItem,
+            onOpenPitTab = actions.openPitTab,
+            onOpenBattery = actions.openBatteryPack,
+            onOpenScheduledMatch = actions.openScheduledMatch,
         )
     }
 
