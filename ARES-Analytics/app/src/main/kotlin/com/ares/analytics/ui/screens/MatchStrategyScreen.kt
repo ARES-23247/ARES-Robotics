@@ -67,6 +67,7 @@ fun MatchStrategyScreen(
     onOpenImports: () -> Unit = {},
     onOpenNotebookEntry: ((String) -> Unit)? = null,
     onOpenPitOps: (() -> Unit)? = null,
+    onSubContextChanged: ((String?) -> Unit)? = null,
 ) {
     val scope = rememberCoroutineScope()
     val league = workspace?.league ?: League.FTC
@@ -117,6 +118,13 @@ fun MatchStrategyScreen(
         } else if (sessions.isEmpty()) {
             selectedSessionId = null
         }
+    }
+    LaunchedEffect(selectedSessionId, sessions) {
+        val selected = sessions.firstOrNull { it.sessionId == selectedSessionId }
+        val label = selected?.let { s ->
+            s.matchNumber?.let { "Match #$it" } ?: "Run ${s.sessionId.take(8)}"
+        }
+        onSubContextChanged?.invoke(label)
     }
 
     val progressionSeries = remember(sessions, summaries) {

@@ -24,6 +24,7 @@ import com.ares.analytics.service.project.ProjectExecutionCommand
 import com.ares.analytics.shared.*
 import com.ares.analytics.shared.models.*
 import com.ares.analytics.domain.navigation.NavigationTarget
+import com.ares.analytics.domain.navigation.PitDeepLinkRequest
 import com.ares.analytics.ui.components.Sidebar
 import com.ares.analytics.ui.components.core.TargetSelection
 import com.ares.analytics.ui.input.DesktopDriveInputPublisher
@@ -82,6 +83,7 @@ fun MainScreen(services: ServiceRegistry) {
     val mainState by mainViewModel.state.collectAsState()
     val config = mainState.config
     val activeNav = mainState.activeNav
+    val navHistory = mainState.navHistory
     val matches = mainState.matches
     val runsIndexReloadTrigger = mainState.runsIndexReloadTrigger
     val diagnosticsResponse = mainState.diagnosticsResponse
@@ -215,6 +217,7 @@ fun MainScreen(services: ServiceRegistry) {
     var deployDialogOpen by remember { mutableStateOf(false) }
     var deployAwaitingConfirmation by remember { mutableStateOf(false) }
     var hardwareStudioInitialTab by remember { mutableStateOf(HardwareStudioTab.DRIVETRAIN) }
+    var pitDeepLink by remember(currentConfig.id) { mutableStateOf(PitDeepLinkRequest()) }
     var targetSelection by remember { mutableStateOf(TargetSelection.LIVE_ROBOT) }
     var liveRobotIp by remember(currentConfig.nt4Host) {
         mutableStateOf(currentConfig.nt4Host ?: "192.168.43.1")
@@ -423,42 +426,33 @@ fun MainScreen(services: ServiceRegistry) {
             .focusRequester(focusRequester)
             .focusable()
             .onPreviewKeyEvent { keyEvent ->
-                val isCtrl = keyEvent.isCtrlPressed
-                if (keyEvent.type == KeyEventType.KeyDown && isCtrl) {
-                    when (keyEvent.key) {
-                        Key.B -> if (activeNav == NavigationTarget.ROBOT_STUDIO && !keyEvent.isShiftPressed) false else {
-                            if (robotStudioShellState.canRunBuild && !isBuildRunning) {
-                                executeProjectCommand(ProjectExecutionCommand.VERIFY_AND_BUILD)
-                            }
-                            true
-                        }
-                        Key.D -> {
-                            requestSimulatorLaunch()
-                            true
-                        }
-                        Key.K -> {
-                            if (keyEvent.isShiftPressed) {
-                                pendingSimulatorLaunch = false
-                                services.projectBuildService.killActiveBuild()
-                                services.robotDeploymentService.cancel()
-                                services.simulatorProcessService.stop()
-                            } else {
-                                commandPaletteOpen = true
-                            }
-                            true
-                        }
-                        else -> false
-                    }
-                } else if (keyEvent.key == Key.Escape && keyEvent.type == KeyEventType.KeyDown) {
-                    when {
-                        commandPaletteOpen -> { commandPaletteOpen = false; true }
-                        coachDrawerOpen -> { coachDrawerOpen = false; true }
-                        workspacePendingDeletion != null -> { workspacePendingDeletion = null; true }
-                        deployDialogOpen -> { deployDialogOpen = false; true }
-                        isTerminalOpen -> { mainViewModel.onIntent(MainIntent.SetTerminalOpen(false)); true }
-                        else -> false
-                    }
-                } else false
+                handleMainScreenPreviewKeyEvent(
+                    keyEvent = keyEvent,
+                    activeNav = activeNav,
+                    canRunBuild = robotStudioShellState.canRunBuild,
+                    isBuildRunning = isBuildRunning,
+                    commandPaletteOpen = commandPaletteOpen,
+                    coachDrawerOpen = coachDrawerOpen,
+                    hasWorkspacePendingDeletion = workspacePendingDeletion != null,
+                    deployDialogOpen = deployDialogOpen,
+                    isTerminalOpen = isTerminalOpen,
+                    executeProjectCommand = executeProjectCommand,
+                    requestSimulatorLaunch = requestSimulatorLaunch,
+                    onStopAll = {
+                        pendingSimulatorLaunch = false
+                        services.projectBuildService.killActiveBuild()
+                        services.robotDeploymentService.cancel()
+                        services.simulatorProcessService.stop()
+                    },
+                    onOpenCommandPalette = { commandPaletteOpen = true },
+                    onDismissCommandPalette = { commandPaletteOpen = false },
+                    onDismissCoach = { coachDrawerOpen = false },
+                    onDismissWorkspaceDeletion = { workspacePendingDeletion = null },
+                    onDismissDeploy = { deployDialogOpen = false },
+                    onCloseTerminal = { mainViewModel.onIntent(MainIntent.SetTerminalOpen(false)) },
+                    onNavigateBack = { mainViewModel.onIntent(MainIntent.NavigateBack) },
+                    onNavigateForward = { mainViewModel.onIntent(MainIntent.NavigateForward) },
+                )
             }
     ) {
         Row(
@@ -513,6 +507,9 @@ fun MainScreen(services: ServiceRegistry) {
                         simulatorLaunchRequestEnabled = simulatorLaunchRequestEnabled,
                         simulatorLaunchDisabledReason = simulatorLaunchDisabledReason,
                         activeCoachLessonId = activeCoachLessonId,
+                        subContextLabel = navHistory.current.subLabel,
+                        canGoBack = navHistory.canGoBack,
+                        canGoForward = navHistory.canGoForward,
                         onSelectWorkspace = { mainViewModel.onIntent(MainIntent.SelectWorkspace(it)) },
                         onRemoveWorkspace = { workspace ->
                             val displayName = workspace.robotName.ifBlank {
@@ -540,6 +537,9 @@ fun MainScreen(services: ServiceRegistry) {
                             }
                             mainViewModel.onIntent(MainIntent.SetActiveNav(destination))
                         },
+                        onNavigateBack = { mainViewModel.onIntent(MainIntent.NavigateBack) },
+                        onNavigateForward = { mainViewModel.onIntent(MainIntent.NavigateForward) },
+                        onOpenCommandPalette = { commandPaletteOpen = true },
                         onSelectProfile = { dashboardViewModel.onIntent(DashboardIntent.ChangeProfile(it)) },
                         onSaveLayoutAs = { dashboardViewModel.onIntent(DashboardIntent.SaveLayoutAs(it)) },
                         onDeleteProfile = { dashboardViewModel.onIntent(DashboardIntent.DeleteLayout(it)) },
@@ -609,6 +609,7 @@ fun MainScreen(services: ServiceRegistry) {
                                 requestedLessonId = requestedLessonId,
                                 requestedCheckpointId = requestedCheckpointId,
                                 requestedGlossaryTerm = requestedGlossaryTerm,
+                                pitDeepLink = pitDeepLink,
                             ),
                             scope = workspaceRouteFeatureScope,
                             actions = createWorkspaceRouteActions(
@@ -679,53 +680,35 @@ fun MainScreen(services: ServiceRegistry) {
                 league = currentConfig.league,
                 updateState = updateState,
                 showUpdateBanner = showUpdateBanner,
+                recentTargets = navHistory.recentTargets,
+                matches = matches,
             ),
-            actions = MainScreenOverlayActions(
-                navigate = { destination ->
-                    if (destination == NavigationTarget.ACADEMY) {
-                        requestedLessonId = null
-                        requestedGlossaryTerm = null
-                    }
-                    mainViewModel.onIntent(MainIntent.SetActiveNav(destination))
-                },
-                dismissCoach = { coachDrawerOpen = false },
-                openAcademyLesson = { lessonId ->
-                    coachDrawerOpen = false
-                    requestedLessonId = lessonId
-                    mainViewModel.onIntent(MainIntent.SetActiveNav(NavigationTarget.ACADEMY))
-                },
+            actions = createMainScreenOverlayActions(
+                mainViewModel = mainViewModel,
+                services = services,
+                workspaceModels = workspaceModels,
+                projectPath = currentConfig.projectPath,
+                startSimulatorProcess = startSimulatorProcess,
+                executeProjectCommand = executeProjectCommand,
                 selectTarget = { targetSelection = it },
-                startSimulator = startSimulatorProcess,
-                stopSimulator = services.simulatorProcessService::stop,
+                dismissCoach = { coachDrawerOpen = false },
                 dismissCommandPalette = { commandPaletteOpen = false },
-                openGlossaryTerm = { termName ->
-                    requestedGlossaryTerm = termName
+                clearAcademyRequests = {
                     requestedLessonId = null
-                    mainViewModel.onIntent(MainIntent.SetActiveNav(NavigationTarget.ACADEMY))
+                    requestedGlossaryTerm = null
+                    requestedCheckpointId = null
                 },
-                openRunReplay = { sessionId ->
-                    dashboardViewModel.onIntent(DashboardIntent.SelectPrimarySession(sessionId, null))
-                    mainViewModel.onIntent(MainIntent.SetActiveNav(NavigationTarget.DASHBOARD))
-                },
-                openNotebookEntry = { entryId ->
-                    workspaceModels.engineeringNotebook.openAndSelectEntry(entryId)
-                    mainViewModel.onIntent(MainIntent.SetActiveNav(NavigationTarget.ENGINEERING_NOTEBOOK))
-                },
-                confirmWorkspaceDeletion = { workspaceId ->
-                    mainViewModel.onIntent(MainIntent.DeleteWorkspace(workspaceId))
-                    workspacePendingDeletion = null
-                },
-                dismissWorkspaceDeletion = { workspacePendingDeletion = null },
-                confirmDeploy = {
-                    deployAwaitingConfirmation = false
-                    executeProjectCommand(ProjectExecutionCommand.DEPLOY)
-                },
-                dismissDeploy = {
+                requestLesson = { requestedLessonId = it },
+                requestGlossary = { requestedGlossaryTerm = it },
+                clearWorkspacePendingDeletion = { workspacePendingDeletion = null },
+                clearDeployAwaitingConfirmation = { deployAwaitingConfirmation = false },
+                dismissDeployDialog = {
                     deployDialogOpen = false
                     deployAwaitingConfirmation = false
                 },
-                cancelDeploy = services.robotDeploymentService::cancel,
-                dismissUpdate = { mainViewModel.onIntent(MainIntent.SetShowUpdateBanner(false)) },
+                requestPitDeepLink = { tab, batteryId, matchNumber ->
+                    pitDeepLink = nextPitDeepLink(pitDeepLink, tab, batteryId, matchNumber)
+                },
             ),
             learningProgressService = services.learningProgressService,
             workspace = currentConfig,

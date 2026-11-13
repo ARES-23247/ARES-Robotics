@@ -278,6 +278,7 @@ internal fun createWorkspaceRouteActions(
     },
     refreshEventSchedule = { mainViewModel.onIntent(MainIntent.RefreshEventSchedule) },
     updateCachedMatches = { mainViewModel.onIntent(MainIntent.UpdateCachedMatches(it)) },
+    updateNavSubLabel = { mainViewModel.onIntent(MainIntent.UpdateNavSubLabel(it)) },
 )
 
 internal fun chooseStandaloneArchiveDestination(config: WorkspaceConfig): File? {

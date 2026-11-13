@@ -85,10 +85,22 @@ fun PitBatteryFleetTab(
     onAssignToReadiness: (batteryId: String) -> Unit,
     onFilterRunHistoryByBattery: (tag: String) -> Unit,
     onLogFleetToNotebook: (() -> Unit)?,
+    highlightedBatteryId: String? = null,
 ) {
     val league = workspace?.league ?: League.FTC
     var showAddBatteryDialog by remember { mutableStateOf(false) }
     var checkinTargetId by remember { mutableStateOf<String?>(null) }
+    val normalizedHighlight = remember(highlightedBatteryId) {
+        highlightedBatteryId?.trim()?.takeIf(String::isNotBlank)?.let(::normalizeBatteryId)
+    }
+    val orderedSummaries = remember(summaries, normalizedHighlight) {
+        if (normalizedHighlight.isNullOrBlank()) summaries
+        else {
+            val match = summaries.filter { it.batteryId.equals(normalizedHighlight, ignoreCase = true) }
+            val rest = summaries.filterNot { it.batteryId.equals(normalizedHighlight, ignoreCase = true) }
+            match + rest
+        }
+    }
 
     val primeCount = summaries.count { it.grade == BatteryHealthGrade.COMPETITION_PRIME }
     val healthyCount = summaries.count { it.grade == BatteryHealthGrade.HEALTHY }
@@ -229,9 +241,11 @@ fun PitBatteryFleetTab(
                 modifier = Modifier.fillMaxWidth().weight(1f),
                 verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
-                items(summaries, key = BatteryHealthSummary::batteryId) { pack ->
+                items(orderedSummaries, key = BatteryHealthSummary::batteryId) { pack ->
+                    val isHighlighted = normalizedHighlight != null && pack.batteryId.equals(normalizedHighlight, ignoreCase = true)
                     BatteryPackCard(
                         pack = pack,
+                        isHighlighted = isHighlighted,
                         onUpdateStatus = { newStatus -> onUpdatePoolStatus(pack.batteryId, newStatus) },
                         onOpenCheckin = { checkinTargetId = pack.batteryId },
                         onAssign = { onAssignToReadiness(pack.batteryId) },
@@ -273,6 +287,7 @@ fun PitBatteryFleetTab(
 @Composable
 private fun BatteryPackCard(
     pack: BatteryHealthSummary,
+    isHighlighted: Boolean = false,
     onUpdateStatus: (BatteryPoolStatus) -> Unit,
     onOpenCheckin: () -> Unit,
     onAssign: () -> Unit,
@@ -289,7 +304,7 @@ private fun BatteryPackCard(
 
     Card(
         colors = CardDefaults.cardColors(containerColor = AresSurface),
-        border = BorderStroke(1.dp, gradeColor.copy(alpha = 0.45f)),
+        border = BorderStroke(if (isHighlighted) 2.dp else 1.dp, if (isHighlighted) AresCyan else gradeColor.copy(alpha = 0.45f)),
         shape = RoundedCornerShape(10.dp),
     ) {
         Column(Modifier.fillMaxWidth().padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -299,6 +314,21 @@ private fun BatteryPackCard(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    if (isHighlighted) {
+                        Surface(
+                            color = AresCyan.copy(alpha = 0.18f),
+                            shape = RoundedCornerShape(12.dp),
+                            border = BorderStroke(1.dp, AresCyan),
+                        ) {
+                            Text(
+                                "Focused",
+                                color = AresCyan,
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(horizontal = 7.dp, vertical = 2.dp),
+                            )
+                        }
+                    }
                     Surface(
                         color = AresSurfaceElevated,
                         shape = RoundedCornerShape(6.dp),

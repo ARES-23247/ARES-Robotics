@@ -33,6 +33,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.ares.analytics.domain.navigation.PitDeepLinkRequest
+import com.ares.analytics.domain.navigation.PitOperationsSubTab
 import com.ares.analytics.domain.pit.BatteryCheckinRecord
 import com.ares.analytics.domain.pit.BatteryFleetAnalyzer
 import com.ares.analytics.domain.pit.BatterySpecRecord
@@ -213,11 +215,19 @@ fun HardwareSelfTestWizard(
     onOpenMatchStrategy: () -> Unit = {},
     onOpenRunHistoryWithTag: (String) -> Unit = {},
     onOpenNotebookEntry: ((String) -> Unit)? = null,
+    pitDeepLink: PitDeepLinkRequest = PitDeepLinkRequest(),
+    onActiveTabChanged: (PitOperationsSubTab) -> Unit = {},
 ) {
     val scope = rememberCoroutineScope()
     val league = workspace?.league ?: League.FTC
     val connected by nt4ClientService.isConnected.collectAsState()
-    var activeTab by remember { mutableStateOf(0) }
+    var activeTab by remember { mutableStateOf(pitDeepLink.tab.index) }
+    LaunchedEffect(pitDeepLink.nonce, pitDeepLink.tab) {
+        activeTab = pitDeepLink.tab.index
+    }
+    LaunchedEffect(activeTab) {
+        onActiveTabChanged(PitOperationsSubTab.fromIndex(activeTab))
+    }
 
     var reloadProfileNonce by remember { mutableStateOf(0) }
     val projectProfile by produceState(
@@ -519,6 +529,7 @@ fun HardwareSelfTestWizard(
                 workspace = workspace,
                 summaries = batterySummaries,
                 recommendedPack = recommendedPack,
+                highlightedBatteryId = pitDeepLink.highlightedBatteryId,
                 onSaveBatterySpec = { spec ->
                     val db = databaseService ?: return@PitBatteryFleetTab
                     scope.launch {
@@ -583,6 +594,7 @@ fun HardwareSelfTestWizard(
                 workspace = workspace,
                 rows = queueRows,
                 statusMessage = scheduleStatusMessage,
+                highlightedMatchNumber = pitDeepLink.highlightedMatchNumber,
                 onSyncApi = {
                     scheduleStatusMessage = "Syncing schedule for ${workspace?.eventCode ?: "workspace"}..."
                     onRefreshEventSchedule()

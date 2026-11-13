@@ -85,6 +85,7 @@ fun PitMatchQueueTab(
     onRemoveMatch: (compLevel: String, matchNumber: Int) -> Unit,
     onStageInReadiness: (TeamMatchQueueRow) -> Unit,
     onOpenMatchStrategy: () -> Unit,
+    highlightedMatchNumber: Int? = null,
 ) {
     var showAddMatchDialog by remember { mutableStateOf(false) }
 
@@ -92,6 +93,14 @@ fun PitMatchQueueTab(
     val nextRow = rows.firstOrNull { it.isNextUnplayedForTeam }
     val eventLabel = workspace?.eventCode?.takeIf(String::isNotBlank) ?: "Offline / Local Schedule"
     val teamLabel = workspace?.teamId?.takeIf(String::isNotBlank) ?: "Unassigned"
+    val orderedRows = remember(rows, highlightedMatchNumber) {
+        if (highlightedMatchNumber == null) rows
+        else {
+            val match = rows.filter { it.item.matchNumber == highlightedMatchNumber }
+            val rest = rows.filterNot { it.item.matchNumber == highlightedMatchNumber }
+            match + rest
+        }
+    }
 
     Column(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Card(
@@ -184,9 +193,11 @@ fun PitMatchQueueTab(
                 modifier = Modifier.fillMaxWidth().weight(1f),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                items(rows, key = { "${it.item.compLevel}:${it.item.matchNumber}" }) { row ->
+                items(orderedRows, key = { "${it.item.compLevel}:${it.item.matchNumber}" }) { row ->
+                    val isHighlighted = highlightedMatchNumber != null && row.item.matchNumber == highlightedMatchNumber
                     MatchQueueRowCard(
                         row = row,
+                        isHighlighted = isHighlighted,
                         onStageInReadiness = { onStageInReadiness(row) },
                         onOpenMatchStrategy = onOpenMatchStrategy,
                         onRemove = { onRemoveMatch(row.item.compLevel, row.item.matchNumber) },
@@ -211,11 +222,13 @@ fun PitMatchQueueTab(
 @Composable
 private fun MatchQueueRowCard(
     row: TeamMatchQueueRow,
+    isHighlighted: Boolean = false,
     onStageInReadiness: () -> Unit,
     onOpenMatchStrategy: () -> Unit,
     onRemove: () -> Unit,
 ) {
     val borderColor = when {
+        isHighlighted -> AresCyan
         row.isNextUnplayedForTeam -> AresAmber
         row.linkedSessionIds.isNotEmpty() -> AresGreen.copy(alpha = 0.55f)
         else -> AresBorder
@@ -228,7 +241,7 @@ private fun MatchQueueRowCard(
 
     Card(
         colors = CardDefaults.cardColors(containerColor = AresSurface),
-        border = BorderStroke(if (row.isNextUnplayedForTeam) 1.5.dp else 1.dp, borderColor),
+        border = BorderStroke(if (isHighlighted) 2.dp else if (row.isNextUnplayedForTeam) 1.5.dp else 1.dp, borderColor),
         shape = RoundedCornerShape(10.dp),
     ) {
         Row(
@@ -238,6 +251,9 @@ private fun MatchQueueRowCard(
         ) {
             Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(5.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    if (isHighlighted) {
+                        QueuePill("Focused", "Jump", AresCyan)
+                    }
                     Text(
                         "${row.item.compLevel.replaceFirstChar { it.uppercaseChar() }} #${row.item.matchNumber}",
                         color = AresTextPrimary,
