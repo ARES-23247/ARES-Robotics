@@ -18,6 +18,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Book
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Search
@@ -154,6 +155,7 @@ fun RobotVerificationReportScreen(
     isRunning: Boolean,
     onRunVerification: () -> Unit,
     onNavigateToSelection: ((RobotStudioSelection) -> Unit)? = null,
+    onLogToNotebook: ((RobotVerificationReport) -> Unit)? = null,
 ) {
     var advanced by remember { mutableStateOf(false) }
     var statusFilter by remember { mutableStateOf(VerificationStatusFilter.ALL) }
@@ -180,6 +182,15 @@ fun RobotVerificationReportScreen(
                 }
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                     if (report != null) {
+                        if (onLogToNotebook != null) {
+                            OutlinedButton(
+                                onClick = { onLogToNotebook(report) },
+                            ) {
+                                Icon(Icons.Default.Book, contentDescription = null, modifier = Modifier.size(16.dp))
+                                Spacer(Modifier.width(6.dp))
+                                Text("Log to Notebook")
+                            }
+                        }
                         OutlinedButton(
                             onClick = { clipboard.setText(AnnotatedString(formatVerificationReportMarkdown(report))) },
                         ) {

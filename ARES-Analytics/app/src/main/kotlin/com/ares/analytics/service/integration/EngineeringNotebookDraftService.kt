@@ -319,6 +319,7 @@ private fun redactEvidence(fact: DraftEvidenceFact): DraftEvidenceFact = fact.co
 internal fun redactSecrets(value: String): String = value
     .replace(Regex("(?i)(authorization\\s*[:=]\\s*bearer\\s+)[^\\s]+"), "\$1[REDACTED]")
     .replace(Regex("(?i)((?:api[_-]?key|token|password|secret)\\s*[:=]\\s*)[^\\s,;]+"), "\$1[REDACTED]")
+    .replace(Regex("\\b(?:gh[pousr]_[A-Za-z0-9_]{20,}|github_pat_[A-Za-z0-9_]{20,}|AIza[A-Za-z0-9_-]{30,})\\b"), "[REDACTED]")
     .replace(Regex("-----BEGIN [A-Z ]+PRIVATE KEY-----[\\s\\S]*?-----END [A-Z ]+PRIVATE KEY-----"), "[REDACTED PRIVATE KEY]")
 
 private fun safeMarkdown(value: String): String = value

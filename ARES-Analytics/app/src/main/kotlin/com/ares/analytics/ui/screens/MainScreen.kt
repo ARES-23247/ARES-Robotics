@@ -188,24 +188,8 @@ fun MainScreen(services: ServiceRegistry) {
         activeNavigation = activeNav,
     )
     val dashboardViewModel = workspaceModels.dashboard
-    val pathPlannerViewModel = workspaceModels.pathPlanner
-    val fieldEditorViewModel = workspaceModels.fieldEditor
-    val sysIdViewModel = workspaceModels.sysId
-    val tuningViewModel = workspaceModels.tuning
-    val profileViewModel = workspaceModels.profile
-    val cloudViewModel = workspaceModels.cloud
-    val importCenterViewModel = workspaceModels.importCenter
-    val controlsEditorViewModel = workspaceModels.controlsEditor
-    val subsystemGeneratorViewModel = workspaceModels.subsystemGenerator
-    val drivebaseBuilderViewModel = workspaceModels.drivebaseBuilder
-    val superstructureStudioViewModel = workspaceModels.superstructureStudio
-    val projectBackupViewModel = workspaceModels.projectBackup
-    val integrationCenterViewModel = workspaceModels.integrationCenter
-    val hardwareSetupViewModel = workspaceModels.hardwareSetup
     val robotStudioViewModel = workspaceModels.robotStudio
-    val projectIdentityViewModel = workspaceModels.projectIdentity
     val guidedRunAnalysisViewModel = workspaceModels.guidedRunAnalysis
-    val guidedTuningExperimentViewModel = workspaceModels.guidedTuningExperiment
     // These view models share the keyed workspace scope and are cancelled together before a new
     // workspace can observe or mutate the prior project's state.
     val dashboardShellState by dashboardViewModel.shellState.collectAsState()
@@ -217,7 +201,6 @@ fun MainScreen(services: ServiceRegistry) {
         if (stableProjectContentHash != null) robotStudioViewModel.refresh()
     }
     val primarySessionId = dashboardShellState.primarySessionId
-    val compareSessionId = dashboardShellState.compareSessionId
     val isConnected by services.nt4ClientService.isConnected.collectAsState()
     val processState by services.projectBuildService.processState.collectAsState()
     val deployExecutionState by services.robotDeploymentService.state.collectAsState()
@@ -632,6 +615,7 @@ fun MainScreen(services: ServiceRegistry) {
                                 workspaceScope = workspaceScope,
                                 services = services,
                                 currentConfig = currentConfig,
+                                engineeringNotebook = workspaceModels.engineeringNotebook,
                                 updateMissionSnapshot = { dashboardMissionSnapshot = it },
                                 requestSimulatorLaunch = requestSimulatorLaunch,
                                 startSimulator = startSimulatorProcess,
@@ -718,6 +702,14 @@ fun MainScreen(services: ServiceRegistry) {
                     requestedLessonId = null
                     mainViewModel.onIntent(MainIntent.SetActiveNav(NavigationTarget.ACADEMY))
                 },
+                openRunReplay = { sessionId ->
+                    dashboardViewModel.onIntent(DashboardIntent.SelectPrimarySession(sessionId, null))
+                    mainViewModel.onIntent(MainIntent.SetActiveNav(NavigationTarget.DASHBOARD))
+                },
+                openNotebookEntry = { entryId ->
+                    workspaceModels.engineeringNotebook.openAndSelectEntry(entryId)
+                    mainViewModel.onIntent(MainIntent.SetActiveNav(NavigationTarget.ENGINEERING_NOTEBOOK))
+                },
                 confirmWorkspaceDeletion = { workspaceId ->
                     mainViewModel.onIntent(MainIntent.DeleteWorkspace(workspaceId))
                     workspacePendingDeletion = null
@@ -735,6 +727,9 @@ fun MainScreen(services: ServiceRegistry) {
                 dismissUpdate = { mainViewModel.onIntent(MainIntent.SetShowUpdateBanner(false)) },
             ),
             learningProgressService = services.learningProgressService,
+            workspace = currentConfig,
+            databaseService = services.databaseService,
+            notebookCaptureService = services.engineeringNotebookCaptureService,
         )
     }
 }

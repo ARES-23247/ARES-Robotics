@@ -1,5 +1,6 @@
 package com.ares.analytics.viewmodel
 
+import com.ares.analytics.service.DatabaseService
 import com.ares.analytics.service.ImportArchiveEntry
 import com.ares.analytics.service.ImportArchiveService
 import com.ares.analytics.service.ImportArchiveSnapshot
@@ -25,6 +26,9 @@ data class ImportCenterState(
     val isImporting: Boolean = false,
     val importPhase: String? = null,
     val lastImport: ManualLogImportOutcome? = null,
+    val pendingMatchNumber: String = "",
+    val pendingAlliance: String = "",
+    val pendingTagsText: String = "",
     val message: String? = null,
     val error: String? = null
 )
@@ -33,6 +37,9 @@ sealed class ImportCenterIntent {
     data object Refresh : ImportCenterIntent()
     data class Retry(val entry: ImportArchiveEntry) : ImportCenterIntent()
     data class ImportFiles(val files: List<File>) : ImportCenterIntent()
+    data class SetPendingMatchNumber(val value: String) : ImportCenterIntent()
+    data class SetPendingAlliance(val value: String) : ImportCenterIntent()
+    data class SetPendingTags(val value: String) : ImportCenterIntent()
     data object CancelImport : ImportCenterIntent()
     data object ClearNotice : ImportCenterIntent()
 }
@@ -42,6 +49,7 @@ class ImportCenterViewModel(
     private val manualLogImportService: ManualLogImportService,
     private val workspace: WorkspaceConfig,
     private val scope: CoroutineScope,
+    private val databaseService: DatabaseService? = null,
     private val onImportCompleted: () -> Unit = {},
 ) {
     private val _state = MutableStateFlow(ImportCenterState())
@@ -58,6 +66,15 @@ class ImportCenterViewModel(
             ImportCenterIntent.ClearNotice -> _state.update { it.copy(message = null, error = null) }
             is ImportCenterIntent.Retry -> retry(intent.entry)
             is ImportCenterIntent.ImportFiles -> importFiles(intent.files)
+            is ImportCenterIntent.SetPendingMatchNumber -> _state.update {
+                it.copy(pendingMatchNumber = intent.value.filter(Char::isDigit).take(4))
+            }
+            is ImportCenterIntent.SetPendingAlliance -> _state.update {
+                it.copy(pendingAlliance = intent.value)
+            }
+            is ImportCenterIntent.SetPendingTags -> _state.update {
+                it.copy(pendingTagsText = intent.value)
+            }
             ImportCenterIntent.CancelImport -> cancelImport()
         }
     }
@@ -115,8 +132,35 @@ class ImportCenterViewModel(
                 )
             }
             try {
+                val pendingMatch = _state.value.pendingMatchNumber.trim().toIntOrNull()?.takeIf { it > 0 }
+                val pendingAlliance = _state.value.pendingAlliance.trim().takeIf(String::isNotBlank)
+                val pendingTags = _state.value.pendingTagsText
+                    .split(',')
+                    .map { it.trim() }
+                    .filter { it.isNotEmpty() }
+                    .distinct()
+
                 _state.update { it.copy(importPhase = "Decoding bounded batches into the local workspace database…") }
-                val outcome = manualLogImportService.importFiles(files, workspace)
+                val rawOutcome = manualLogImportService.importFiles(files, workspace)
+                var updatedSession = rawOutcome.session
+                val db = databaseService
+                if (db != null && (pendingMatch != null || pendingAlliance != null || pendingTags.isNotEmpty())) {
+                    val effectiveMatch = pendingMatch ?: updatedSession.matchNumber
+                    val effectiveAlliance = pendingAlliance ?: updatedSession.allianceColor
+                    if (pendingMatch != null || pendingAlliance != null) {
+                        db.updateSessionMatchDetails(updatedSession.sessionId, effectiveMatch, effectiveAlliance)
+                        updatedSession = updatedSession.copy(
+                            matchNumber = effectiveMatch,
+                            allianceColor = effectiveAlliance,
+                        )
+                    }
+                    if (pendingTags.isNotEmpty()) {
+                        val mergedTags = (updatedSession.tags + pendingTags).distinct()
+                        db.updateSessionTags(updatedSession.sessionId, mergedTags)
+                        updatedSession = updatedSession.copy(tags = mergedTags)
+                    }
+                }
+                val outcome = rawOutcome.copy(session = updatedSession)
                 val snapshot = withContext(Dispatchers.IO) { archiveService.load(workspace.projectPath) }
                 _state.update {
                     it.copy(
@@ -125,6 +169,7 @@ class ImportCenterViewModel(
                         isImporting = false,
                         importPhase = null,
                         lastImport = outcome,
+                        pendingMatchNumber = "",
                         message = if (outcome.wasAlreadyImported) {
                             "These exact files were already imported. ARES reused the existing run instead of creating a duplicate."
                         } else {

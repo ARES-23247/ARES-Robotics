@@ -37,6 +37,7 @@ val NavigationTarget.icon: ImageVector get() = when (this) {
     NavigationTarget.MATCH_STRATEGY -> Icons.Default.Analytics
     NavigationTarget.GUIDED_RUN_ANALYSIS -> Icons.Default.Analytics
     NavigationTarget.RUN_HISTORY -> Icons.Default.TableChart
+    NavigationTarget.ENGINEERING_NOTEBOOK -> Icons.Default.Book
     NavigationTarget.DATABASE_VIEWER -> Icons.Default.Storage
     NavigationTarget.CONTROLS -> Icons.Default.SportsEsports
     NavigationTarget.TUNING -> Icons.Default.Tune
@@ -67,7 +68,6 @@ val primaryNavigationSections = NavigationSection.entries.toList()
 val developerToolTargets = setOf(
     NavigationTarget.KDOC_VIEWER,
     NavigationTarget.DATABASE_VIEWER,
-    NavigationTarget.MATCH_STRATEGY
 )
 
 fun NavigationTarget.section(): NavigationSection? = when (this) {
@@ -75,11 +75,11 @@ fun NavigationTarget.section(): NavigationSection? = when (this) {
     NavigationTarget.ROBOT_STUDIO, NavigationTarget.HARDWARE_STUDIO, NavigationTarget.PROJECT_IDENTITY, NavigationTarget.HARDWARE_SETUP, NavigationTarget.PIT_DIAGNOSTICS, NavigationTarget.CONTROLS,
     NavigationTarget.TUNING, NavigationTarget.DRIVEBASE_BUILDER, NavigationTarget.SUBSYSTEM_GEN, NavigationTarget.SUPERSTRUCTURE_STUDIO -> NavigationSection.ROBOT
     NavigationTarget.PATH_PLANNER, NavigationTarget.FIELD_EDITOR -> NavigationSection.AUTONOMOUS
-    NavigationTarget.GUIDED_RUN_ANALYSIS, NavigationTarget.RUN_HISTORY -> NavigationSection.ANALYSIS
+    NavigationTarget.GUIDED_RUN_ANALYSIS, NavigationTarget.MATCH_STRATEGY, NavigationTarget.RUN_HISTORY, NavigationTarget.ENGINEERING_NOTEBOOK -> NavigationSection.ANALYSIS
     NavigationTarget.IMPORT_CENTER, NavigationTarget.CLOUD -> NavigationSection.DATA
     NavigationTarget.PROJECT_BACKUP, NavigationTarget.INTEGRATIONS, NavigationTarget.PROFILE, NavigationTarget.ADMIN -> NavigationSection.SETTINGS
     NavigationTarget.ACADEMY, NavigationTarget.KDOC_VIEWER,
-    NavigationTarget.DATABASE_VIEWER, NavigationTarget.MATCH_STRATEGY -> null
+    NavigationTarget.DATABASE_VIEWER -> null
 }
 
 fun NavigationSection.defaultTarget(): NavigationTarget = when (this) {
@@ -102,7 +102,12 @@ fun NavigationSection.targets(): List<NavigationTarget> = when (this) {
         NavigationTarget.PIT_DIAGNOSTICS,
     )
     NavigationSection.AUTONOMOUS -> listOf(NavigationTarget.PATH_PLANNER, NavigationTarget.FIELD_EDITOR)
-    NavigationSection.ANALYSIS -> listOf(NavigationTarget.GUIDED_RUN_ANALYSIS, NavigationTarget.RUN_HISTORY)
+    NavigationSection.ANALYSIS -> listOf(
+        NavigationTarget.GUIDED_RUN_ANALYSIS,
+        NavigationTarget.MATCH_STRATEGY,
+        NavigationTarget.RUN_HISTORY,
+        NavigationTarget.ENGINEERING_NOTEBOOK,
+    )
     NavigationSection.DATA -> listOf(NavigationTarget.IMPORT_CENTER, NavigationTarget.CLOUD)
     NavigationSection.SETTINGS -> listOf(NavigationTarget.PROFILE, NavigationTarget.INTEGRATIONS, NavigationTarget.PROJECT_BACKUP, NavigationTarget.ADMIN)
 }
@@ -130,9 +135,10 @@ fun NavigationTarget.searchTerms(): Set<String> = when (this) {
     )
     NavigationTarget.KDOC_VIEWER -> setOf("api", "code reference", "kdoc", "source", "architecture", "units")
     NavigationTarget.PIT_DIAGNOSTICS -> setOf("hardware", "readiness", "pit", "self test", "freshness")
-    NavigationTarget.MATCH_STRATEGY -> setOf("match", "strategy", "preview")
+    NavigationTarget.MATCH_STRATEGY -> setOf("match", "strategy", "heatmap", "debrief", "coaching", "cycle", "preview")
     NavigationTarget.GUIDED_RUN_ANALYSIS -> setOf("analyze", "evidence", "possible cause", "safe next step", "guided review", "compare runs")
-    NavigationTarget.RUN_HISTORY -> setOf("replay", "review", "compare", "past run", "session")
+    NavigationTarget.RUN_HISTORY -> setOf("replay", "review", "compare", "past run", "session", "cohort", "distribution")
+    NavigationTarget.ENGINEERING_NOTEBOOK -> setOf("notebook", "portfolio", "journal", "judges", "rubric", "engineering note", "dossier")
     NavigationTarget.DATABASE_VIEWER -> setOf("sql", "duckdb", "table")
     NavigationTarget.CONTROLS -> setOf("gamepad", "button", "driver", "operator", "binding")
     NavigationTarget.TUNING -> setOf("pid", "sysid", "feedforward", "calibration")

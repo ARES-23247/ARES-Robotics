@@ -100,6 +100,7 @@ fun RobotStudioScreen(
     onOpenInIde: () -> String,
     onChooseStandaloneExport: () -> File?,
     onExportStandaloneProject: suspend (File) -> String,
+    onLogVerificationToNotebook: ((com.ares.analytics.service.verification.RobotVerificationReport) -> Unit)? = null,
     initialSelection: RobotStudioSelection = RobotStudioSelection.Identity,
 ) {
     val state by viewModel.state.collectAsState()
@@ -353,6 +354,7 @@ fun RobotStudioScreen(
                 report = state.verificationReport,
                 isRunning = state.buildStage?.status == RobotStudioStageStatus.RUNNING,
                 onRunVerification = onRunVerification,
+                onLogToNotebook = onLogVerificationToNotebook,
                 onNavigateToSelection = { newSelection ->
                     if (newSelection is RobotStudioSelection.Subsystem) {
                         val targetId = newSelection.documentId.ifBlank {

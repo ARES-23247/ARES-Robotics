@@ -33,6 +33,7 @@ import com.ares.analytics.viewmodel.controls.ControlsEditorViewModel
 import com.ares.analytics.viewmodel.drivebase.DrivebaseBuilderViewModel
 import com.ares.analytics.viewmodel.hardware.HardwareSetupViewModel
 import com.ares.analytics.viewmodel.integrationcenter.IntegrationCenterViewModel
+import com.ares.analytics.viewmodel.notebook.EngineeringNotebookViewModel
 import com.ares.analytics.viewmodel.project.ProjectIdentityViewModel
 import com.ares.analytics.viewmodel.robotstudio.RobotStudioViewModel
 import com.ares.analytics.viewmodel.runanalysis.GuidedRunAnalysisViewModel
@@ -63,6 +64,7 @@ internal data class WorkspaceViewModelGraph(
     val projectIdentity: ProjectIdentityViewModel,
     val guidedRunAnalysis: GuidedRunAnalysisViewModel,
     val guidedTuningExperiment: GuidedTuningExperimentViewModel,
+    val engineeringNotebook: EngineeringNotebookViewModel,
 )
 
 @Composable
@@ -202,13 +204,15 @@ internal fun rememberWorkspaceViewModelGraph(
             workspaceScope,
         )
     }
-    val importCenter = remember(projectKey) {
+    val importCenter = remember(projectKey, config.teamId, config.seasonId, config.robotId) {
         ImportCenterViewModel(
-            services.importArchiveService,
-            services.manualLogImportService,
-            config,
-            workspaceScope,
-        ) { mainViewModel.onIntent(MainIntent.TriggerRunsIndexReload) }
+            archiveService = services.importArchiveService,
+            manualLogImportService = services.manualLogImportService,
+            workspace = config,
+            scope = workspaceScope,
+            databaseService = services.databaseService,
+            onImportCompleted = { mainViewModel.onIntent(MainIntent.TriggerRunsIndexReload) },
+        )
     }
     val controlsEditor = remember(projectKey, config.league) {
         ControlsEditorViewModel(
@@ -315,6 +319,13 @@ internal fun rememberWorkspaceViewModelGraph(
             },
         )
     }
+    val engineeringNotebook = remember(projectKey, config.teamId, config.seasonId, config.robotId) {
+        EngineeringNotebookViewModel(
+            workspace = config,
+            captureService = services.engineeringNotebookCaptureService,
+            scope = workspaceScope,
+        )
+    }
 
     LaunchedEffect(sysId, config.league) {
         sysId.onIntent(SysIdIntent.ConfigurePlatform(config.league == League.FTC))
@@ -357,5 +368,6 @@ internal fun rememberWorkspaceViewModelGraph(
         projectIdentity,
         guidedRunAnalysis,
         guidedTuningExperiment,
+        engineeringNotebook,
     )
 }
