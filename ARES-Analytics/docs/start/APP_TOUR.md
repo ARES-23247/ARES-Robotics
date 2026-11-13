@@ -17,7 +17,7 @@ The narrow left rail switches between major areas. The icons include labels such
 | --- | --- | --- |
 | See whether data is arriving | **Dashboard** | Field pose, telemetry charts, and connection labels |
 | Practice without hardware | Select **Local Sim**, then press Play | The target label remains Local Sim and telemetry begins changing |
-| Check what robot signals exist | **Robot → Pit Self-Test** | Status cards marked Observed, Waiting, or Warning |
+| Check what robot signals, battery health, match queue & alert rules exist | **Robot → Pit Operations (Pit Self-Test)** | Status cards marked Observed, Waiting, or Warning plus Battery Fleet & Match Queue tabs |
 | Map a gamepad button | **Robot → TeleOp Controls** | Controller diagram, Bindings list, and New binding panel |
 | Build a mechanism safely | **Robot → Subsystem Builder** | Template, safety contract, generated-file groups, and preview |
 | Find a completed run | **Data → Run History** | Imported sessions; live telemetry is not automatically a saved run |

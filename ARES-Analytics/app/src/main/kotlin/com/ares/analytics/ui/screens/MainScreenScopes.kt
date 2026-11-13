@@ -2,6 +2,7 @@ package com.ares.analytics.ui.screens
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import com.ares.analytics.di.ServiceRegistry
@@ -148,6 +149,7 @@ internal fun rememberWorkspaceRouteFeatureScope(
             sync = services.syncEngineService,
             aiDiagnostics = services.aiDiagnosticsService,
             notebookCapture = services.engineeringNotebookCaptureService,
+            pendingTagFilter = mutableStateOf(null),
         ),
         academy = academyFeatureScope,
         learningProgress = services.learningProgressService,
@@ -181,6 +183,8 @@ internal fun rememberWorkspaceRouteFeatureScope(
         export = services.exportService,
         projectSession = services.projectSession,
         hardwareSetup = services.hardwareSetupService,
+        alertEngine = services.alertEngineService,
+        eventScheduleStore = services.eventScheduleStore,
     )
 }
 
@@ -272,6 +276,8 @@ internal fun createWorkspaceRouteActions(
             mainViewModel.onIntent(MainIntent.SetActiveNav(NavigationTarget.ENGINEERING_NOTEBOOK))
         }
     },
+    refreshEventSchedule = { mainViewModel.onIntent(MainIntent.RefreshEventSchedule) },
+    updateCachedMatches = { mainViewModel.onIntent(MainIntent.UpdateCachedMatches(it)) },
 )
 
 internal fun chooseStandaloneArchiveDestination(config: WorkspaceConfig): File? {

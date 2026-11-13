@@ -209,6 +209,35 @@ class DatabaseSchemaInitializer(
                     PRIMARY KEY (entry_id, revision, publisher_id, remote_id)
                 );
 
+                CREATE TABLE IF NOT EXISTS battery_fleet (
+                    team_id VARCHAR NOT NULL,
+                    season_id VARCHAR NOT NULL,
+                    robot_id VARCHAR NOT NULL,
+                    battery_id VARCHAR NOT NULL,
+                    label VARCHAR NOT NULL,
+                    nominal_voltage DOUBLE NOT NULL DEFAULT 12.0,
+                    capacity_ah DOUBLE NOT NULL DEFAULT 3.0,
+                    status VARCHAR NOT NULL DEFAULT 'READY',
+                    notes VARCHAR NOT NULL DEFAULT '',
+                    created_at_ms BIGINT NOT NULL,
+                    updated_at_ms BIGINT NOT NULL,
+                    PRIMARY KEY (team_id, season_id, robot_id, battery_id)
+                );
+
+                CREATE TABLE IF NOT EXISTS battery_checkins (
+                    checkin_id VARCHAR PRIMARY KEY,
+                    team_id VARCHAR NOT NULL,
+                    season_id VARCHAR NOT NULL,
+                    robot_id VARCHAR NOT NULL,
+                    battery_id VARCHAR NOT NULL,
+                    resting_voltage DOUBLE,
+                    beak_resistance_mohm DOUBLE,
+                    soc_percent DOUBLE,
+                    inspector_initials VARCHAR NOT NULL DEFAULT '',
+                    notes VARCHAR NOT NULL DEFAULT '',
+                    recorded_at_ms BIGINT NOT NULL
+                );
+
             """.trimIndent())
             // Telemetry is an immutable, append-only analytical fact table. DuckDB creates an ART
             // index for every primary/unique constraint and explicit CREATE INDEX. Those indexes
@@ -222,6 +251,10 @@ class DatabaseSchemaInitializer(
             st.execute(
                 "CREATE INDEX IF NOT EXISTS idx_integration_events_aggregate " +
                     "ON integration_events(aggregate_id, occurred_at_ms)"
+            )
+            st.execute(
+                "CREATE INDEX IF NOT EXISTS idx_battery_checkins_lookup " +
+                    "ON battery_checkins(team_id, season_id, robot_id, battery_id, recorded_at_ms)"
             )
         }
         requireCurrentColumns(

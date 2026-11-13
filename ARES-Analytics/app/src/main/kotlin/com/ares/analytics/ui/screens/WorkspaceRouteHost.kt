@@ -3,6 +3,8 @@ package com.ares.analytics.ui.screens
 import androidx.compose.runtime.Composable
 import com.ares.analytics.service.AcademyPracticeIdentity
 import com.ares.analytics.service.AcademyPracticeWorkflowService
+import com.ares.analytics.service.AlertEngineService
+import com.ares.analytics.service.EventScheduleStore
 import com.ares.analytics.service.ExportService
 import com.ares.analytics.service.GuidedRunAnalysisReport
 import com.ares.analytics.service.LearningProgressService
@@ -56,6 +58,8 @@ internal data class WorkspaceRouteFeatureScope(
     val export: ExportService,
     val projectSession: ProjectSession,
     val hardwareSetup: HardwareSetupService,
+    val alertEngine: AlertEngineService,
+    val eventScheduleStore: EventScheduleStore,
 )
 
 internal data class WorkspaceRouteState(
@@ -100,6 +104,8 @@ internal data class WorkspaceRouteActions(
     val logGuidedReviewToNotebook: (GuidedRunAnalysisReport, RunComparisonReport?) -> Unit,
     val logTuningExperimentToNotebook: (GuidedTuningExperiment) -> Unit,
     val logVerificationToNotebook: (RobotVerificationReport) -> Unit,
+    val refreshEventSchedule: () -> Unit = {},
+    val updateCachedMatches: (List<MatchInfo>) -> Unit = {},
 )
 
 /** Renders the selected workspace route from explicit feature capabilities and shell actions. */
@@ -239,6 +245,20 @@ internal fun WorkspaceRouteHost(
             projectSession = scope.projectSession,
             hardwareSetupService = scope.hardwareSetup,
             exportService = scope.export,
+            databaseService = scope.runData.database,
+            alertEngineService = scope.alertEngine,
+            eventScheduleStore = scope.eventScheduleStore,
+            notebookCaptureService = scope.notebookCapture,
+            matches = state.matches,
+            reloadTrigger = state.runsReloadTrigger,
+            onRefreshEventSchedule = actions.refreshEventSchedule,
+            onMatchesUpdated = actions.updateCachedMatches,
+            onOpenMatchStrategy = { actions.navigate(NavigationTarget.MATCH_STRATEGY) },
+            onOpenRunHistoryWithTag = { tag ->
+                scope.runData.pendingTagFilter.value = tag
+                actions.navigate(NavigationTarget.RUN_HISTORY)
+            },
+            onOpenNotebookEntry = actions.openNotebookEntry,
         )
         NavigationTarget.MATCH_STRATEGY -> MatchStrategyScreen(
             databaseService = scope.runData.database,
@@ -246,12 +266,14 @@ internal fun WorkspaceRouteHost(
             notebookCaptureService = scope.notebookCapture,
             workspace = workspace,
             reloadTrigger = state.runsReloadTrigger,
+            matches = state.matches,
             onOpenReplay = { sessionId, timestampMs ->
                 scope.dashboard.onIntent(DashboardIntent.SelectPrimarySession(sessionId, timestampMs))
                 actions.navigate(NavigationTarget.DASHBOARD)
             },
             onOpenImports = { actions.navigate(NavigationTarget.IMPORT_CENTER) },
             onOpenNotebookEntry = actions.openNotebookEntry,
+            onOpenPitOps = { actions.navigate(NavigationTarget.PIT_DIAGNOSTICS) },
         )
         NavigationTarget.ENGINEERING_NOTEBOOK -> EngineeringNotebookScreen(
             viewModel = scope.engineeringNotebook,

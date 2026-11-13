@@ -520,6 +520,65 @@ class EngineeringNotebookCaptureService(
         )
     }
 
+    suspend fun capturePitReadinessReceipt(
+        workspace: WorkspaceConfig,
+        projectLabel: String,
+        matchBadge: String,
+        batteryId: String?,
+        connected: Boolean,
+        streamLive: Boolean,
+        observedSignalsSummary: List<String>,
+        warningSignalsSummary: List<String>,
+        checkedCrewItems: List<String>,
+        uncheckedCrewItems: List<String>,
+        receiptMarkdown: String,
+        authorId: String? = null,
+    ): EngineeringNotebookEntry {
+        val formatted = PitOpsNotebookCaptureFormatter.formatPitReadiness(
+            projectLabel = projectLabel,
+            matchBadge = matchBadge,
+            batteryId = batteryId,
+            connected = connected,
+            streamLive = streamLive,
+            observedSignalsSummary = observedSignalsSummary,
+            warningSignalsSummary = warningSignalsSummary,
+            checkedCrewItems = checkedCrewItems,
+            uncheckedCrewItems = uncheckedCrewItems,
+            receiptMarkdown = receiptMarkdown,
+        )
+        return saveEditedEntry(
+            workspace = workspace,
+            entryId = "pit-readiness-${formatted.entryIdSlug.take(36)}",
+            entryType = NotebookEntryType.ENGINEERING_NOTE,
+            markdownBody = formatted.markdownBody,
+            evidence = formatted.evidence,
+            authorId = authorId,
+            externalUpdatesAllowed = true,
+        )
+    }
+
+    suspend fun captureBatteryFleetSummary(
+        workspace: WorkspaceConfig,
+        summaries: List<com.ares.analytics.domain.pit.BatteryHealthSummary>,
+        recommendedBatteryId: String?,
+        authorId: String? = null,
+    ): EngineeringNotebookEntry {
+        val formatted = PitOpsNotebookCaptureFormatter.formatBatteryFleetSummary(
+            workspace = workspace,
+            summaries = summaries,
+            recommendedBatteryId = recommendedBatteryId,
+        )
+        return saveEditedEntry(
+            workspace = workspace,
+            entryId = "battery-fleet-${formatted.entryIdSlug.take(36)}",
+            entryType = NotebookEntryType.ENGINEERING_NOTE,
+            markdownBody = formatted.markdownBody,
+            evidence = formatted.evidence,
+            authorId = authorId,
+            externalUpdatesAllowed = true,
+        )
+    }
+
     suspend fun buildWorkspacePortfolioMarkdown(
         workspace: WorkspaceConfig,
         entries: List<EngineeringNotebookEntry>,

@@ -16,10 +16,15 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.FactCheck
+import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.Book
 import androidx.compose.material.icons.filled.Explore
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Save
+import com.ares.analytics.domain.pit.extractBatteryIdFromTags
+import com.ares.analytics.domain.pit.isBatterySessionTag
+import com.ares.analytics.domain.pit.normalizeBatteryId
+import com.ares.analytics.domain.pit.replaceBatteryTag
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -69,13 +74,17 @@ fun SessionMetadataDialog(
         mutableStateOf(session.allianceColor?.lowercase()?.takeIf { it == "red" || it == "blue" })
     }
     var tagsText by remember(session.sessionId) {
-        mutableStateOf(session.tags.joinToString(", "))
+        mutableStateOf(session.tags.filterNot(::isBatterySessionTag).joinToString(", "))
+    }
+    var batteryIdText by remember(session.sessionId) {
+        mutableStateOf(extractBatteryIdFromTags(session.tags).orEmpty())
     }
 
     fun parseCurrentTags(): List<String> = tagsText
         .split(',', ';')
         .map(String::trim)
         .filter(String::isNotBlank)
+        .filterNot(::isBatterySessionTag)
         .distinct()
 
     AlertDialog(
@@ -114,7 +123,16 @@ fun SessionMetadataDialog(
                         onValueChange = { raw -> matchText = raw.filter(Char::isDigit).take(4) },
                         label = { Text("Match # (optional)") },
                         singleLine = true,
-                        modifier = Modifier.width(170.dp),
+                        modifier = Modifier.width(145.dp),
+                    )
+                    OutlinedTextField(
+                        value = batteryIdText,
+                        onValueChange = { raw -> batteryIdText = normalizeBatteryId(raw).take(20) },
+                        label = { Text("Battery Pack ID") },
+                        placeholder = { Text("BAT-01") },
+                        leadingIcon = { Icon(Icons.Default.Bolt, contentDescription = null, modifier = Modifier.size(15.dp)) },
+                        singleLine = true,
+                        modifier = Modifier.width(160.dp),
                     )
                     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                         Text("Alliance", color = AresTextSecondary, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
@@ -130,6 +148,30 @@ fun SessionMetadataDialog(
                     }
                 }
 
+                val batteryTagsInWorkspace = existingWorkspaceTags.filter(::isBatterySessionTag)
+                if (batteryTagsInWorkspace.isNotEmpty()) {
+                    FlowRow(
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        verticalArrangement = Arrangement.spacedBy(4.dp),
+                    ) {
+                        Text(
+                            "Quick battery pack:",
+                            color = AresTextTertiary,
+                            fontSize = 11.sp,
+                            modifier = Modifier.align(Alignment.CenterVertically),
+                        )
+                        batteryTagsInWorkspace.take(8).forEach { tag ->
+                            val rawId = extractBatteryIdFromTags(listOf(tag)).orEmpty()
+                            val selected = rawId.isNotEmpty() && batteryIdText.equals(rawId, ignoreCase = true)
+                            FilterChip(
+                                selected = selected,
+                                onClick = { batteryIdText = if (selected) "" else rawId },
+                                label = { Text(rawId.ifBlank { tag }, fontSize = 11.sp) },
+                            )
+                        }
+                    }
+                }
+
                 OutlinedTextField(
                     value = tagsText,
                     onValueChange = { tagsText = it },
@@ -139,7 +181,8 @@ fun SessionMetadataDialog(
                     modifier = Modifier.fillMaxWidth(),
                 )
 
-                if (existingWorkspaceTags.isNotEmpty()) {
+                val nonBatteryTags = existingWorkspaceTags.filterNot(::isBatterySessionTag)
+                if (nonBatteryTags.isNotEmpty()) {
                     FlowRow(
                         horizontalArrangement = Arrangement.spacedBy(6.dp),
                         verticalArrangement = Arrangement.spacedBy(4.dp),
@@ -151,7 +194,7 @@ fun SessionMetadataDialog(
                             modifier = Modifier.align(Alignment.CenterVertically),
                         )
                         val activeTags = parseCurrentTags()
-                        existingWorkspaceTags.take(10).forEach { tag ->
+                        nonBatteryTags.take(10).forEach { tag ->
                             val present = activeTags.any { it.equals(tag, ignoreCase = true) }
                             FilterChip(
                                 selected = present,
@@ -235,7 +278,7 @@ fun SessionMetadataDialog(
             Button(
                 onClick = {
                     val parsedMatch = matchText.trim().toIntOrNull()?.takeIf { it > 0 }
-                    val parsedTags = parseCurrentTags()
+                    val parsedTags = replaceBatteryTag(parseCurrentTags(), batteryIdText)
                     onSaveMetadata(parsedMatch, alliance, parsedTags)
                     onDismiss()
                 },

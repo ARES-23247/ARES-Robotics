@@ -121,6 +121,8 @@ fun RunHistoryScreen(
     workspace: WorkspaceConfig,
     reloadTrigger: Int = 0,
     notebookCaptureService: EngineeringNotebookCaptureService? = null,
+    initialTagFilter: String? = null,
+    onConsumeInitialTagFilter: () -> Unit = {},
     onOpenImports: () -> Unit = {},
     onOpenHelp: () -> Unit = {},
     onOpenReplay: (String) -> Unit = {},
@@ -137,6 +139,13 @@ fun RunHistoryScreen(
     var isCohortExplorerOpen by remember { mutableStateOf(false) }
     var searchQuery by remember { mutableStateOf("") }
     var selectedTagFilter by remember { mutableStateOf<String?>(null) }
+
+    LaunchedEffect(initialTagFilter) {
+        if (!initialTagFilter.isNullOrBlank()) {
+            selectedTagFilter = initialTagFilter
+            onConsumeInitialTagFilter()
+        }
+    }
     var editingSession by remember { mutableStateOf<Session?>(null) }
     var statusBanner by remember { mutableStateOf<String?>(null) }
     val analystChatHistory = remember { mutableStateListOf<Pair<String, String>>() }
