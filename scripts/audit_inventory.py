@@ -114,10 +114,23 @@ def category(path):
     return "configuration-or-resource"
 
 
+def _canonical_path(path):
+    absolute = Path(os.path.abspath(path))
+    if absolute.is_symlink():
+        try:
+            return absolute.parent.resolve() / absolute.name
+        except OSError:
+            return absolute
+    try:
+        return absolute.resolve()
+    except OSError:
+        return absolute
+
+
 def inventory(root, paths, records, *, records_path=None):
     validate_records(records)
-    root = Path(os.path.abspath(root))
-    ledger = Path(os.path.abspath(records_path)) if records_path is not None else root / LEDGER_PATH
+    root = _canonical_path(root)
+    ledger = _canonical_path(records_path) if records_path is not None else root / LEDGER_PATH
     paths = sorted(set(paths))  # Reuse materialized input, including when callers supply a generator.
     for path in paths:
         _validate_path(path)
@@ -175,23 +188,24 @@ def main():
     parser.add_argument("--refresh-ledger-fingerprint", action="store_true",
                         help="Refresh only an existing ledger self-record hash after reviewing ledger changes")
     args = parser.parse_args()
+    root = _canonical_path(ROOT)
     if args.output.resolve() == args.records.resolve():
         raise ValueError("Inventory output must not overwrite its review ledger input")
-    paths = [path for path in subprocess.check_output(["git", "ls-files", "-z"], cwd=ROOT)
+    paths = [path for path in subprocess.check_output(["git", "ls-files", "-z"], cwd=root)
              .decode("utf-8", errors="surrogateescape").split("\0") if path]
     document = load_ledger(args.records)
     if args.refresh_ledger_fingerprint:
         if args.records.is_symlink():
             raise ValueError("Cannot refresh a symlinked ledger")
-        ledger = Path(os.path.abspath(args.records))
-        key = next((path for path in paths if ROOT / path == ledger), None)
+        ledger = _canonical_path(args.records)
+        key = next((path for path in paths if root / path == ledger), None)
         if key is None or key not in document["files"]:
             raise ValueError("Refresh requires a tracked ledger with an existing self-review record")
         document["files"][key]["sha256"] = ledger_fingerprint(document, key)
         write_json(args.records, document)
-    result = inventory(ROOT, paths, document["files"], records_path=args.records)
-    result["head"] = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip()
-    result["workingTreeStatus"] = subprocess.check_output(["git", "status", "--porcelain"], cwd=ROOT, text=True)
+    result = inventory(root, paths, document["files"], records_path=args.records)
+    result["head"] = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=root, text=True).strip()
+    result["workingTreeStatus"] = subprocess.check_output(["git", "status", "--porcelain"], cwd=root, text=True)
     write_json(args.output, result)
     print(json.dumps({key: value for key, value in result.items() if key != "files"}, indent=2))
 
