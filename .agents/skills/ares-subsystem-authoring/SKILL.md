@@ -34,3 +34,10 @@ optional capabilities such as Prism lighting.
 Complete the requested authoring flow through its affected generation, registration, and behavior
 checks. Product preview/token confirmation applies at starter replacement; it does not prevent
 preparing the descriptor, diff, or validation evidence.
+
+## Using `ares-project-mcp` for AI-guided authoring
+
+When editing an external FTC or FRC team repository from an AI assistant connected to `ares-project-mcp`:
+- Start with `ares_project_inspect` / `ares_project_validate` (or `ares://project/summary` & `ares://schemas/{documentKind}`).
+- Author descriptors through `ares_subsystem_mutate` / `ares_descriptor_mutate` rather than hand-editing `.ares/` JSON directly so compiler IR validation and JGit `refs/ares-mcp/snapshots/*` rollback protection apply automatically.
+- Reconcile plumbing with `ares_codegen_reconcile` (`PREVIEW` -> `APPLY` with `confirmationToken` if starters change), scaffold `USER-OWNED` adapters via `ares_kotlin_scaffold`, and verify `0` errors in `ares_code_audit`.

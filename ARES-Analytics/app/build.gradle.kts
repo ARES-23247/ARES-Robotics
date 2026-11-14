@@ -101,8 +101,9 @@ dependencies {
     implementation(compose.material3)
     implementation(compose.materialIconsExtended)
 
-    // Shared module
+    // Shared & MCP modules
     implementation(project(":shared"))
+    implementation(project(":mcp"))
     
     // Versioned ARES libraries from the GitHub Maven release channel (or -ParesRepository for validation).
     implementation(platform("org.aresfirst.ares:ares-bom:$aresVersion"))
@@ -606,10 +607,37 @@ compose.desktop {
 val packagedProjectFixture = layout.projectDirectory.dir("src/test/resources/packaged-runtime-project")
 val mainDistributableRoot = layout.buildDirectory.dir("compose/binaries/main/app")
 
+val verifyDistributableMcpSmoke = tasks.register<Exec>("verifyDistributableMcpSmoke") {
+    group = "verification"
+    description = "Verifies that the trimmed native launcher serves FULL and COMPACT MCP toolsets cleanly."
+    dependsOn("createDistributable")
+
+    doFirst {
+        val root = mainDistributableRoot.get().asFile
+        val osName = System.getProperty("os.name").lowercase()
+        val executable = when {
+            osName.contains("win") -> root.resolve("$aresProductName/$aresProductName.exe")
+            osName.contains("mac") -> root.resolve("$aresProductName.app/Contents/MacOS/$aresProductName")
+            else -> root.resolve("$aresProductName/bin/$aresProductName")
+        }
+        require(executable.isFile) { "Native $aresProductName launcher was not created at $executable" }
+        val smokeBridgeDir = layout.buildDirectory.dir("tmp/verifyDistributableMcpSmoke").get().asFile
+        smokeBridgeDir.deleteRecursively()
+        smokeBridgeDir.mkdirs()
+        commandLine(
+            executable.absolutePath,
+            "--verify-mcp-smoke",
+            "--bridge-dir",
+            smokeBridgeDir.absolutePath,
+        )
+    }
+}
+
 val verifyDistributableProjectLoading = tasks.register<Exec>("verifyDistributableProjectLoading") {
     group = "verification"
     description = "Loads every canonical ARES project document through the trimmed native runtime."
     dependsOn("createDistributable")
+    dependsOn(verifyDistributableMcpSmoke)
     inputs.dir(packagedProjectFixture)
 
     doFirst {

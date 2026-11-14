@@ -4,12 +4,15 @@ import androidx.compose.runtime.Composable
 import com.ares.analytics.service.ManagedToolchainService
 import com.ares.analytics.service.OAuthService
 import com.ares.analytics.service.SyncEngineService
+import com.ares.analytics.shared.mcp.McpBridgeDescriptor
 import com.ares.analytics.shared.models.WorkspaceConfig
 import com.ares.analytics.shared.models.IntegrationWorkspaceIdentity
 import com.ares.analytics.domain.navigation.NavigationTarget
 import com.ares.analytics.viewmodel.ProfileViewModel
 import com.ares.analytics.viewmodel.ProjectBackupViewModel
 import com.ares.analytics.viewmodel.integrationcenter.IntegrationCenterViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 
 /** Dependencies intentionally limited to workspace preferences, backup, and external integrations. */
 internal data class WorkspaceServicesFeatureScope(
@@ -19,6 +22,7 @@ internal data class WorkspaceServicesFeatureScope(
     val toolchains: ManagedToolchainService,
     val sync: SyncEngineService,
     val oauth: OAuthService,
+    val mcpBridgeDescriptor: StateFlow<McpBridgeDescriptor?> = MutableStateFlow(null),
 )
 
 @Composable
@@ -34,6 +38,7 @@ internal fun WorkspaceServicesRouteHost(
             managedToolchainService = scope.toolchains,
             config = workspace,
             onConfigChanged = saveWorkspace,
+            mcpBridgeDescriptor = scope.mcpBridgeDescriptor,
         )
         true
     }

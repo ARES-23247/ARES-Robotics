@@ -115,6 +115,12 @@ class ServiceRegistry {
             tuningRepository = tuningProfileRepository,
         )
     }
+
+    val mcpBridgeServer by lazy {
+        com.ares.analytics.desktop.McpBridgeServer(
+            projectSession = projectSession,
+        )
+    }
     val projectExecutionCoordinator by lazy {
         com.ares.analytics.service.project.ProjectExecutionCoordinator(
             projectSession,
@@ -263,6 +269,12 @@ class ServiceRegistry {
         databaseService
         if (disposed.get()) throw CancellationException("Studio is shutting down")
         runBlocking { notificationIntegrationService.start() }
+        if (disposed.get()) throw CancellationException("Studio is shutting down")
+        runCatching { runBlocking { mcpBridgeServer.start() } }
+            .onFailure {
+                org.slf4j.LoggerFactory.getLogger(ServiceRegistry::class.java)
+                    .warn("Failed to start local MCP bridge server", it)
+            }
     }
 
     /** Reject new workspace work and neutralize input before waiting for Compose cancellation. */
@@ -373,6 +385,9 @@ class ServiceRegistry {
                 }
                 if (lazyFieldInitialized(::notificationIntegrationService)) {
                     notificationIntegrationService.closeAndJoin()
+                }
+                if (lazyFieldInitialized(::mcpBridgeServer)) {
+                    runCatching { mcpBridgeServer.close() }
                 }
                 if (lazyFieldInitialized(::robotLogIngestionService)) {
                     robotLogIngestionService.close()

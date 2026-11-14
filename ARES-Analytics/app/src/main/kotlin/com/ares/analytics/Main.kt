@@ -51,6 +51,10 @@ import kotlin.system.exitProcess
  * Compose owns visibility and always-on-top state). This file only wires them together.
  */
 fun main(args: Array<String>) {
+    com.ares.analytics.mcp.AresMcpMain.runIfMcpCommand(args)?.let { exitCode ->
+        if (exitCode != 0) exitProcess(exitCode)
+        return
+    }
     runPackagedProjectValidationCommand(args)?.let { exitCode ->
         if (exitCode != 0) exitProcess(exitCode)
         return
