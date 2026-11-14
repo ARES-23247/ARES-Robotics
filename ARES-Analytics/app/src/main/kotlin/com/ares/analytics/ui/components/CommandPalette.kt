@@ -20,9 +20,11 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.AccountTree
+import androidx.compose.material.icons.filled.Analytics
 import androidx.compose.material.icons.filled.BatteryChargingFull
 import androidx.compose.material.icons.filled.Book
 import androidx.compose.material.icons.filled.Build
+import androidx.compose.material.icons.filled.Flag
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Route
@@ -59,6 +61,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.ares.analytics.domain.navigation.MatchStrategySubTab
 import com.ares.analytics.domain.navigation.NavigationTarget
 import com.ares.analytics.domain.navigation.PitOperationsSubTab
 import com.ares.analytics.ui.theme.AresAmber
@@ -80,6 +83,8 @@ fun CommandPalette(
     projectItems: List<CommandPaletteProjectItem>? = null,
     recentTargets: List<NavigationTarget> = emptyList(),
     pitTabItems: List<CommandPalettePitTabItem> = defaultPitOperationsTabItems(),
+    strategyTabItems: List<CommandPaletteStrategyTabItem> = defaultMatchStrategyTabItems(),
+    strategyTeams: List<CommandPaletteStrategyTeamItem> = emptyList(),
     batteryItems: List<CommandPaletteBatteryItem> = emptyList(),
     matchItems: List<CommandPaletteMatchItem> = emptyList(),
     runItems: List<CommandPaletteRunItem> = emptyList(),
@@ -91,6 +96,8 @@ fun CommandPalette(
     onOpenNotebookEntry: (String) -> Unit = {},
     onOpenProjectItem: ((CommandPaletteProjectItem) -> Unit)? = null,
     onOpenPitTab: (PitOperationsSubTab) -> Unit = { onNavigate(NavigationTarget.PIT_DIAGNOSTICS) },
+    onOpenStrategyTab: (MatchStrategySubTab) -> Unit = { onNavigate(NavigationTarget.MATCH_STRATEGY) },
+    onOpenScoutedTeam: (String) -> Unit = { onNavigate(NavigationTarget.MATCH_STRATEGY) },
     onOpenBattery: (String) -> Unit = { onNavigate(NavigationTarget.PIT_DIAGNOSTICS) },
     onOpenScheduledMatch: (Int) -> Unit = { onNavigate(NavigationTarget.PIT_DIAGNOSTICS) },
 ) {
@@ -113,6 +120,8 @@ fun CommandPalette(
                 projectItems = projectItems,
                 recentTargets = recentTargets,
                 pitTabItems = pitTabItems,
+                strategyTabItems = strategyTabItems,
+                strategyTeams = strategyTeams,
                 batteryItems = batteryItems,
                 matchItems = matchItems,
                 runItems = runItems,
@@ -124,6 +133,8 @@ fun CommandPalette(
                 onOpenNotebookEntry = onOpenNotebookEntry,
                 onOpenProjectItem = onOpenProjectItem,
                 onOpenPitTab = onOpenPitTab,
+                onOpenStrategyTab = onOpenStrategyTab,
+                onOpenScoutedTeam = onOpenScoutedTeam,
                 onOpenBattery = onOpenBattery,
                 onOpenScheduledMatch = onOpenScheduledMatch,
             )
@@ -141,6 +152,8 @@ internal fun CommandPaletteSurfaceContent(
     projectItems: List<CommandPaletteProjectItem>? = null,
     recentTargets: List<NavigationTarget> = emptyList(),
     pitTabItems: List<CommandPalettePitTabItem> = defaultPitOperationsTabItems(),
+    strategyTabItems: List<CommandPaletteStrategyTabItem> = defaultMatchStrategyTabItems(),
+    strategyTeams: List<CommandPaletteStrategyTeamItem> = emptyList(),
     batteryItems: List<CommandPaletteBatteryItem> = emptyList(),
     matchItems: List<CommandPaletteMatchItem> = emptyList(),
     runItems: List<CommandPaletteRunItem> = emptyList(),
@@ -152,6 +165,8 @@ internal fun CommandPaletteSurfaceContent(
     onOpenNotebookEntry: (String) -> Unit = {},
     onOpenProjectItem: ((CommandPaletteProjectItem) -> Unit)? = null,
     onOpenPitTab: (PitOperationsSubTab) -> Unit = { onNavigate(NavigationTarget.PIT_DIAGNOSTICS) },
+    onOpenStrategyTab: (MatchStrategySubTab) -> Unit = { onNavigate(NavigationTarget.MATCH_STRATEGY) },
+    onOpenScoutedTeam: (String) -> Unit = { onNavigate(NavigationTarget.MATCH_STRATEGY) },
     onOpenBattery: (String) -> Unit = { onNavigate(NavigationTarget.PIT_DIAGNOSTICS) },
     onOpenScheduledMatch: (Int) -> Unit = { onNavigate(NavigationTarget.PIT_DIAGNOSTICS) },
 ) {
@@ -169,6 +184,8 @@ internal fun CommandPaletteSurfaceContent(
         recentTargets,
         allProjectItems,
         pitTabItems,
+        strategyTabItems,
+        strategyTeams,
         batteryItems,
         matchItems,
         runItems,
@@ -180,6 +197,8 @@ internal fun CommandPaletteSurfaceContent(
             recentTargets = recentTargets,
             projectItems = allProjectItems,
             pitTabItems = pitTabItems,
+            strategyTabItems = strategyTabItems,
+            strategyTeamItems = strategyTeams,
             batteryItems = batteryItems,
             matchItems = matchItems,
             runItems = runItems,
@@ -204,6 +223,8 @@ internal fun CommandPaletteSurfaceContent(
         when (entry) {
             is CommandPaletteUnifiedEntry.RecentDestination -> onNavigate(entry.target)
             is CommandPaletteUnifiedEntry.PitTab -> onOpenPitTab(entry.item.tab)
+            is CommandPaletteUnifiedEntry.StrategyTab -> onOpenStrategyTab(entry.item.tab)
+            is CommandPaletteUnifiedEntry.ScoutedTeam -> onOpenScoutedTeam(entry.item.teamNumber)
             is CommandPaletteUnifiedEntry.BatteryPack -> onOpenBattery(entry.item.batteryId)
             is CommandPaletteUnifiedEntry.ScheduledMatch -> onOpenScheduledMatch(entry.item.matchNumber)
             is CommandPaletteUnifiedEntry.RunReplay -> onOpenRun(entry.item.sessionId)
@@ -361,6 +382,8 @@ private fun CommandPaletteEntryRow(
 private fun paletteEntryVisuals(entry: CommandPaletteUnifiedEntry): Pair<ImageVector, Color> = when (entry) {
     is CommandPaletteUnifiedEntry.RecentDestination -> Icons.Default.History to AresCyan
     is CommandPaletteUnifiedEntry.PitTab -> Icons.Default.SettingsInputComponent to AresAmber
+    is CommandPaletteUnifiedEntry.StrategyTab -> Icons.Default.Analytics to AresCyan
+    is CommandPaletteUnifiedEntry.ScoutedTeam -> Icons.Default.Flag to AresGold
     is CommandPaletteUnifiedEntry.BatteryPack -> Icons.Default.BatteryChargingFull to AresGreen
     is CommandPaletteUnifiedEntry.ScheduledMatch -> Icons.Default.Schedule to AresGold
     is CommandPaletteUnifiedEntry.RunReplay -> Icons.Default.PlayArrow to AresCyan

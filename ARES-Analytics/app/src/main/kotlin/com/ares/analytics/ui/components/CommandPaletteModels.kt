@@ -1,9 +1,14 @@
 package com.ares.analytics.ui.components
 
+import com.ares.analytics.domain.navigation.MatchStrategySubTab
 import com.ares.analytics.domain.navigation.NavigationTarget
 import com.ares.analytics.domain.navigation.PitOperationsSubTab
 import com.ares.analytics.domain.notebook.NotebookSectionParser
 import com.ares.analytics.domain.pit.BatteryHealthSummary
+import com.ares.analytics.domain.strategy.EventOprSnapshot
+import com.ares.analytics.domain.strategy.PitTeamProfile
+import com.ares.analytics.domain.strategy.TeamStandScoutingSummary
+import com.ares.analytics.domain.strategy.normalizeTeamNumber
 import com.ares.analytics.service.MatchInfo
 import com.ares.analytics.service.project.AresProjectDocuments
 import com.ares.analytics.shared.models.EngineeringNotebookEntry
@@ -65,6 +70,21 @@ data class CommandPaletteMatchItem(
     val keywords: List<String> = emptyList(),
 )
 
+data class CommandPaletteStrategyTabItem(
+    val tab: MatchStrategySubTab,
+    val label: String,
+    val subtitle: String,
+    val keywords: List<String> = emptyList(),
+)
+
+data class CommandPaletteStrategyTeamItem(
+    val teamNumber: String,
+    val label: String,
+    val subtitle: String,
+    val npOprLabel: String,
+    val keywords: List<String> = emptyList(),
+)
+
 sealed interface CommandPaletteUnifiedEntry {
     val key: String
     val title: String
@@ -97,6 +117,20 @@ sealed interface CommandPaletteUnifiedEntry {
         override val title: String = item.label
         override val subtitle: String = item.subtitle
         override val badge: String = "Schedule"
+    }
+
+    data class StrategyTab(val item: CommandPaletteStrategyTabItem) : CommandPaletteUnifiedEntry {
+        override val key: String = "strategy-tab-${item.tab.name}"
+        override val title: String = item.label
+        override val subtitle: String = item.subtitle
+        override val badge: String = "Strategy"
+    }
+
+    data class ScoutedTeam(val item: CommandPaletteStrategyTeamItem) : CommandPaletteUnifiedEntry {
+        override val key: String = "scouted-team-${item.teamNumber}"
+        override val title: String = item.label
+        override val subtitle: String = item.subtitle
+        override val badge: String = item.npOprLabel
     }
 
     data class RunReplay(val item: CommandPaletteRunItem, val isRecent: Boolean = false) : CommandPaletteUnifiedEntry {
@@ -132,6 +166,75 @@ sealed interface CommandPaletteUnifiedEntry {
         override val title: String = term
         override val subtitle: String = definition
         override val badge: String = "Glossary"
+    }
+}
+
+fun defaultMatchStrategyTabItems(): List<CommandPaletteStrategyTabItem> = listOf(
+    CommandPaletteStrategyTabItem(
+        tab = MatchStrategySubTab.SESSION_DEBRIEF,
+        label = "Strategy: ${MatchStrategySubTab.SESSION_DEBRIEF.label}",
+        subtitle = "Spatial field heatmap, multi-run progression & replay-linked debrief",
+        keywords = listOf("strategy", "debrief", "heatmap", "session"),
+    ),
+    CommandPaletteStrategyTabItem(
+        tab = MatchStrategySubTab.OPR_SCOUTING,
+        label = "Strategy: ${MatchStrategySubTab.OPR_SCOUTING.label}",
+        subtitle = "NP-OPR / DPR / ccWM leaderboard, score sync & multi-scout merge bundle",
+        keywords = listOf("strategy", "opr", "ccwm", "scouting", "dpr", "np-opr", "merge"),
+    ),
+    CommandPaletteStrategyTabItem(
+        tab = MatchStrategySubTab.MATCHUP_BRIEFING,
+        label = "Strategy: ${MatchStrategySubTab.MATCHUP_BRIEFING.label}",
+        subtitle = "Pre-match Red vs Blue NP projections & partner auto-zone collision alerts",
+        keywords = listOf("strategy", "briefing", "matchup", "projection", "auto zone"),
+    ),
+    CommandPaletteStrategyTabItem(
+        tab = MatchStrategySubTab.ALLIANCE_PICKLIST,
+        label = "Strategy: ${MatchStrategySubTab.ALLIANCE_PICKLIST.label}",
+        subtitle = "Live alliance selection picklist, weights, pins & printable floor sheet",
+        keywords = listOf("strategy", "picklist", "alliance", "selection", "draft", "captain"),
+    ),
+)
+
+fun buildCommandPaletteStrategyTeamItems(
+    oprSnapshot: EventOprSnapshot,
+    pitProfiles: List<PitTeamProfile>,
+    standSummaries: Map<String, TeamStandScoutingSummary>,
+): List<CommandPaletteStrategyTeamItem> {
+    val pitByTeam = pitProfiles.associateBy { normalizeTeamNumber(it.teamNumber) }
+    val teams = (oprSnapshot.metricsByTeam.keys + pitByTeam.keys + standSummaries.keys)
+        .map(::normalizeTeamNumber)
+        .filter(String::isNotBlank)
+        .distinct()
+        .sortedWith(
+            compareByDescending<String> { oprSnapshot.metricsByTeam[it]?.npOpr ?: Double.NEGATIVE_INFINITY }
+                .thenBy { it.toIntOrNull() ?: Int.MAX_VALUE }
+                .thenBy { it },
+        )
+    return teams.map { team ->
+        val opr = oprSnapshot.metricsByTeam[team]
+        val pit = pitByTeam[team]
+        val stand = standSummaries[team]
+        val npText = opr?.npOpr?.let { "${String.format(Locale.US, "%.1f", it)} NP-OPR" } ?: "Scouted"
+        val ccwmText = opr?.ccwm?.let { " · ccWM ${String.format(Locale.US, "%+.1f", it)}" }.orEmpty()
+        val zoneText = pit?.preferredAutoZone?.label?.let { " · Auto: $it" }.orEmpty()
+        val standText = stand?.let { " · ${it.observationsCount} stand log(s)" }.orEmpty()
+        CommandPaletteStrategyTeamItem(
+            teamNumber = team,
+            label = "Team #$team — ${pit?.drivetrain?.label ?: "Competition Scouting"}",
+            subtitle = "$npText$ccwmText$zoneText$standText",
+            npOprLabel = npText,
+            keywords = listOfNotNull(
+                "team",
+                "team $team",
+                team,
+                "opr",
+                "picklist",
+                pit?.drivetrain?.label,
+                pit?.preferredAutoZone?.label,
+                pit?.primaryRole?.label,
+            ),
+        )
     }
 }
 
@@ -326,6 +429,33 @@ fun filterCommandPalettePitTabs(
     }
 }
 
+fun filterCommandPaletteStrategyTabs(
+    query: String,
+    items: List<CommandPaletteStrategyTabItem>,
+): List<CommandPaletteStrategyTabItem> {
+    val normalized = query.trim().lowercase(Locale.US)
+    if (normalized.isEmpty()) return emptyList()
+    return items.filter { item ->
+        item.label.lowercase(Locale.US).contains(normalized) ||
+            item.subtitle.lowercase(Locale.US).contains(normalized) ||
+            item.keywords.any { it.lowercase(Locale.US).contains(normalized) }
+    }
+}
+
+fun filterCommandPaletteStrategyTeams(
+    query: String,
+    items: List<CommandPaletteStrategyTeamItem>,
+): List<CommandPaletteStrategyTeamItem> {
+    val normalized = query.trim().lowercase(Locale.US)
+    if (normalized.isEmpty()) return emptyList()
+    return items.filter { item ->
+        item.teamNumber.lowercase(Locale.US).contains(normalized) ||
+            item.label.lowercase(Locale.US).contains(normalized) ||
+            item.subtitle.lowercase(Locale.US).contains(normalized) ||
+            item.keywords.any { it.lowercase(Locale.US).contains(normalized) }
+    }.take(8)
+}
+
 fun defaultRobotStudioStageItems(): List<CommandPaletteProjectItem> = listOf(
     CommandPaletteProjectItem(
         id = "stage:identity",
@@ -471,6 +601,8 @@ fun buildUnifiedCommandPaletteEntries(
     recentTargets: List<NavigationTarget> = emptyList(),
     projectItems: List<CommandPaletteProjectItem> = emptyList(),
     pitTabItems: List<CommandPalettePitTabItem> = defaultPitOperationsTabItems(),
+    strategyTabItems: List<CommandPaletteStrategyTabItem> = defaultMatchStrategyTabItems(),
+    strategyTeamItems: List<CommandPaletteStrategyTeamItem> = emptyList(),
     batteryItems: List<CommandPaletteBatteryItem> = emptyList(),
     matchItems: List<CommandPaletteMatchItem> = emptyList(),
     runItems: List<CommandPaletteRunItem> = emptyList(),
@@ -483,13 +615,17 @@ fun buildUnifiedCommandPaletteEntries(
         notebookItems.take(3).forEach { add(CommandPaletteUnifiedEntry.NotebookNote(it, isRecent = true)) }
         batteryItems.take(2).forEach { add(CommandPaletteUnifiedEntry.BatteryPack(it)) }
         matchItems.take(2).forEach { add(CommandPaletteUnifiedEntry.ScheduledMatch(it)) }
+        strategyTeamItems.take(2).forEach { add(CommandPaletteUnifiedEntry.ScoutedTeam(it)) }
         pitTabItems.forEach { add(CommandPaletteUnifiedEntry.PitTab(it)) }
+        strategyTabItems.forEach { add(CommandPaletteUnifiedEntry.StrategyTab(it)) }
         projectItems.filter { it.category == CommandPaletteProjectCategory.STAGE }
             .forEach { add(CommandPaletteUnifiedEntry.ProjectEntity(it)) }
         availablePaletteTargets(developerMode)
             .filterNot { it in recentTargets }
             .forEach { add(CommandPaletteUnifiedEntry.ScreenDestination(it)) }
     } else {
+        filterCommandPaletteStrategyTeams(trimmed, strategyTeamItems)
+            .forEach { add(CommandPaletteUnifiedEntry.ScoutedTeam(it)) }
         filterCommandPaletteBatteries(trimmed, batteryItems)
             .forEach { add(CommandPaletteUnifiedEntry.BatteryPack(it)) }
         filterCommandPaletteMatches(trimmed, matchItems)
@@ -498,6 +634,8 @@ fun buildUnifiedCommandPaletteEntries(
             .forEach { add(CommandPaletteUnifiedEntry.RunReplay(it)) }
         filterCommandPaletteNotebookEntries(trimmed, notebookItems)
             .forEach { add(CommandPaletteUnifiedEntry.NotebookNote(it)) }
+        filterCommandPaletteStrategyTabs(trimmed, strategyTabItems)
+            .forEach { add(CommandPaletteUnifiedEntry.StrategyTab(it)) }
         filterCommandPalettePitTabs(trimmed, pitTabItems)
             .forEach { add(CommandPaletteUnifiedEntry.PitTab(it)) }
         filterCommandPaletteProjectItems(trimmed, projectItems)

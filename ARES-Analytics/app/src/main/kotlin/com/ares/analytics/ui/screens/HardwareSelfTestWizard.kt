@@ -213,6 +213,7 @@ fun HardwareSelfTestWizard(
     onRefreshEventSchedule: () -> Unit = {},
     onMatchesUpdated: (List<MatchInfo>) -> Unit = {},
     onOpenMatchStrategy: () -> Unit = {},
+    onOpenMatchupBriefing: ((Int) -> Unit)? = null,
     onOpenRunHistoryWithTag: (String) -> Unit = {},
     onOpenNotebookEntry: ((String) -> Unit)? = null,
     pitDeepLink: PitDeepLinkRequest = PitDeepLinkRequest(),
@@ -647,6 +648,7 @@ fun HardwareSelfTestWizard(
                     activeTab = 0
                 },
                 onOpenMatchStrategy = onOpenMatchStrategy,
+                onOpenMatchupBriefing = onOpenMatchupBriefing,
             )
 
             else -> PitAlertThresholdsTab(

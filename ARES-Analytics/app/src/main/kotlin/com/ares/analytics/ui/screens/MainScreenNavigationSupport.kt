@@ -9,9 +9,11 @@ import androidx.compose.ui.input.key.isShiftPressed
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.type
 import com.ares.analytics.di.ServiceRegistry
+import com.ares.analytics.domain.navigation.MatchStrategySubTab
 import com.ares.analytics.domain.navigation.NavigationTarget
 import com.ares.analytics.domain.navigation.PitDeepLinkRequest
 import com.ares.analytics.domain.navigation.PitOperationsSubTab
+import com.ares.analytics.domain.navigation.StrategyDeepLinkRequest
 import com.ares.analytics.service.project.ProjectExecutionCommand
 import com.ares.analytics.ui.components.CommandPaletteProjectCategory
 import com.ares.analytics.ui.components.CommandPaletteProjectItem
@@ -157,6 +159,7 @@ internal fun createMainScreenOverlayActions(
     clearDeployAwaitingConfirmation: () -> Unit,
     dismissDeployDialog: () -> Unit,
     requestPitDeepLink: (PitOperationsSubTab, String?, Int?) -> Unit,
+    requestStrategyDeepLink: (MatchStrategySubTab, String?, Int?) -> Unit = { _, _, _ -> },
 ): MainScreenOverlayActions = MainScreenOverlayActions(
     navigate = { destination ->
         if (destination == NavigationTarget.ACADEMY) {
@@ -201,6 +204,19 @@ internal fun createMainScreenOverlayActions(
         requestPitDeepLink(tab, null, null)
         mainViewModel.onIntent(MainIntent.SetActiveNav(NavigationTarget.PIT_DIAGNOSTICS, tab.label))
     },
+    openStrategyTab = { tab ->
+        requestStrategyDeepLink(tab, null, null)
+        mainViewModel.onIntent(MainIntent.SetActiveNav(NavigationTarget.MATCH_STRATEGY, tab.label))
+    },
+    openScoutedTeam = { team ->
+        requestStrategyDeepLink(MatchStrategySubTab.OPR_SCOUTING, team, null)
+        mainViewModel.onIntent(
+            MainIntent.SetActiveNav(
+                NavigationTarget.MATCH_STRATEGY,
+                "${MatchStrategySubTab.OPR_SCOUTING.label} · Team #$team",
+            ),
+        )
+    },
     openBatteryPack = { batteryId ->
         requestPitDeepLink(PitOperationsSubTab.BATTERY_FLEET, batteryId, null)
         mainViewModel.onIntent(
@@ -241,6 +257,18 @@ internal fun nextPitDeepLink(
 ): PitDeepLinkRequest = PitDeepLinkRequest(
     tab = tab,
     highlightedBatteryId = batteryId,
+    highlightedMatchNumber = matchNumber,
+    nonce = previous.nonce + 1,
+)
+
+internal fun nextStrategyDeepLink(
+    previous: StrategyDeepLinkRequest,
+    tab: MatchStrategySubTab,
+    teamNumber: String? = null,
+    matchNumber: Int? = null,
+): StrategyDeepLinkRequest = StrategyDeepLinkRequest(
+    tab = tab,
+    highlightedTeamNumber = teamNumber,
     highlightedMatchNumber = matchNumber,
     nonce = previous.nonce + 1,
 )

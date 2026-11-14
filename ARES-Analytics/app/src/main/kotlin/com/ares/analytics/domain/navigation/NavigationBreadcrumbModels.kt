@@ -28,6 +28,34 @@ data class PitDeepLinkRequest(
     val nonce: Int = 0,
 )
 
+/** Named tabs exposed inside the Competition Strategy Hub (`NavigationTarget.MATCH_STRATEGY`). */
+enum class MatchStrategySubTab(
+    val index: Int,
+    val label: String,
+) {
+    SESSION_DEBRIEF(0, "Session Debrief"),
+    OPR_SCOUTING(1, "OPR & Scouting"),
+    MATCHUP_BRIEFING(2, "Matchup Briefing"),
+    ALLIANCE_PICKLIST(3, "Alliance Picklist"),
+    ;
+
+    companion object {
+        fun fromIndex(index: Int): MatchStrategySubTab =
+            entries.firstOrNull { it.index == index } ?: SESSION_DEBRIEF
+    }
+}
+
+/**
+ * One-shot deep-link request targeting a specific Match Strategy sub-tab, scouted team, or scheduled match.
+ * Incrementing [nonce] triggers tab/entity focus inside the live Match Strategy view.
+ */
+data class StrategyDeepLinkRequest(
+    val tab: MatchStrategySubTab = MatchStrategySubTab.SESSION_DEBRIEF,
+    val highlightedTeamNumber: String? = null,
+    val highlightedMatchNumber: Int? = null,
+    val nonce: Int = 0,
+)
+
 /** One segment of the top header contextual breadcrumb trail. */
 data class BreadcrumbSegment(
     val label: String,

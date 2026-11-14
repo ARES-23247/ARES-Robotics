@@ -579,6 +579,47 @@ class EngineeringNotebookCaptureService(
         )
     }
 
+    suspend fun capturePreMatchStrategyPlan(
+        workspace: WorkspaceConfig,
+        report: com.ares.analytics.domain.strategy.MatchupBriefingReport,
+        authorId: String? = null,
+    ): EngineeringNotebookEntry {
+        val formatted = StrategyNotebookCaptureFormatter.formatPreMatchBriefing(workspace, report)
+        return saveEditedEntry(
+            workspace = workspace,
+            entryId = "matchup-plan-${formatted.entryIdSlug.take(36)}",
+            entryType = NotebookEntryType.ENGINEERING_NOTE,
+            markdownBody = formatted.markdownBody,
+            evidence = formatted.evidence,
+            authorId = authorId,
+            externalUpdatesAllowed = true,
+        )
+    }
+
+    suspend fun captureAlliancePicklistRationale(
+        workspace: WorkspaceConfig,
+        preset: com.ares.analytics.domain.strategy.PicklistWeightPreset,
+        confidence: com.ares.analytics.domain.strategy.OprSampleConfidence,
+        rows: List<com.ares.analytics.domain.strategy.RankedPicklistTeamRow>,
+        authorId: String? = null,
+    ): EngineeringNotebookEntry {
+        val formatted = StrategyNotebookCaptureFormatter.formatAlliancePicklistRationale(
+            workspace = workspace,
+            preset = preset,
+            confidence = confidence,
+            rows = rows,
+        )
+        return saveEditedEntry(
+            workspace = workspace,
+            entryId = "picklist-${formatted.entryIdSlug.take(38)}",
+            entryType = NotebookEntryType.ENGINEERING_NOTE,
+            markdownBody = formatted.markdownBody,
+            evidence = formatted.evidence,
+            authorId = authorId,
+            externalUpdatesAllowed = true,
+        )
+    }
+
     suspend fun buildWorkspacePortfolioMarkdown(
         workspace: WorkspaceConfig,
         entries: List<EngineeringNotebookEntry>,
