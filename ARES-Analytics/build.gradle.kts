@@ -181,9 +181,11 @@ subprojects {
     // A running desktop app uses an isolated runtime classpath, so compilation and clean tasks
     // must be safe while it is open. Only a new run owns replacement of an existing app process;
     // coupling clean to killExisting made unrelated agent rebuilds silently close the UI.
-    tasks.matching { it.name == "run" }.configureEach {
-        if (!project.hasProperty("fromRootRun") && !project.hasProperty("skipKill")) {
-            dependsOn(":killExisting")
+    if (name != "mcp") {
+        tasks.matching { it.name == "run" }.configureEach {
+            if (!project.hasProperty("fromRootRun") && !project.hasProperty("skipKill")) {
+                dependsOn(":killExisting")
+            }
         }
     }
 
@@ -200,7 +202,7 @@ subprojects {
 
     val lineCoverageFloor = when (name) {
         "app" -> 38
-        "gateway", "shared" -> 54
+        "gateway", "shared", "mcp" -> 54
         else -> null
     }
     if (lineCoverageFloor != null) {
@@ -235,7 +237,7 @@ subprojects {
 }
 
 val largeProductionKotlinBaseline = file("config/maintainability/large-production-kotlin-baseline.txt")
-val productionKotlinRoots = listOf(file("app/src/main"), file("shared/src/main"), file("gateway/src/main"))
+val productionKotlinRoots = listOf(file("app/src/main"), file("shared/src/main"), file("gateway/src/main"), file("mcp/src/main"))
 
 val verifyProductionKotlinFileSizes = tasks.register("verifyProductionKotlinFileSizes") {
     group = "verification"
@@ -288,9 +290,11 @@ tasks.register("studioReleaseVerification") {
         verifyReleaseVersionAlignment,
         verifyProductionKotlinFileSizes,
         ":shared:test",
+        ":mcp:test",
         ":gateway:test",
         ":app:test",
         ":shared:koverVerify",
+        ":mcp:koverVerify",
         ":gateway:koverVerify",
         ":app:koverVerify",
         ":app:dashboardPerformanceBaseline",
@@ -310,15 +314,20 @@ tasks.register("killExisting") {
         // not an application identity; killing every listener on 5810/8080 could
         // terminate an unrelated simulator or developer service.
         try {
-            val jpsProc = ProcessBuilder("jps", "-l").start()
+            val jpsProc = ProcessBuilder("jps", "-lm").start()
             val reader = java.io.BufferedReader(java.io.InputStreamReader(jpsProc.inputStream))
             var line: String?
             while (reader.readLine().also { line = it } != null) {
-                val parts = line!!.split("\\s+".toRegex()).filter { it.isNotEmpty() }
+                val currentLine = line ?: continue
+                val parts = currentLine.split("\\s+".toRegex()).filter { it.isNotEmpty() }
                 if (parts.size >= 2) {
                     val pidString = parts[0]
                     val mainClass = parts[1]
-                    if (mainClass.contains("com.ares.analytics")) {
+                    if (
+                        mainClass.contains("com.ares.analytics") &&
+                        !mainClass.contains("com.ares.analytics.mcp") &&
+                        !currentLine.contains("--mcp-stdio")
+                    ) {
                         val pid = pidString.toLongOrNull()
                         if (pid != null && pid != ProcessHandle.current().pid()) {
                             ProcessHandle.of(pid).ifPresent { handle ->

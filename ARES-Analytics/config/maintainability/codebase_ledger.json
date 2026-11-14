@@ -2,7 +2,7 @@
   "schemaVersion": 2,
   "scope": "Tracked production Kotlin file sizes; no review or test coverage claim.",
   "summary": {
-    "totalProductionKotlinFiles": 1226,
+    "totalProductionKotlinFiles": 1250,
     "grandfatheredFiles": 24,
     "violationsOverLimit": 0,
     "microfilesRemaining": 20,
@@ -12,7 +12,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/Main.kt",
       "product": "ARES-Analytics",
-      "lines": 258,
+      "lines": 262,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -110,6 +110,16 @@
       "isMicrofile": false
     },
     {
+      "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/desktop/McpBridgeServer.kt",
+      "product": "ARES-Analytics",
+      "lines": 331,
+      "lineLimit": 750,
+      "effectiveLimit": 750,
+      "grandfathered": false,
+      "compliant": true,
+      "isMicrofile": false
+    },
+    {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/desktop/NativeWindowProbe.kt",
       "product": "ARES-Analytics",
       "lines": 60,
@@ -122,7 +132,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/di/ServiceRegistry.kt",
       "product": "ARES-Analytics",
-      "lines": 477,
+      "lines": 492,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -5192,7 +5202,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/screens/MainScreenScopes.kt",
       "product": "ARES-Analytics",
-      "lines": 315,
+      "lines": 316,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -5270,6 +5280,16 @@
       "isMicrofile": false
     },
     {
+      "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/screens/ProfileMcpAssistantSection.kt",
+      "product": "ARES-Analytics",
+      "lines": 322,
+      "lineLimit": 750,
+      "effectiveLimit": 750,
+      "grandfathered": false,
+      "compliant": true,
+      "isMicrofile": false
+    },
+    {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/screens/ProfilePreferenceSections.kt",
       "product": "ARES-Analytics",
       "lines": 393,
@@ -5292,7 +5312,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/screens/ProfileScreen.kt",
       "product": "ARES-Analytics",
-      "lines": 345,
+      "lines": 356,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -5472,7 +5492,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/screens/WorkspaceServicesRouteHost.kt",
       "product": "ARES-Analytics",
-      "lines": 71,
+      "lines": 76,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -6740,6 +6760,216 @@
       "isMicrofile": true
     },
     {
+      "path": "ARES-Analytics/mcp/src/main/kotlin/com/ares/analytics/mcp/AresMcpMain.kt",
+      "product": "ARES-Analytics",
+      "lines": 304,
+      "lineLimit": 750,
+      "effectiveLimit": 750,
+      "grandfathered": false,
+      "compliant": true,
+      "isMicrofile": false
+    },
+    {
+      "path": "ARES-Analytics/mcp/src/main/kotlin/com/ares/analytics/mcp/AresMcpServerFactory.kt",
+      "product": "ARES-Analytics",
+      "lines": 61,
+      "lineLimit": 750,
+      "effectiveLimit": 750,
+      "grandfathered": false,
+      "compliant": true,
+      "isMicrofile": false
+    },
+    {
+      "path": "ARES-Analytics/mcp/src/main/kotlin/com/ares/analytics/mcp/audit/GcAndClockRules.kt",
+      "product": "ARES-Analytics",
+      "lines": 106,
+      "lineLimit": 750,
+      "effectiveLimit": 750,
+      "grandfathered": false,
+      "compliant": true,
+      "isMicrofile": false
+    },
+    {
+      "path": "ARES-Analytics/mcp/src/main/kotlin/com/ares/analytics/mcp/audit/KotlinInvariantAuditor.kt",
+      "product": "ARES-Analytics",
+      "lines": 227,
+      "lineLimit": 750,
+      "effectiveLimit": 750,
+      "grandfathered": false,
+      "compliant": true,
+      "isMicrofile": false
+    },
+    {
+      "path": "ARES-Analytics/mcp/src/main/kotlin/com/ares/analytics/mcp/audit/SafetyAndCoordinateRules.kt",
+      "product": "ARES-Analytics",
+      "lines": 258,
+      "lineLimit": 750,
+      "effectiveLimit": 750,
+      "grandfathered": false,
+      "compliant": true,
+      "isMicrofile": false
+    },
+    {
+      "path": "ARES-Analytics/mcp/src/main/kotlin/com/ares/analytics/mcp/bridge/StudioBridgeClient.kt",
+      "product": "ARES-Analytics",
+      "lines": 197,
+      "lineLimit": 750,
+      "effectiveLimit": 750,
+      "grandfathered": false,
+      "compliant": true,
+      "isMicrofile": false
+    },
+    {
+      "path": "ARES-Analytics/mcp/src/main/kotlin/com/ares/analytics/mcp/engine/ConfirmationTokenManager.kt",
+      "product": "ARES-Analytics",
+      "lines": 169,
+      "lineLimit": 750,
+      "effectiveLimit": 750,
+      "grandfathered": false,
+      "compliant": true,
+      "isMicrofile": false
+    },
+    {
+      "path": "ARES-Analytics/mcp/src/main/kotlin/com/ares/analytics/mcp/engine/HeadlessProjectEngine.kt",
+      "product": "ARES-Analytics",
+      "lines": 563,
+      "lineLimit": 750,
+      "effectiveLimit": 750,
+      "grandfathered": false,
+      "compliant": true,
+      "isMicrofile": false
+    },
+    {
+      "path": "ARES-Analytics/mcp/src/main/kotlin/com/ares/analytics/mcp/engine/HeadlessProjectMutators.kt",
+      "product": "ARES-Analytics",
+      "lines": 637,
+      "lineLimit": 750,
+      "effectiveLimit": 750,
+      "grandfathered": false,
+      "compliant": true,
+      "isMicrofile": false
+    },
+    {
+      "path": "ARES-Analytics/mcp/src/main/kotlin/com/ares/analytics/mcp/engine/JGitSnapshotSafety.kt",
+      "product": "ARES-Analytics",
+      "lines": 287,
+      "lineLimit": 750,
+      "effectiveLimit": 750,
+      "grandfathered": false,
+      "compliant": true,
+      "isMicrofile": false
+    },
+    {
+      "path": "ARES-Analytics/mcp/src/main/kotlin/com/ares/analytics/mcp/engine/ProjectCodegenConventions.kt",
+      "product": "ARES-Analytics",
+      "lines": 272,
+      "lineLimit": 750,
+      "effectiveLimit": 750,
+      "grandfathered": false,
+      "compliant": true,
+      "isMicrofile": false
+    },
+    {
+      "path": "ARES-Analytics/mcp/src/main/kotlin/com/ares/analytics/mcp/prompts/AresMcpPrompts.kt",
+      "product": "ARES-Analytics",
+      "lines": 104,
+      "lineLimit": 750,
+      "effectiveLimit": 750,
+      "grandfathered": false,
+      "compliant": true,
+      "isMicrofile": false
+    },
+    {
+      "path": "ARES-Analytics/mcp/src/main/kotlin/com/ares/analytics/mcp/resources/AresMcpResources.kt",
+      "product": "ARES-Analytics",
+      "lines": 172,
+      "lineLimit": 750,
+      "effectiveLimit": 750,
+      "grandfathered": false,
+      "compliant": true,
+      "isMicrofile": false
+    },
+    {
+      "path": "ARES-Analytics/mcp/src/main/kotlin/com/ares/analytics/mcp/scaffold/FrcKotlinScaffoldRenderer.kt",
+      "product": "ARES-Analytics",
+      "lines": 164,
+      "lineLimit": 750,
+      "effectiveLimit": 750,
+      "grandfathered": false,
+      "compliant": true,
+      "isMicrofile": false
+    },
+    {
+      "path": "ARES-Analytics/mcp/src/main/kotlin/com/ares/analytics/mcp/scaffold/FtcKotlinScaffoldRenderer.kt",
+      "product": "ARES-Analytics",
+      "lines": 225,
+      "lineLimit": 750,
+      "effectiveLimit": 750,
+      "grandfathered": false,
+      "compliant": true,
+      "isMicrofile": false
+    },
+    {
+      "path": "ARES-Analytics/mcp/src/main/kotlin/com/ares/analytics/mcp/scaffold/MockIoTestScaffoldRenderer.kt",
+      "product": "ARES-Analytics",
+      "lines": 59,
+      "lineLimit": 750,
+      "effectiveLimit": 750,
+      "grandfathered": false,
+      "compliant": true,
+      "isMicrofile": false
+    },
+    {
+      "path": "ARES-Analytics/mcp/src/main/kotlin/com/ares/analytics/mcp/tools/AuditTools.kt",
+      "product": "ARES-Analytics",
+      "lines": 33,
+      "lineLimit": 750,
+      "effectiveLimit": 750,
+      "grandfathered": false,
+      "compliant": true,
+      "isMicrofile": false
+    },
+    {
+      "path": "ARES-Analytics/mcp/src/main/kotlin/com/ares/analytics/mcp/tools/CodegenAndScaffoldTools.kt",
+      "product": "ARES-Analytics",
+      "lines": 89,
+      "lineLimit": 750,
+      "effectiveLimit": 750,
+      "grandfathered": false,
+      "compliant": true,
+      "isMicrofile": false
+    },
+    {
+      "path": "ARES-Analytics/mcp/src/main/kotlin/com/ares/analytics/mcp/tools/DescriptorMutationTools.kt",
+      "product": "ARES-Analytics",
+      "lines": 275,
+      "lineLimit": 750,
+      "effectiveLimit": 750,
+      "grandfathered": false,
+      "compliant": true,
+      "isMicrofile": false
+    },
+    {
+      "path": "ARES-Analytics/mcp/src/main/kotlin/com/ares/analytics/mcp/tools/McpSchemaHelpers.kt",
+      "product": "ARES-Analytics",
+      "lines": 112,
+      "lineLimit": 750,
+      "effectiveLimit": 750,
+      "grandfathered": false,
+      "compliant": true,
+      "isMicrofile": false
+    },
+    {
+      "path": "ARES-Analytics/mcp/src/main/kotlin/com/ares/analytics/mcp/tools/ProjectLifecycleTools.kt",
+      "product": "ARES-Analytics",
+      "lines": 83,
+      "lineLimit": 750,
+      "effectiveLimit": 750,
+      "grandfathered": false,
+      "compliant": true,
+      "isMicrofile": false
+    },
+    {
       "path": "ARES-Analytics/shared/src/main/kotlin/com/ares/analytics/shared/AppJson.kt",
       "product": "ARES-Analytics",
       "lines": 13,
@@ -6773,6 +7003,16 @@
       "path": "ARES-Analytics/shared/src/main/kotlin/com/ares/analytics/shared/UnitConversion.kt",
       "product": "ARES-Analytics",
       "lines": 134,
+      "lineLimit": 750,
+      "effectiveLimit": 750,
+      "grandfathered": false,
+      "compliant": true,
+      "isMicrofile": false
+    },
+    {
+      "path": "ARES-Analytics/shared/src/main/kotlin/com/ares/analytics/shared/mcp/StudioBridgeProtocol.kt",
+      "product": "ARES-Analytics",
+      "lines": 50,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,

@@ -48,7 +48,7 @@ def classify_paths(paths: Iterable[str], event_name: str = "pull_request") -> di
             result["frc_starter"] = True
         elif path.startswith("ARES-XRP-Starter/"):
             result["xrp_starter"] = True
-        elif path.startswith("ARES-Analytics/app/"):
+        elif path.startswith("ARES-Analytics/app/") or path.startswith("ARES-Analytics/mcp/"):
             result["analytics_app"] = True
         elif path.startswith("ARES-Analytics/gateway/"):
             result["analytics_gateway"] = True

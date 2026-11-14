@@ -177,6 +177,7 @@ internal fun rememberWorkspaceRouteFeatureScope(
             toolchains = services.managedToolchainService,
             sync = services.syncEngineService,
             oauth = services.oauthService,
+            mcpBridgeDescriptor = services.mcpBridgeServer.descriptorState,
         ),
         nt4 = services.nt4ClientService,
         simulator = services.simulatorProcessService,

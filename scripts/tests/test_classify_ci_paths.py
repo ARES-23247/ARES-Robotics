@@ -34,6 +34,17 @@ class ClassifyCiPathsTest(unittest.TestCase):
         self.assertFalse(result["analytics_shared"])
         self.assertTrue(result["packages"])
 
+    def test_mcp_change_runs_studio_app_and_packages(self):
+        result = MODULE.classify_paths(["ARES-Analytics/mcp/src/main/kotlin/McpMain.kt"])
+        self.assertTrue(result["analytics"])
+        self.assertFalse(result["full"])
+        self.assertFalse(result["lib"])
+        self.assertFalse(result["ftc"])
+        self.assertTrue(result["analytics_app"])
+        self.assertFalse(result["analytics_gateway"])
+        self.assertFalse(result["analytics_shared"])
+        self.assertTrue(result["packages"])
+
     def test_library_change_runs_candidate_and_every_consumer(self):
         result = MODULE.classify_paths(["ARESLib-Kotlin/core/src/main/kotlin/Clock.kt"])
         self.assertTrue(all(result.values()))
