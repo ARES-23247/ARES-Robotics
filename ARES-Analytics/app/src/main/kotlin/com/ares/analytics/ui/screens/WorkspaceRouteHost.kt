@@ -4,7 +4,9 @@ import androidx.compose.runtime.Composable
 import com.ares.analytics.service.AcademyPracticeIdentity
 import com.ares.analytics.service.AcademyPracticeWorkflowService
 import com.ares.analytics.service.AlertEngineService
+import com.ares.analytics.service.EventApiService
 import com.ares.analytics.service.EventScheduleStore
+import com.ares.analytics.service.EventScoutingStore
 import com.ares.analytics.service.ExportService
 import com.ares.analytics.service.GuidedRunAnalysisReport
 import com.ares.analytics.service.LearningProgressService
@@ -23,6 +25,7 @@ import com.ares.analytics.shared.models.ForensicsResponse
 import com.ares.analytics.shared.models.WorkspaceConfig
 import com.ares.analytics.domain.navigation.NavigationTarget
 import com.ares.analytics.domain.navigation.PitDeepLinkRequest
+import com.ares.analytics.domain.navigation.StrategyDeepLinkRequest
 import com.ares.analytics.ui.components.core.TargetSelection
 import com.ares.analytics.ui.components.dashboard.DashboardMissionSnapshot
 import com.ares.analytics.viewmodel.DashboardIntent
@@ -60,7 +63,9 @@ internal data class WorkspaceRouteFeatureScope(
     val projectSession: ProjectSession,
     val hardwareSetup: HardwareSetupService,
     val alertEngine: AlertEngineService,
+    val eventApiService: EventApiService,
     val eventScheduleStore: EventScheduleStore,
+    val eventScoutingStore: EventScoutingStore,
 )
 
 internal data class WorkspaceRouteState(
@@ -82,6 +87,7 @@ internal data class WorkspaceRouteState(
     val requestedCheckpointId: String?,
     val requestedGlossaryTerm: String?,
     val pitDeepLink: PitDeepLinkRequest = PitDeepLinkRequest(),
+    val strategyDeepLink: StrategyDeepLinkRequest = StrategyDeepLinkRequest(),
 )
 
 internal data class WorkspaceRouteActions(
@@ -109,6 +115,7 @@ internal data class WorkspaceRouteActions(
     val refreshEventSchedule: () -> Unit = {},
     val updateCachedMatches: (List<MatchInfo>) -> Unit = {},
     val updateNavSubLabel: (String?) -> Unit = {},
+    val openStrategyBriefing: (Int) -> Unit = {},
 )
 
 /** Renders the selected workspace route from explicit feature capabilities and shell actions. */
@@ -257,6 +264,7 @@ internal fun WorkspaceRouteHost(
             onRefreshEventSchedule = actions.refreshEventSchedule,
             onMatchesUpdated = actions.updateCachedMatches,
             onOpenMatchStrategy = { actions.navigate(NavigationTarget.MATCH_STRATEGY) },
+            onOpenMatchupBriefing = actions.openStrategyBriefing,
             onOpenRunHistoryWithTag = { tag ->
                 scope.runData.pendingTagFilter.value = tag
                 actions.navigate(NavigationTarget.RUN_HISTORY)
@@ -268,10 +276,14 @@ internal fun WorkspaceRouteHost(
         NavigationTarget.MATCH_STRATEGY -> MatchStrategyScreen(
             databaseService = scope.runData.database,
             exportService = scope.export,
+            eventApiService = scope.eventApiService,
+            eventScoutingStore = scope.eventScoutingStore,
             notebookCaptureService = scope.notebookCapture,
             workspace = workspace,
             reloadTrigger = state.runsReloadTrigger,
             matches = state.matches,
+            strategyDeepLink = state.strategyDeepLink,
+            onMatchesUpdated = actions.updateCachedMatches,
             onOpenReplay = { sessionId, timestampMs ->
                 scope.dashboard.onIntent(DashboardIntent.SelectPrimarySession(sessionId, timestampMs))
                 actions.navigate(NavigationTarget.DASHBOARD)

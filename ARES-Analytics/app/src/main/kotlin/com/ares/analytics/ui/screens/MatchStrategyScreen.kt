@@ -3,11 +3,10 @@ package com.ares.analytics.ui.screens
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.filled.Analytics
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -16,22 +15,29 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ares.analytics.domain.analysis.*
+import com.ares.analytics.domain.navigation.MatchStrategySubTab
+import com.ares.analytics.domain.navigation.StrategyDeepLinkRequest
+import com.ares.analytics.domain.strategy.*
 import com.ares.analytics.service.DatabaseService
+import com.ares.analytics.service.EventApiService
+import com.ares.analytics.service.EventScoutingStore
 import com.ares.analytics.service.ExportService
 import com.ares.analytics.service.MatchInfo
+import com.ares.analytics.service.integration.EngineeringNotebookCaptureService
+import com.ares.analytics.service.toMatchInfo
 import com.ares.analytics.shared.models.*
+import com.ares.analytics.ui.components.strategy.LoadedMatchStrategySnapshot
+import com.ares.analytics.ui.components.strategy.MatchStrategySessionDebriefTab
+import com.ares.analytics.ui.components.strategy.StrategyAlliancePicklistTab
+import com.ares.analytics.ui.components.strategy.StrategyMatchupBriefingTab
+import com.ares.analytics.ui.components.strategy.StrategyOprAndScoutingTab
 import com.ares.analytics.ui.theme.*
 import com.ares.analytics.ui.util.DesktopFileChoosers
-import java.awt.Toolkit
-import java.awt.datatransfer.StringSelection
-import java.util.Locale
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-/**
- * Legacy coaching card value type retained for KDoc and external compatibility.
- */
+/** Legacy coaching card value type retained for KDoc and external compatibility. */
 data class DriverCoachingCard(
     val title: String,
     val detail: String,
@@ -39,30 +45,22 @@ data class DriverCoachingCard(
     val severity: String,
 )
 
-private data class LoadedMatchStrategySnapshot(
-    val session: Session,
-    val summary: SessionSummary?,
-    val sessionStartMs: Long,
-    val heatmap: SpatialFieldHeatmap,
-    val insights: List<MatchCoachingInsight>,
-    val alerts: List<AlertRecord>,
-    val annotations: List<SessionAnnotation>,
-)
-
 /**
- * Session-backed Match Strategy, Spatial Field Heatmap, Multi-Match Event Progression, and Pit Debrief screen.
- *
- * Replaces the former developer-preview sample layout with deterministic analysis backed by DuckDB
- * `Session`, `SessionSummary`, `ReplayPoseRepository`, `TelemetryFrame`, `AlertRecord`, and `SessionAnnotation` records.
+ * 4-Tab Competition Strategy Hub inside Studio:
+ * `0: Session Debrief`, `1: OPR & Scouting`, `2: Matchup Briefing`, and `3: Alliance Picklist`.
  */
 @Composable
 fun MatchStrategyScreen(
     databaseService: DatabaseService? = null,
     exportService: ExportService? = null,
-    notebookCaptureService: com.ares.analytics.service.integration.EngineeringNotebookCaptureService? = null,
+    eventApiService: EventApiService? = null,
+    eventScoutingStore: EventScoutingStore? = null,
+    notebookCaptureService: EngineeringNotebookCaptureService? = null,
     workspace: WorkspaceConfig? = null,
     reloadTrigger: Int = 0,
     matches: List<MatchInfo> = emptyList(),
+    strategyDeepLink: StrategyDeepLinkRequest = StrategyDeepLinkRequest(),
+    onMatchesUpdated: (List<MatchInfo>) -> Unit = {},
     onOpenReplay: (String, Long?) -> Unit = { _, _ -> },
     onOpenImports: () -> Unit = {},
     onOpenNotebookEntry: ((String) -> Unit)? = null,
@@ -75,7 +73,22 @@ fun MatchStrategyScreen(
         exportService ?: databaseService?.let(::ExportService)
     }
 
+    var activeTab by remember { mutableStateOf(strategyDeepLink.tab) }
+    var highlightedTeamNumber by remember(strategyDeepLink.nonce) {
+        mutableStateOf(strategyDeepLink.highlightedTeamNumber?.let(::normalizeTeamNumber)?.takeIf(String::isNotBlank))
+    }
+    var selectedBriefingMatch by remember(strategyDeepLink.nonce) {
+        mutableStateOf(strategyDeepLink.highlightedMatchNumber)
+    }
+    LaunchedEffect(strategyDeepLink.nonce) {
+        if (strategyDeepLink.nonce > 0) {
+            activeTab = strategyDeepLink.tab
+        }
+    }
+
     var manualRefreshNonce by remember { mutableStateOf(0) }
+    var scoutingRefreshNonce by remember { mutableStateOf(0) }
+    var syncInProgress by remember { mutableStateOf(false) }
     var selectedSessionId by remember(workspace?.id) { mutableStateOf<String?>(null) }
     var heatmapMode by remember { mutableStateOf(StrategyHeatmapMode.OCCUPANCY) }
     var statusBanner by remember { mutableStateOf<String?>(null) }
@@ -103,8 +116,7 @@ fun MatchStrategyScreen(
             }.sortedByDescending { it.createdAt }
 
             val sessionIds = sessions.mapTo(HashSet()) { it.sessionId }
-            val summaries = databaseService.getAllSessionSummaries()
-                .filter { it.sessionId in sessionIds }
+            val summaries = databaseService.getAllSessionSummaries().filter { it.sessionId in sessionIds }
             sessions to summaries
         }
     }
@@ -119,10 +131,18 @@ fun MatchStrategyScreen(
             selectedSessionId = null
         }
     }
-    LaunchedEffect(selectedSessionId, sessions) {
-        val selected = sessions.firstOrNull { it.sessionId == selectedSessionId }
-        val label = selected?.let { s ->
-            s.matchNumber?.let { "Match #$it" } ?: "Run ${s.sessionId.take(8)}"
+
+    LaunchedEffect(activeTab, selectedSessionId, sessions, highlightedTeamNumber, selectedBriefingMatch) {
+        val label = when (activeTab) {
+            MatchStrategySubTab.SESSION_DEBRIEF -> {
+                val selected = sessions.firstOrNull { it.sessionId == selectedSessionId }
+                selected?.let { s -> s.matchNumber?.let { "Match #$it" } ?: "Run ${s.sessionId.take(8)}" }
+            }
+            MatchStrategySubTab.OPR_SCOUTING -> highlightedTeamNumber?.let { "OPR & Scouting · Team #$it" }
+                ?: MatchStrategySubTab.OPR_SCOUTING.label
+            MatchStrategySubTab.MATCHUP_BRIEFING -> selectedBriefingMatch?.let { "Matchup Briefing · Match #$it" }
+                ?: MatchStrategySubTab.MATCHUP_BRIEFING.label
+            MatchStrategySubTab.ALLIANCE_PICKLIST -> MatchStrategySubTab.ALLIANCE_PICKLIST.label
         }
         onSubContextChanged?.invoke(label)
     }
@@ -165,29 +185,58 @@ fun MatchStrategyScreen(
             val alerts = runCatching { db.getAlerts(sessionId) }.getOrDefault(emptyList())
             val annotations = runCatching { db.getAnnotations(sessionId) }.getOrDefault(emptyList())
             val actions = runCatching { db.getActionsForSession(sessionId) }.getOrDefault(emptyList())
-
-            val heatmap = MatchStrategyAnalyzer.computeSpatialFieldHeatmap(
-                league = league,
-                poses = poseSamples,
-                telemetryFrames = telemetryFrames,
-            )
-            val insights = MatchStrategyAnalyzer.analyzeMatchCoachingInsights(
-                league = league,
-                summary = summary,
-                telemetryFrames = telemetryFrames,
-                alerts = alerts,
-                actions = actions,
-            )
-            LoadedMatchStrategySnapshot(
-                session = session,
-                summary = summary,
-                sessionStartMs = startMs,
-                heatmap = heatmap,
-                insights = insights,
-                alerts = alerts,
-                annotations = annotations,
-            )
+            val heatmap = MatchStrategyAnalyzer.computeSpatialFieldHeatmap(league, poseSamples, telemetryFrames)
+            val insights = MatchStrategyAnalyzer.analyzeMatchCoachingInsights(league, summary, telemetryFrames, alerts, actions)
+            LoadedMatchStrategySnapshot(session, summary, startMs, heatmap, insights, alerts, annotations)
         }
+    }
+
+    var scoutingBundle by remember(workspace?.id, workspace?.eventCode) {
+        mutableStateOf(EventScoutingBundle(eventCode = workspace?.eventCode.orEmpty(), league = league))
+    }
+    LaunchedEffect(eventScoutingStore, workspace?.id, workspace?.eventCode, scoutingRefreshNonce, manualRefreshNonce) {
+        val store = eventScoutingStore
+        val ws = workspace
+        if (store != null && ws != null) {
+            scoutingBundle = store.loadBundle(ws)
+        }
+    }
+
+    val oprSnapshot = remember(league, scoutingBundle.matchResults) {
+        OprAndSynergyAnalyzer.solveOprMetrics(league, scoutingBundle.matchResults)
+    }
+    val standSummaries = remember(scoutingBundle.standObservations) {
+        OprAndSynergyAnalyzer.summarizeStandObservations(scoutingBundle.standObservations)
+    }
+    val pitByTeam = remember(scoutingBundle.pitProfiles) {
+        scoutingBundle.pitProfiles.associateBy { normalizeTeamNumber(it.teamNumber) }
+    }
+    val overridesByTeam = remember(scoutingBundle.picklistOverrides) {
+        scoutingBundle.picklistOverrides.associateBy { normalizeTeamNumber(it.teamNumber) }
+    }
+    val scheduledTeams = remember(matches) {
+        matches.flatMap { it.redAlliance + it.blueAlliance }.map(::normalizeTeamNumber).filter(String::isNotBlank).toSet()
+    }
+    val ourTeam = workspace?.teamId?.let(::normalizeTeamNumber).orEmpty()
+    val rankedPicklist = remember(
+        ourTeam,
+        pitByTeam,
+        oprSnapshot,
+        standSummaries,
+        overridesByTeam,
+        scoutingBundle.selectedPreset,
+        scheduledTeams,
+    ) {
+        OprAndSynergyAnalyzer.rankAlliancePicklist(
+            ourTeamNumber = ourTeam,
+            ourPitProfile = pitByTeam[ourTeam],
+            oprSnapshot = oprSnapshot,
+            pitProfiles = pitByTeam,
+            standSummaries = standSummaries,
+            overrides = overridesByTeam,
+            preset = scoutingBundle.selectedPreset,
+            scheduledTeams = scheduledTeams,
+        )
     }
 
     Column(
@@ -197,14 +246,13 @@ fun MatchStrategyScreen(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        // Header + Session Selector + Debrief Export Bar
         Card(
             modifier = Modifier.fillMaxWidth(),
             colors = CardDefaults.cardColors(containerColor = AresSurface),
             shape = RoundedCornerShape(12.dp),
             border = BorderStroke(1.dp, AresBorder),
         ) {
-            Column(modifier = Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Column(modifier = Modifier.fillMaxWidth().padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -214,162 +262,41 @@ fun MatchStrategyScreen(
                         Icon(Icons.Default.Analytics, contentDescription = null, tint = AresCyan, modifier = Modifier.size(26.dp))
                         Column {
                             Text(
-                                text = "Match Strategy & Pit Debrief",
+                                text = "Match Strategy & Competition Hub",
                                 style = MaterialTheme.typography.titleLarge,
                                 fontWeight = FontWeight.Bold,
                                 color = AresTextPrimary,
                             )
                             Text(
-                                text = "Session-backed spatial field heatmaps, multi-match trends, and deterministic replay-linked coaching",
+                                text = "Session heatmaps, OPR/NP-OPR/ccWM analytics, pre-match briefings & live alliance picklists",
                                 fontSize = 12.sp,
                                 color = AresTextSecondary,
                             )
                         }
                     }
 
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                        if (sessions.isNotEmpty()) {
-                            SessionSelectorDropdown(
-                                sessions = sessions,
-                                selectedSessionId = selectedSessionId,
-                                onSelect = { selectedSessionId = it },
-                            )
-                        }
+                    IconButton(onClick = { manualRefreshNonce += 1 }) {
+                        Icon(Icons.Default.Refresh, contentDescription = "Refresh strategy analysis", tint = AresTextSecondary)
+                    }
+                }
 
-                        val snap = activeSnapshot
-                        if (snap != null && resolvedExportService != null) {
-                            OutlinedButton(
-                                onClick = {
-                                    scope.launch {
-                                        val md = MatchDebriefReportBuilder.buildSessionMarkdownDebrief(
-                                            league = league,
-                                            session = snap.session,
-                                            summary = snap.summary,
-                                            insights = snap.insights,
-                                            heatmap = snap.heatmap,
-                                            alerts = snap.alerts,
-                                            annotations = snap.annotations,
-                                            sessionStartMs = snap.sessionStartMs,
-                                        )
-                                        val dest = withContext(Dispatchers.IO) {
-                                            DesktopFileChoosers.chooseSaveFile(
-                                                dialogTitle = "Export Match Debrief (.md)",
-                                                defaultFileName = "pit_debrief_${snap.session.sessionId.take(12)}.md",
-                                                filterDescription = "Markdown Report (*.md)",
-                                                extensions = listOf("md"),
-                                            )
-                                        } ?: return@launch
-                                        runCatching { resolvedExportService.writeTextReportAtomically(dest, md) }
-                                            .onSuccess { statusBanner = "Saved Markdown debrief: ${dest.name}" }
-                                            .onFailure { statusBanner = "Export failed: ${it.message}" }
-                                    }
-                                },
-                                shape = RoundedCornerShape(8.dp),
-                                border = BorderStroke(1.dp, AresCyan.copy(alpha = 0.65f)),
-                                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
-                            ) {
-                                Icon(Icons.Default.Description, contentDescription = null, tint = AresCyan, modifier = Modifier.size(15.dp))
-                                Spacer(Modifier.width(4.dp))
-                                Text("Export .md", fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = AresCyan)
-                            }
-
-                            OutlinedButton(
-                                onClick = {
-                                    scope.launch {
-                                        val html = MatchDebriefReportBuilder.buildSessionHtmlDebrief(
-                                            league = league,
-                                            session = snap.session,
-                                            summary = snap.summary,
-                                            insights = snap.insights,
-                                            heatmap = snap.heatmap,
-                                            alerts = snap.alerts,
-                                            annotations = snap.annotations,
-                                            sessionStartMs = snap.sessionStartMs,
-                                        )
-                                        val dest = withContext(Dispatchers.IO) {
-                                            DesktopFileChoosers.chooseSaveFile(
-                                                dialogTitle = "Export Match Debrief (.html)",
-                                                defaultFileName = "pit_debrief_${snap.session.sessionId.take(12)}.html",
-                                                filterDescription = "HTML Report (*.html)",
-                                                extensions = listOf("html"),
-                                            )
-                                        } ?: return@launch
-                                        runCatching { resolvedExportService.writeTextReportAtomically(dest, html) }
-                                            .onSuccess { statusBanner = "Saved HTML debrief: ${dest.name}" }
-                                            .onFailure { statusBanner = "Export failed: ${it.message}" }
-                                    }
-                                },
-                                shape = RoundedCornerShape(8.dp),
-                                border = BorderStroke(1.dp, AresGreen.copy(alpha = 0.65f)),
-                                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
-                            ) {
-                                Icon(Icons.Default.Code, contentDescription = null, tint = AresGreen, modifier = Modifier.size(15.dp))
-                                Spacer(Modifier.width(4.dp))
-                                Text("Export .html", fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = AresGreen)
-                            }
-
-                            OutlinedButton(
-                                onClick = {
-                                    val md = MatchDebriefReportBuilder.buildSessionMarkdownDebrief(
-                                        league = league,
-                                        session = snap.session,
-                                        summary = snap.summary,
-                                        insights = snap.insights,
-                                        heatmap = snap.heatmap,
-                                        alerts = snap.alerts,
-                                        annotations = snap.annotations,
-                                        sessionStartMs = snap.sessionStartMs,
-                                    )
-                                    runCatching {
-                                        Toolkit.getDefaultToolkit().systemClipboard.setContents(StringSelection(md), null)
-                                    }
-                                    statusBanner = "Copied Markdown debrief to clipboard."
-                                },
-                                shape = RoundedCornerShape(8.dp),
-                                border = BorderStroke(1.dp, AresBorder),
-                                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
-                            ) {
-                                Icon(Icons.Default.ContentCopy, contentDescription = null, tint = AresTextSecondary, modifier = Modifier.size(14.dp))
-                                Spacer(Modifier.width(4.dp))
-                                Text("Copy", fontSize = 11.sp, color = AresTextPrimary)
-                            }
-
-                            if (workspace != null && notebookCaptureService != null) {
-                                Button(
-                                    onClick = {
-                                        scope.launch {
-                                            runCatching {
-                                                notebookCaptureService.captureMatchDebrief(
-                                                    workspace = workspace,
-                                                    session = snap.session,
-                                                    summary = snap.summary,
-                                                    insights = snap.insights,
-                                                    heatmap = snap.heatmap,
-                                                    alerts = snap.alerts,
-                                                    annotations = snap.annotations,
-                                                )
-                                            }.onSuccess { saved ->
-                                                lastLoggedNotebookEntryId = saved.entryId
-                                                statusBanner = "Logged ${saved.entryId} r${saved.revision} to Engineering Notebook."
-                                            }.onFailure { err ->
-                                                statusBanner = "Notebook capture failed: ${err.message}"
-                                            }
-                                        }
-                                    },
-                                    colors = ButtonDefaults.buttonColors(containerColor = AresCyan, contentColor = AresOnAccent),
-                                    shape = RoundedCornerShape(8.dp),
-                                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
-                                ) {
-                                    Icon(Icons.Default.Book, contentDescription = null, modifier = Modifier.size(14.dp))
-                                    Spacer(Modifier.width(4.dp))
-                                    Text("Log to Notebook", fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                                }
-                            }
-                        }
-
-                        IconButton(onClick = { manualRefreshNonce += 1 }) {
-                            Icon(Icons.Default.Refresh, contentDescription = "Refresh strategy analysis", tint = AresTextSecondary)
-                        }
+                PrimaryTabRow(
+                    selectedTabIndex = activeTab.index,
+                    containerColor = AresSurfaceElevated,
+                    contentColor = AresCyan,
+                ) {
+                    MatchStrategySubTab.entries.forEach { tab ->
+                        Tab(
+                            selected = activeTab == tab,
+                            onClick = { activeTab = tab },
+                            text = {
+                                Text(
+                                    text = tab.label,
+                                    fontSize = 12.sp,
+                                    fontWeight = if (activeTab == tab) FontWeight.Bold else FontWeight.Medium,
+                                )
+                            },
+                        )
                     }
                 }
 
@@ -390,208 +317,184 @@ fun MatchStrategyScreen(
             }
         }
 
-        if (sessions.isEmpty()) {
-            if (matches.isNotEmpty()) {
-                TournamentScheduleContextCard(
-                    matches = matches,
-                    teamId = workspace?.teamId.orEmpty(),
+        Box(modifier = Modifier.fillMaxWidth().weight(1f)) {
+            when (activeTab) {
+                MatchStrategySubTab.SESSION_DEBRIEF -> MatchStrategySessionDebriefTab(
+                    league = league,
+                    workspace = workspace,
                     sessions = sessions,
-                    selectedSession = null,
+                    selectedSessionId = selectedSessionId,
+                    onSelectSession = { selectedSessionId = it },
+                    activeSnapshot = activeSnapshot,
+                    progressionSeries = progressionSeries,
+                    heatmapMode = heatmapMode,
+                    onHeatmapModeChange = { heatmapMode = it },
+                    matches = matches,
+                    exportService = resolvedExportService,
+                    notebookCaptureService = notebookCaptureService,
+                    onOpenReplay = onOpenReplay,
+                    onOpenImports = onOpenImports,
                     onOpenPitOps = onOpenPitOps,
+                    onStatusMessage = { statusBanner = it },
+                    onLoggedNotebookEntry = { lastLoggedNotebookEntryId = it },
                 )
-            }
-            Card(
-                modifier = Modifier.fillMaxWidth().weight(1f),
-                colors = CardDefaults.cardColors(containerColor = AresSurface),
-                shape = RoundedCornerShape(12.dp),
-                border = BorderStroke(1.dp, AresBorder),
-            ) {
-                Column(
-                    modifier = Modifier.fillMaxSize().padding(32.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center,
-                ) {
-                    Icon(Icons.Default.Analytics, contentDescription = null, tint = AresCyan, modifier = Modifier.size(42.dp))
-                    Spacer(Modifier.height(12.dp))
-                    Text(
-                        text = "No Recorded Match or Practice Sessions Yet",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = AresTextPrimary,
-                    )
-                    Spacer(Modifier.height(6.dp))
-                    Text(
-                        text = "Import a robot log (.wpilog, .hoot, .dslog, .parquet, .csv) or record a live NT4/simulator run to inspect spatial heatmaps, multi-match trends, and replay-linked coaching.",
-                        fontSize = 12.sp,
-                        color = AresTextSecondary,
-                    )
-                    Spacer(Modifier.height(16.dp))
-                    Button(
-                        onClick = onOpenImports,
-                        colors = ButtonDefaults.buttonColors(containerColor = AresCyan, contentColor = AresOnAccent),
-                    ) {
-                        Text("Open Import Center", color = AresOnAccent, fontWeight = FontWeight.Bold)
-                    }
-                }
-            }
-            return@Column
-        }
 
-        val snap = activeSnapshot
-        if (matches.isNotEmpty()) {
-            TournamentScheduleContextCard(
-                matches = matches,
-                teamId = workspace?.teamId.orEmpty(),
-                sessions = sessions,
-                selectedSession = snap?.session,
-                onOpenPitOps = onOpenPitOps,
-            )
-        }
-
-        EventProgressionStrip(
-            seriesList = progressionSeries,
-            selectedSessionId = selectedSessionId,
-            onSelectSession = { selectedSessionId = it },
-        )
-
-        Row(
-            modifier = Modifier.fillMaxWidth().weight(1f),
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
-        ) {
-            SpatialFieldHeatmapCard(
-                heatmap = snap?.heatmap,
-                mode = heatmapMode,
-                onModeChange = { heatmapMode = it },
-                modifier = Modifier.weight(1.22f).fillMaxHeight(),
-            )
-
-            Card(
-                modifier = Modifier.weight(1f).fillMaxHeight(),
-                colors = CardDefaults.cardColors(containerColor = AresSurface),
-                shape = RoundedCornerShape(12.dp),
-                border = BorderStroke(1.dp, AresBorder),
-            ) {
-                Column(modifier = Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                            Icon(Icons.Default.Lightbulb, contentDescription = null, tint = AresGold, modifier = Modifier.size(18.dp))
-                            Text(
-                                text = "EVIDENCE-BACKED COACHING & PIT NOTES",
-                                style = MaterialTheme.typography.labelMedium,
-                                color = AresGold,
-                                fontWeight = FontWeight.Bold,
-                            )
-                        }
-                        if (snap != null) {
-                            TextButton(onClick = { onOpenReplay(snap.session.sessionId, null) }) {
-                                Text("Open Full Replay →", fontSize = 11.sp, color = AresCyan, fontWeight = FontWeight.SemiBold)
-                            }
-                        }
-                    }
-
-                    if (snap == null) {
-                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            CircularProgressIndicator(color = AresCyan, modifier = Modifier.size(28.dp))
-                        }
-                    } else {
-                        LazyColumn(
-                            modifier = Modifier.fillMaxSize(),
-                            verticalArrangement = Arrangement.spacedBy(10.dp),
-                        ) {
-                            items(snap.insights, key = MatchCoachingInsight::id) { insight ->
-                                CoachingInsightCardItem(
-                                    insight = insight,
-                                    sessionStartMs = snap.sessionStartMs,
-                                    onJumpToReplay = { ts -> onOpenReplay(snap.session.sessionId, ts) },
-                                )
-                            }
-
-                            if (snap.annotations.isNotEmpty()) {
-                                item(key = "pinned-notes-header") {
-                                    Text(
-                                        text = "PINNED REPLAY NOTES (${snap.annotations.size})",
-                                        fontSize = 11.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = AresTextSecondary,
-                                        modifier = Modifier.padding(top = 6.dp),
-                                    )
-                                }
-                                items(snap.annotations, key = SessionAnnotation::annotationId) { note ->
-                                    val relSec = ((note.effectiveTimestampMs() - snap.sessionStartMs).coerceAtLeast(0L)) / 1000.0
-                                    Surface(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        color = AresSurfaceElevated,
-                                        shape = RoundedCornerShape(8.dp),
-                                        border = BorderStroke(1.dp, AresGold.copy(alpha = 0.45f)),
-                                    ) {
-                                        Row(
-                                            modifier = Modifier.fillMaxWidth().padding(10.dp),
-                                            horizontalArrangement = Arrangement.SpaceBetween,
-                                            verticalAlignment = Alignment.CenterVertically,
-                                        ) {
-                                            Column(modifier = Modifier.weight(1f)) {
-                                                Text(
-                                                    text = String.format(Locale.US, "◆ +%.3fs", relSec),
-                                                    fontSize = 10.sp,
-                                                    fontWeight = FontWeight.Bold,
-                                                    color = AresGold,
-                                                )
-                                                Text(note.text, fontSize = 12.sp, color = AresTextPrimary)
-                                            }
-                                            TextButton(onClick = { onOpenReplay(snap.session.sessionId, note.effectiveTimestampMs()) }) {
-                                                Text("Seek", fontSize = 11.sp, color = AresCyan)
-                                            }
+                MatchStrategySubTab.OPR_SCOUTING -> StrategyOprAndScoutingTab(
+                    workspace = workspace,
+                    bundle = scoutingBundle,
+                    oprSnapshot = oprSnapshot,
+                    standSummaries = standSummaries,
+                    rankedRows = rankedPicklist,
+                    highlightedTeamNumber = highlightedTeamNumber,
+                    syncInProgress = syncInProgress,
+                    onSyncEventScores = {
+                        val api = eventApiService
+                        val store = eventScoutingStore
+                        val ws = workspace
+                        if (api == null || store == null || ws == null) {
+                            statusBanner = "Configure Workspace Event Code and API Key in Settings first."
+                        } else {
+                            scope.launch {
+                                syncInProgress = true
+                                runCatching { api.fetchWorkspaceEventMatchResults(ws) }
+                                    .onSuccess { fetched ->
+                                        if (fetched.isEmpty()) {
+                                            statusBanner = "No match scores returned for ${ws.eventCode ?: "event"}; check Event Code / API Key."
+                                        } else {
+                                            scoutingBundle = store.upsertMatchResults(ws, fetched)
+                                            scoutingRefreshNonce += 1
+                                            if (matches.isEmpty()) onMatchesUpdated(fetched.map(EventMatchResult::toMatchInfo))
+                                            statusBanner = "Synced ${fetched.size} match record(s) into offline OPR store."
                                         }
                                     }
-                                }
+                                    .onFailure { err -> statusBanner = "Score sync failed: ${err.message}" }
+                                syncInProgress = false
                             }
                         }
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun SessionSelectorDropdown(
-    sessions: List<Session>,
-    selectedSessionId: String?,
-    onSelect: (String) -> Unit,
-) {
-    var expanded by remember { mutableStateOf(false) }
-    val active = sessions.firstOrNull { it.sessionId == selectedSessionId } ?: sessions.first()
-
-    fun formatSessionLabel(s: Session): String {
-        val matchPrefix = s.matchNumber?.let { "Match #$it · " }.orEmpty()
-        val alliance = s.allianceColor?.takeIf(String::isNotBlank)?.uppercase(Locale.US)?.let { "[$it] " }.orEmpty()
-        val durSec = s.durationMs / 1000
-        return "$matchPrefix$alliance${s.robotId.ifBlank { s.sessionId.take(10) }} (${durSec}s)"
-    }
-
-    Box {
-        OutlinedButton(
-            onClick = { expanded = true },
-            shape = RoundedCornerShape(8.dp),
-            border = BorderStroke(1.dp, AresBorder),
-            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
-        ) {
-            Text(formatSessionLabel(active), fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = AresTextPrimary)
-            Spacer(Modifier.width(4.dp))
-            Icon(Icons.Default.ArrowDropDown, contentDescription = null, tint = AresTextSecondary)
-        }
-        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-            sessions.take(24).forEach { candidate ->
-                DropdownMenuItem(
-                    text = { Text(formatSessionLabel(candidate), color = AresTextPrimary, fontSize = 12.sp) },
-                    onClick = {
-                        onSelect(candidate.sessionId)
-                        expanded = false
                     },
+                    onImportAndMergeBundle = {
+                        val store = eventScoutingStore
+                        val ws = workspace
+                        if (store == null || ws == null) {
+                            statusBanner = "Select an active workspace first."
+                        } else {
+                            scope.launch {
+                                val file = withContext(Dispatchers.IO) {
+                                    DesktopFileChoosers.chooseOpenFile(
+                                        dialogTitle = "Import / Merge Scouting Bundle (.json / .csv)",
+                                        filterDescription = "Scouting Bundle or Scores (*.json, *.csv)",
+                                        extensions = listOf("json", "csv"),
+                                    )
+                                } ?: return@launch
+                                runCatching { store.importAndMergeFile(ws, file) }
+                                    .onSuccess { (merged, summary) ->
+                                        scoutingBundle = merged
+                                        scoutingRefreshNonce += 1
+                                        if (matches.isEmpty() && merged.matchResults.isNotEmpty()) {
+                                            onMatchesUpdated(merged.matchResults.map(EventMatchResult::toMatchInfo))
+                                        }
+                                        statusBanner = "Merged ${summary.mergedMatches} matches, ${summary.mergedPitProfiles} pit profiles, ${summary.mergedStandObservations} stand logs."
+                                    }
+                                    .onFailure { err -> statusBanner = "Import failed: ${err.message}" }
+                            }
+                        }
+                    },
+                    onExportBundle = {
+                        val store = eventScoutingStore
+                        val ws = workspace
+                        if (store != null && ws != null) {
+                            scope.launch {
+                                val dest = withContext(Dispatchers.IO) {
+                                    DesktopFileChoosers.chooseSaveFile(
+                                        dialogTitle = "Export Scouting Bundle (.json)",
+                                        defaultFileName = "scouting_bundle_${ws.eventCode?.ifBlank { "event" } ?: "event"}.json",
+                                        filterDescription = "JSON Bundle (*.json)",
+                                        extensions = listOf("json"),
+                                    )
+                                } ?: return@launch
+                                runCatching { store.exportBundleFile(ws, dest) }
+                                    .onSuccess { statusBanner = "Exported scouting bundle: ${dest.name}" }
+                                    .onFailure { err -> statusBanner = "Export failed: ${err.message}" }
+                            }
+                        }
+                    },
+                    onSavePitProfile = { profile ->
+                        val store = eventScoutingStore ?: return@StrategyOprAndScoutingTab
+                        val ws = workspace ?: return@StrategyOprAndScoutingTab
+                        scope.launch {
+                            scoutingBundle = store.upsertPitProfile(ws, profile)
+                            scoutingRefreshNonce += 1
+                            statusBanner = "Saved pit profile for Team #${profile.teamNumber}."
+                        }
+                    },
+                    onSaveStandObservation = { obs ->
+                        val store = eventScoutingStore ?: return@StrategyOprAndScoutingTab
+                        val ws = workspace ?: return@StrategyOprAndScoutingTab
+                        scope.launch {
+                            scoutingBundle = store.upsertStandObservation(ws, obs)
+                            scoutingRefreshNonce += 1
+                            statusBanner = "Logged stand observation for Team #${obs.teamNumber} Match #${obs.matchNumber}."
+                        }
+                    },
+                    onSaveManualMatchResult = { res ->
+                        val store = eventScoutingStore ?: return@StrategyOprAndScoutingTab
+                        val ws = workspace ?: return@StrategyOprAndScoutingTab
+                        scope.launch {
+                            scoutingBundle = store.upsertMatchResults(ws, listOf(res))
+                            scoutingRefreshNonce += 1
+                            statusBanner = "Recorded score for ${res.compLevel} #${res.matchNumber}."
+                        }
+                    },
+                    onJumpToPicklistTeam = { team ->
+                        highlightedTeamNumber = team
+                        activeTab = MatchStrategySubTab.ALLIANCE_PICKLIST
+                    },
+                )
+
+                MatchStrategySubTab.MATCHUP_BRIEFING -> StrategyMatchupBriefingTab(
+                    workspace = workspace,
+                    matches = matches,
+                    bundle = scoutingBundle,
+                    oprSnapshot = oprSnapshot,
+                    standSummaries = standSummaries,
+                    selectedMatchNumber = selectedBriefingMatch,
+                    onSelectMatchNumber = { selectedBriefingMatch = it },
+                    exportService = resolvedExportService,
+                    notebookCaptureService = notebookCaptureService,
+                    onScoutTeam = { team ->
+                        highlightedTeamNumber = normalizeTeamNumber(team)
+                        activeTab = MatchStrategySubTab.OPR_SCOUTING
+                    },
+                    onStatusMessage = { statusBanner = it },
+                    onLoggedNotebookEntry = { lastLoggedNotebookEntryId = it },
+                )
+
+                MatchStrategySubTab.ALLIANCE_PICKLIST -> StrategyAlliancePicklistTab(
+                    workspace = workspace,
+                    bundle = scoutingBundle,
+                    oprSnapshot = oprSnapshot,
+                    rankedRows = rankedPicklist,
+                    highlightedTeamNumber = highlightedTeamNumber,
+                    exportService = resolvedExportService,
+                    notebookCaptureService = notebookCaptureService,
+                    onChangePreset = { preset ->
+                        val store = eventScoutingStore ?: return@StrategyAlliancePicklistTab
+                        val ws = workspace ?: return@StrategyAlliancePicklistTab
+                        scope.launch {
+                            scoutingBundle = store.updateWeightPreset(ws, preset)
+                            scoutingRefreshNonce += 1
+                        }
+                    },
+                    onSaveOverride = { override ->
+                        val store = eventScoutingStore ?: return@StrategyAlliancePicklistTab
+                        val ws = workspace ?: return@StrategyAlliancePicklistTab
+                        scope.launch {
+                            scoutingBundle = store.upsertPicklistOverride(ws, override)
+                            scoutingRefreshNonce += 1
+                        }
+                    },
+                    onStatusMessage = { statusBanner = it },
+                    onLoggedNotebookEntry = { lastLoggedNotebookEntryId = it },
                 )
             }
         }

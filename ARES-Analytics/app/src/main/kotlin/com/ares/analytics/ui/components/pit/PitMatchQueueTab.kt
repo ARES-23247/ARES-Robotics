@@ -86,6 +86,7 @@ fun PitMatchQueueTab(
     onStageInReadiness: (TeamMatchQueueRow) -> Unit,
     onOpenMatchStrategy: () -> Unit,
     highlightedMatchNumber: Int? = null,
+    onOpenMatchupBriefing: ((Int) -> Unit)? = null,
 ) {
     var showAddMatchDialog by remember { mutableStateOf(false) }
 
@@ -200,6 +201,7 @@ fun PitMatchQueueTab(
                         isHighlighted = isHighlighted,
                         onStageInReadiness = { onStageInReadiness(row) },
                         onOpenMatchStrategy = onOpenMatchStrategy,
+                        onOpenMatchupBriefing = onOpenMatchupBriefing?.let { open -> { open(row.item.matchNumber) } },
                         onRemove = { onRemoveMatch(row.item.compLevel, row.item.matchNumber) },
                     )
                 }
@@ -225,6 +227,7 @@ private fun MatchQueueRowCard(
     isHighlighted: Boolean = false,
     onStageInReadiness: () -> Unit,
     onOpenMatchStrategy: () -> Unit,
+    onOpenMatchupBriefing: (() -> Unit)? = null,
     onRemove: () -> Unit,
 ) {
     val borderColor = when {
@@ -320,6 +323,11 @@ private fun MatchQueueRowCard(
                     contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
                 ) {
                     Text("Stage in Readiness", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                }
+                if (onOpenMatchupBriefing != null) {
+                    OutlinedButton(onClick = onOpenMatchupBriefing, contentPadding = PaddingValues(horizontal = 8.dp, vertical = 6.dp)) {
+                        Text("Briefing", fontSize = 11.sp, color = AresCyan)
+                    }
                 }
                 OutlinedButton(onClick = onOpenMatchStrategy, contentPadding = PaddingValues(horizontal = 8.dp, vertical = 6.dp)) {
                     Icon(Icons.Default.Explore, contentDescription = null, modifier = Modifier.size(14.dp))

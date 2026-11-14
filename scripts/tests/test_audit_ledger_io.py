@@ -1,4 +1,5 @@
 import copy
+import ctypes
 import hashlib
 import importlib.util
 import json
@@ -142,3 +143,53 @@ class AuditLedgerIoTest(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     MODULE.main()
             self.assertEqual(ledger.read_bytes(), before)
+
+    def test_windows_short_temp_path_cli_refresh_succeeds(self):
+        with tempfile.TemporaryDirectory() as directory:
+            long_parent = Path(directory) / 'ares_long_temp_directory_name_audit_check'
+            long_parent.mkdir()
+            effective_parent = long_parent
+            if os.name == 'nt':
+                buffer = ctypes.create_unicode_buffer(512)
+                length = ctypes.windll.kernel32.GetShortPathNameW(str(long_parent), buffer, len(buffer))
+                if length == 0 or '~' not in buffer.value:
+                    self.skipTest('Windows 8.3 short paths are not enabled on this volume')
+                effective_parent = Path(buffer.value)
+
+            root = effective_parent / 'repo_long_name'
+            root.mkdir()
+            script = root / 'scripts' / 'audit_inventory.py'
+            script.parent.mkdir(parents=True)
+            script.write_bytes(SCRIPT.read_bytes())
+            (root / 'nested').mkdir()
+            source = root / 'source.py'
+            source.write_bytes(b'pass\n')
+            ledger = root / 'audit.json'
+            document = {'schemaVersion': 1, 'files': {
+                'source.py': record(MODULE.fingerprint(source)),
+                'audit.json': {**record(), 'review': 'partial'}}}
+            ledger.write_text(json.dumps(document), encoding='utf-8')
+
+            def git(*args):
+                return subprocess.run(['git', *args], cwd=root, check=True, capture_output=True)
+
+            git('init', '-q')
+            git('config', 'user.name', 'Audit Test')
+            git('config', 'user.email', 'audit-test@example.invalid')
+            git('add', 'source.py', 'audit.json')
+            git('commit', '-qm', 'fixture')
+
+            output = root / 'result.json'
+            env = dict(os.environ, TEMP=str(effective_parent), TMP=str(effective_parent))
+            subprocess.run(
+                [sys.executable, str(script), '--records', 'nested/../audit.json',
+                 '--output', str(output), '--refresh-ledger-fingerprint'],
+                cwd=root,
+                env=env,
+                check=True,
+                capture_output=True,
+            )
+            result = json.loads(output.read_text(encoding='utf-8'))
+            self.assertEqual(result['complete'], 1)
+            own = next(row for row in result['files'] if row['path'] == 'audit.json')
+            self.assertEqual(own['fingerprintKind'], 'ledger-json-v1')

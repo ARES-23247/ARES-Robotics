@@ -18,11 +18,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.ares.analytics.domain.navigation.MatchStrategySubTab
 import com.ares.analytics.domain.navigation.NavigationTarget
 import com.ares.analytics.domain.navigation.PitOperationsSubTab
 import com.ares.analytics.domain.pit.BatteryFleetAnalyzer
+import com.ares.analytics.domain.strategy.OprAndSynergyAnalyzer
 import com.ares.analytics.service.DatabaseService
 import com.ares.analytics.service.DeployExecutionState
+import com.ares.analytics.service.EventScoutingStore
 import com.ares.analytics.service.LearningProgressService
 import com.ares.analytics.service.MatchInfo
 import com.ares.analytics.service.UpdateCheckerService
@@ -35,11 +38,13 @@ import com.ares.analytics.ui.components.CommandPaletteBatteryItem
 import com.ares.analytics.ui.components.CommandPaletteNotebookItem
 import com.ares.analytics.ui.components.CommandPaletteProjectItem
 import com.ares.analytics.ui.components.CommandPaletteRunItem
+import com.ares.analytics.ui.components.CommandPaletteStrategyTeamItem
 import com.ares.analytics.ui.components.LearningCoachDrawer
 import com.ares.analytics.ui.components.buildCommandPaletteBatteryItems
 import com.ares.analytics.ui.components.buildCommandPaletteMatchItems
 import com.ares.analytics.ui.components.buildCommandPaletteNotebookItems
 import com.ares.analytics.ui.components.buildCommandPaletteRunItems
+import com.ares.analytics.ui.components.buildCommandPaletteStrategyTeamItems
 import com.ares.analytics.ui.components.core.AresDialog
 import com.ares.analytics.ui.components.core.AresDialogVariant
 import com.ares.analytics.ui.components.core.OneClickDeployDialog
@@ -71,6 +76,7 @@ private data class CommandPaletteIndexedEntities(
     val runs: List<CommandPaletteRunItem> = emptyList(),
     val notes: List<CommandPaletteNotebookItem> = emptyList(),
     val batteries: List<CommandPaletteBatteryItem> = emptyList(),
+    val strategyTeams: List<CommandPaletteStrategyTeamItem> = emptyList(),
 )
 
 internal data class MainScreenOverlayActions(
@@ -86,6 +92,8 @@ internal data class MainScreenOverlayActions(
     val openNotebookEntry: (String) -> Unit = {},
     val openProjectItem: (CommandPaletteProjectItem) -> Unit = {},
     val openPitTab: (PitOperationsSubTab) -> Unit = {},
+    val openStrategyTab: (MatchStrategySubTab) -> Unit = {},
+    val openScoutedTeam: (String) -> Unit = {},
     val openBatteryPack: (String) -> Unit = {},
     val openScheduledMatch: (Int) -> Unit = {},
     val confirmWorkspaceDeletion: (String) -> Unit,
@@ -105,6 +113,7 @@ internal fun BoxScope.MainScreenOverlays(
     workspace: WorkspaceConfig? = null,
     databaseService: DatabaseService? = null,
     notebookCaptureService: EngineeringNotebookCaptureService? = null,
+    eventScoutingStore: EventScoutingStore? = null,
 ) {
     AnimatedVisibility(
         visible = state.coachDrawerOpen &&
@@ -138,6 +147,7 @@ internal fun BoxScope.MainScreenOverlays(
             workspace?.robotId,
             databaseService,
             notebookCaptureService,
+            eventScoutingStore,
         ) {
             value = withContext(Dispatchers.IO) {
                 val ws = workspace
@@ -194,7 +204,17 @@ internal fun BoxScope.MainScreenOverlays(
                 } else {
                     emptyList()
                 }
-                CommandPaletteIndexedEntities(runs = runs, notes = notes, batteries = batteries)
+                val strategyTeams = if (workspace != null && eventScoutingStore != null) {
+                    runCatching {
+                        val bundle = eventScoutingStore.loadBundle(workspace)
+                        val opr = OprAndSynergyAnalyzer.solveOprMetrics(workspace.league, bundle.matchResults)
+                        val stand = OprAndSynergyAnalyzer.summarizeStandObservations(bundle.standObservations)
+                        buildCommandPaletteStrategyTeamItems(opr, bundle.pitProfiles, stand)
+                    }.getOrDefault(emptyList())
+                } else {
+                    emptyList()
+                }
+                CommandPaletteIndexedEntities(runs = runs, notes = notes, batteries = batteries, strategyTeams = strategyTeams)
             }
         }
         val matchItems = remember(state.matches, workspace?.teamId) {
@@ -204,6 +224,7 @@ internal fun BoxScope.MainScreenOverlays(
             developerMode = state.developerMode,
             projectPath = state.projectPath,
             recentTargets = state.recentTargets,
+            strategyTeams = indexedEntities.strategyTeams,
             batteryItems = indexedEntities.batteries,
             matchItems = matchItems,
             runItems = indexedEntities.runs,
@@ -215,6 +236,8 @@ internal fun BoxScope.MainScreenOverlays(
             onOpenNotebookEntry = actions.openNotebookEntry,
             onOpenProjectItem = actions.openProjectItem,
             onOpenPitTab = actions.openPitTab,
+            onOpenStrategyTab = actions.openStrategyTab,
+            onOpenScoutedTeam = actions.openScoutedTeam,
             onOpenBattery = actions.openBatteryPack,
             onOpenScheduledMatch = actions.openScheduledMatch,
         )

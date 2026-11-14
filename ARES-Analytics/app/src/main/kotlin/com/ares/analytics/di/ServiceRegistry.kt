@@ -52,6 +52,7 @@ class ServiceRegistry {
     val keybindingParserService by lazy { KeybindingParserService() }
     val eventApiService by lazy { EventApiService() }
     val eventScheduleStore by lazy { EventScheduleStore() }
+    val eventScoutingStore by lazy { EventScoutingStore() }
     val layoutPreferenceService by lazy { LayoutPreferenceService(widgetCatalog = DashboardWidgetRegistry) }
     val updateCheckerService by lazy { UpdateCheckerService() }
     val windowsUpdateService by lazy {

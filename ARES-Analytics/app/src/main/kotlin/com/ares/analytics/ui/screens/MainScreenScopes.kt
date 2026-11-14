@@ -184,7 +184,9 @@ internal fun rememberWorkspaceRouteFeatureScope(
         projectSession = services.projectSession,
         hardwareSetup = services.hardwareSetupService,
         alertEngine = services.alertEngineService,
+        eventApiService = services.eventApiService,
         eventScheduleStore = services.eventScheduleStore,
+        eventScoutingStore = services.eventScoutingStore,
     )
 }
 
@@ -203,6 +205,7 @@ internal fun createWorkspaceRouteActions(
     openAcademyLesson: (String) -> Unit,
     openAcademyCheckpoint: (String, String) -> Unit,
     executeProjectCommand: (ProjectExecutionCommand) -> Boolean,
+    openStrategyBriefing: (Int) -> Unit = {},
 ): WorkspaceRouteActions = WorkspaceRouteActions(
     navigate = { mainViewModel.onIntent(MainIntent.SetActiveNav(it)) },
     saveWorkspace = { mainViewModel.onIntent(MainIntent.SaveConfig(it)) },
@@ -279,6 +282,7 @@ internal fun createWorkspaceRouteActions(
     refreshEventSchedule = { mainViewModel.onIntent(MainIntent.RefreshEventSchedule) },
     updateCachedMatches = { mainViewModel.onIntent(MainIntent.UpdateCachedMatches(it)) },
     updateNavSubLabel = { mainViewModel.onIntent(MainIntent.UpdateNavSubLabel(it)) },
+    openStrategyBriefing = openStrategyBriefing,
 )
 
 internal fun chooseStandaloneArchiveDestination(config: WorkspaceConfig): File? {

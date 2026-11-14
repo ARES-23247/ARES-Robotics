@@ -23,8 +23,10 @@ import com.ares.analytics.service.isLoopbackDriveControlHost
 import com.ares.analytics.service.project.ProjectExecutionCommand
 import com.ares.analytics.shared.*
 import com.ares.analytics.shared.models.*
+import com.ares.analytics.domain.navigation.MatchStrategySubTab
 import com.ares.analytics.domain.navigation.NavigationTarget
 import com.ares.analytics.domain.navigation.PitDeepLinkRequest
+import com.ares.analytics.domain.navigation.StrategyDeepLinkRequest
 import com.ares.analytics.ui.components.Sidebar
 import com.ares.analytics.ui.components.core.TargetSelection
 import com.ares.analytics.ui.input.DesktopDriveInputPublisher
@@ -218,6 +220,7 @@ fun MainScreen(services: ServiceRegistry) {
     var deployAwaitingConfirmation by remember { mutableStateOf(false) }
     var hardwareStudioInitialTab by remember { mutableStateOf(HardwareStudioTab.DRIVETRAIN) }
     var pitDeepLink by remember(currentConfig.id) { mutableStateOf(PitDeepLinkRequest()) }
+    var strategyDeepLink by remember(currentConfig.id) { mutableStateOf(StrategyDeepLinkRequest()) }
     var targetSelection by remember { mutableStateOf(TargetSelection.LIVE_ROBOT) }
     var liveRobotIp by remember(currentConfig.nt4Host) {
         mutableStateOf(currentConfig.nt4Host ?: "192.168.43.1")
@@ -610,6 +613,7 @@ fun MainScreen(services: ServiceRegistry) {
                                 requestedCheckpointId = requestedCheckpointId,
                                 requestedGlossaryTerm = requestedGlossaryTerm,
                                 pitDeepLink = pitDeepLink,
+                                strategyDeepLink = strategyDeepLink,
                             ),
                             scope = workspaceRouteFeatureScope,
                             actions = createWorkspaceRouteActions(
@@ -638,6 +642,10 @@ fun MainScreen(services: ServiceRegistry) {
                                     mainViewModel.onIntent(MainIntent.SetActiveNav(NavigationTarget.ACADEMY))
                                 },
                                 executeProjectCommand = executeProjectCommand,
+                                openStrategyBriefing = { matchNum ->
+                                    strategyDeepLink = nextStrategyDeepLink(strategyDeepLink, MatchStrategySubTab.MATCHUP_BRIEFING, null, matchNum)
+                                    mainViewModel.onIntent(MainIntent.SetActiveNav(NavigationTarget.MATCH_STRATEGY, "Matchup Briefing · Match #$matchNum"))
+                                },
                             ),
                         )
                     }
@@ -709,11 +717,15 @@ fun MainScreen(services: ServiceRegistry) {
                 requestPitDeepLink = { tab, batteryId, matchNumber ->
                     pitDeepLink = nextPitDeepLink(pitDeepLink, tab, batteryId, matchNumber)
                 },
+                requestStrategyDeepLink = { tab, team, matchNumber ->
+                    strategyDeepLink = nextStrategyDeepLink(strategyDeepLink, tab, team, matchNumber)
+                },
             ),
             learningProgressService = services.learningProgressService,
             workspace = currentConfig,
             databaseService = services.databaseService,
             notebookCaptureService = services.engineeringNotebookCaptureService,
+            eventScoutingStore = services.eventScoutingStore,
         )
     }
 }
