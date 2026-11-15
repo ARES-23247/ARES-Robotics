@@ -33,6 +33,7 @@ dependencyResolutionManagement {
 rootProject.name = "ARES-Analytics"
 
 include(":shared")
+include(":mcp")
 include(":app")
 include(":gateway")
 

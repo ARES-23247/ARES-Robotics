@@ -451,6 +451,13 @@ Preserve these invariants:
 | Dashboard business logic index | `ARES-Analytics/app/.../di/ServiceRegistry.kt` |
 | Gateway HTTP surface | `ARES-Analytics/gateway/.../Application.kt`, `routes/DiagnosticsRoutes.kt` |
 | PathPlanner file format | `ARESLib-Kotlin/core/src/main/kotlin/com/areslib/pathing/PathPlannerParser.kt` and `PathPlannerJsonParser.kt`; Studio editor state lives in `ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/PathPlannerModels.kt` |
+| AI coding MCP server | `ARES-Analytics/mcp/src/main/kotlin/com/ares/analytics/mcp/` (`ares-project-mcp` stdio server via `--mcp-stdio --toolset full\|compact`) and Studio bridge `ARES-Analytics/app/src/main/kotlin/com/ares/analytics/desktop/McpBridgeServer.kt` |
+
+### ARES Project MCP Server (`ares-project-mcp`)
+
+- **Stdio Server (`ARES-Analytics:mcp`)**: Expose `ares_project_*`, descriptor mutators (`FULL` 12 tools or `COMPACT` 7 tools via `--toolset compact`), `ares_codegen_reconcile`, `ares_kotlin_scaffold`, and 8 static Kotlin invariant rules (`ARES-GC-001`..`ARES-SIM-008`) over stdio JSON-RPC (`scripts/ares-mcp.ps1` / `scripts/ares-mcp.sh` or `<StudioExecutable> --mcp-stdio`). `System.out` stays reserved for JSON-RPC frames.
+- **Loopback Studio Bridge**: When Desktop Studio runs, `McpBridgeServer` binds `127.0.0.1:0` with a per-launch 256-bit bearer token, writes `mcp-bridge.json` under `AppDataPaths.rootDirectory()`, and serves `/v1/mcp/health` + `/v1/mcp/session/reload` (removing `mcp-bridge.json` cleanly on shutdown). When offline, `:mcp` operates headlessly without error.
+- **Safety & Ownership**: Canonical `.ares/` mutations pass codec + compiler IR validation with rollback on new errors and CAS `expectedRevision` checks. Deletions, canonical tuning edits, starter replacements, and scaffold overwrites require two-phase `confirmationToken` approval; `GENERATED DO NOT EDIT` files are never overwritten, `USER-OWNED` files remain preserved, and non-intrusive JGit snapshots write under `refs/ares-mcp/snapshots/*` without touching `HEAD`.
 
 ## 10. Engineering Truthfulness & Anti-Hallucination Directives
 

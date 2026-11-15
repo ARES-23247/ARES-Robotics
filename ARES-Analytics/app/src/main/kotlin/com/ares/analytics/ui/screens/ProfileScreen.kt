@@ -22,6 +22,7 @@ import androidx.compose.ui.unit.sp
 import com.ares.analytics.BuildConfig
 import com.ares.analytics.service.AuthState
 import com.ares.analytics.service.ManagedToolchainService
+import com.ares.analytics.shared.mcp.McpBridgeDescriptor
 import com.ares.analytics.shared.models.League
 import com.ares.analytics.shared.models.WorkspaceConfig
 import com.ares.analytics.ui.components.core.AresCard
@@ -32,6 +33,8 @@ import com.ares.analytics.ui.theme.*
 import com.ares.analytics.util.ProjectLayout
 import com.ares.analytics.viewmodel.ProfileIntent
 import com.ares.analytics.viewmodel.ProfileViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
 /**
@@ -53,7 +56,8 @@ fun ProfileScreen(
     config: WorkspaceConfig,
     onConfigChanged: (WorkspaceConfig) -> Unit,
     authState: AuthState = AuthState.Unauthenticated,
-    onLogout: () -> Unit = {}
+    onLogout: () -> Unit = {},
+    mcpBridgeDescriptor: StateFlow<McpBridgeDescriptor?> = MutableStateFlow(null),
 ) {
     val state by viewModel.state.collectAsState()
     val toolchains by managedToolchainService.snapshot.collectAsState()
@@ -245,6 +249,13 @@ fun ProfileScreen(
             toolchains = toolchains,
             toolchainInstallState = toolchainInstallState,
             managedToolchainService = managedToolchainService,
+        )
+
+        // 2b. AI Coding Assistant (MCP)
+        val bridgeDescriptor by mcpBridgeDescriptor.collectAsState()
+        ProfileMcpAssistantSection(
+            bridgeDescriptor = bridgeDescriptor,
+            activeProjectPath = config.projectPath,
         )
 
         // 3. Google Drive Cloud Sync
