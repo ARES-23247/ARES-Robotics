@@ -1,5 +1,6 @@
 package com.ares.analytics.mcp.audit
 
+import com.areslib.project.AresProjectMetadataCodec
 import kotlinx.serialization.Serializable
 import java.io.File
 
@@ -39,7 +40,7 @@ internal data class ScannedSourceFile(
 )
 
 /**
- * Deterministic static invariant auditor implementing rules `ARES-GC-001` through `ARES-SIM-008`.
+ * Deterministic static invariant auditor implementing rules `ARES-GC-001` through `ARES-COORD-012`.
  *
  * Comments (`//`, nested `/* ... */`) and string literals (`"..."`, `"""..."""`) are masked out of
  * [ScannedSourceFile.codeLines] while keeping 1-based line numbers exact so examples and docstrings
@@ -66,9 +67,18 @@ object KotlinInvariantAuditor {
         } else {
             collectAuditableRobotSources(canonical)
         }
+        val projectConvention = resolveProjectCoordinateConvention(canonical)
         val findings = files.flatMap { file ->
             val rel = file.relativeToOrSelf(canonical).invariantSeparatorsPath
-            auditText(rel, file.readText())
+            val text = file.readText()
+            val single = auditText(rel, text, projectConvention)
+            val firstLine = text.lineSequence().firstOrNull().orEmpty()
+            val cross = if (firstLine.contains("// ARES OWNERSHIP: GENERATED DO NOT EDIT")) {
+                emptyList()
+            } else {
+                CrossArtifactAndVendorRules.checkCrossArtifact(canonical, scanSource(rel, text))
+            }
+            single + cross
         }.sortedWith(compareBy({ it.file }, { it.line }, { it.ruleId }))
 
         val errors = findings.count { it.severity == AuditSeverity.ERROR }
@@ -83,14 +93,28 @@ object KotlinInvariantAuditor {
         )
     }
 
-    fun auditText(relativePath: String, sourceText: String): List<AuditFinding> {
+    fun auditText(
+        relativePath: String,
+        sourceText: String,
+        coordinateConvention: String? = null,
+    ): List<AuditFinding> {
         val firstLine = sourceText.lineSequence().firstOrNull().orEmpty()
         if (firstLine.contains("// ARES OWNERSHIP: GENERATED DO NOT EDIT")) {
             return emptyList()
         }
         val scanned = scanSource(relativePath, sourceText)
-        return (GcAndClockRules.check(scanned) + SafetyAndCoordinateRules.check(scanned))
-            .sortedWith(compareBy({ it.line }, { it.ruleId }))
+        return (
+            GcAndClockRules.check(scanned) +
+                SafetyAndCoordinateRules.check(scanned) +
+                CrossArtifactAndVendorRules.checkSingleFile(scanned, coordinateConvention)
+            ).sortedWith(compareBy({ it.line }, { it.ruleId }))
+    }
+
+    private fun resolveProjectCoordinateConvention(canonicalRoot: File): String? {
+        val metadataFile = File(canonicalRoot, ".ares/project.json")
+        if (!metadataFile.isFile) return null
+        val metadata = runCatching { AresProjectMetadataCodec.decode(metadataFile.readText()) }.getOrNull() ?: return null
+        return metadata.coordinateConvention.name
     }
 
     internal fun collectAuditableRobotSources(root: File): List<File> {

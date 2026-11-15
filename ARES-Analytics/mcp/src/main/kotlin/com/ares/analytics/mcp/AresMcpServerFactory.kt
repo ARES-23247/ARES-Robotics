@@ -10,6 +10,7 @@ import com.ares.analytics.mcp.tools.AuditTools
 import com.ares.analytics.mcp.tools.CodegenAndScaffoldTools
 import com.ares.analytics.mcp.tools.DescriptorMutationTools
 import com.ares.analytics.mcp.tools.ProjectLifecycleTools
+import com.ares.analytics.mcp.tools.VerifyAndBringupTools
 import io.modelcontextprotocol.kotlin.sdk.server.Server
 import io.modelcontextprotocol.kotlin.sdk.server.ServerOptions
 import io.modelcontextprotocol.kotlin.sdk.types.Implementation
@@ -53,6 +54,7 @@ object AresMcpServerFactory {
         }
         CodegenAndScaffoldTools.register(server, engine, mutators)
         AuditTools.register(server, engine)
+        VerifyAndBringupTools.register(server, engine, mutators)
 
         AresMcpResources.register(server, engine)
         AresMcpPrompts.register(server)

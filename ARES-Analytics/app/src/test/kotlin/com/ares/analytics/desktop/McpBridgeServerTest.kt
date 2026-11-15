@@ -56,7 +56,7 @@ class McpBridgeServerTest {
         val bridgeServer = McpBridgeServer(
             projectSession = session,
             bridgeDirProvider = { bridgeDir },
-            studioVersion = "7.0.79-test",
+            studioVersion = "7.0.81-test",
         )
         val client = HttpClient(CIO)
         try {
@@ -65,7 +65,7 @@ class McpBridgeServerTest {
                 val bridgeFile = File(bridgeDir, MCP_BRIDGE_FILE_NAME)
                 assertTrue(bridgeFile.isFile)
                 val descriptor = json.decodeFromString(McpBridgeDescriptor.serializer(), bridgeFile.readText())
-                assertEquals("7.0.79-test", descriptor.studioVersion)
+                assertEquals("7.0.81-test", descriptor.studioVersion)
                 assertNotNull(bridgeServer.descriptorState.value)
 
                 // Reject unauthorized calls

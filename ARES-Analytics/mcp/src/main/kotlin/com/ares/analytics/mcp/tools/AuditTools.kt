@@ -6,12 +6,12 @@ import io.modelcontextprotocol.kotlin.sdk.server.Server
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.putJsonObject
 
-/** Registers `ares_code_audit` running rules `ARES-GC-001` through `ARES-SIM-008`. */
+/** Registers `ares_code_audit` running rules `ARES-GC-001` through `ARES-COORD-012`. */
 internal object AuditTools {
     fun register(server: Server, engine: HeadlessProjectEngine) {
         server.addTool(
             name = "ares_code_audit",
-            description = "Run deterministic ARES static invariant audit (ARES-GC-001 through ARES-SIM-008: zero-GC loops, RobotClock, Redux purity, disable/fault neutralization, cached reads, CCW coordinates, offline-first, truth isolation).",
+            description = "Run deterministic ARES static invariant audit (ARES-GC-001 through ARES-COORD-012: zero-GC loops, RobotClock, Redux purity, disable/fault neutralization, cached reads, CCW coordinates, offline-first, truth isolation, vendordeps/CAN consistency, batched Phoenix 6 signals, non-blocking hot loops, and league coordinate transforms).",
             inputSchema = toolSchema {
                 putJsonObject("projectPath") { stringProp("Robot repository root (defaults to active Studio bridge project)") }
                 putJsonObject("paths") { stringArrayProp("Optional repo-relative Kotlin/Java paths (defaults to all auditable non-generated sources)") }

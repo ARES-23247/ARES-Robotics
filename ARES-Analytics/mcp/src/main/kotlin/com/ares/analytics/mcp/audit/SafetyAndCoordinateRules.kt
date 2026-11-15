@@ -14,7 +14,7 @@ internal object SafetyAndCoordinateRules {
         """\b(?:setPower|setVoltage|setControl|applyMotorPower|applyVoltage|applyPower)\s*\(""",
     )
     private val neutralMethodDecl = Regex(
-        """\bfun\s+(?:disable|stop|close|neutralize|disabledInit)\s*\(""",
+        """\bfun\s+(?:disable|stop|close|neutralize|neutralizeOutputs|disabledInit)\s*\(""",
     )
     private val neutralResetToken = Regex(
         """(?:0\.0|0f|NeutralOut|stopMotor|disable\s*\(\)|stop\s*\(\)|applyNeutralOutputs\s*\(\))""",

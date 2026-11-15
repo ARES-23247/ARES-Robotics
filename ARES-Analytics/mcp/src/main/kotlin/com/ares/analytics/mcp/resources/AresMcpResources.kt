@@ -1,16 +1,20 @@
 package com.ares.analytics.mcp.resources
 
 import com.ares.analytics.mcp.engine.HeadlessProjectEngine
+import com.ares.analytics.mcp.verify.ProjectGradleVerifier
+import com.ares.analytics.shared.AppJson
 import com.ares.analytics.shared.AppJsonPretty
 import io.modelcontextprotocol.kotlin.sdk.server.Server
 import io.modelcontextprotocol.kotlin.sdk.types.ReadResourceResult
 import io.modelcontextprotocol.kotlin.sdk.types.TextResourceContents
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonArray
-import kotlinx.serialization.json.JsonPrimitive
 import java.io.File
 
 /** Registers static `ares://` resources and URI templates for lazy context loading. */
@@ -79,7 +83,7 @@ internal object AresMcpResources {
         server.addResource(
             uri = "ares://verification/latest",
             name = "Latest Project Validation Summary",
-            description = "Latest RobotProjectAssembler and compiler IR validation state for the attached project.",
+            description = "Latest RobotProjectAssembler, compiler IR, and ares_project_verify Gradle verification summary.",
             mimeType = "application/json",
         ) { request ->
             val json = runBlocking {
@@ -87,20 +91,42 @@ internal object AresMcpResources {
                 if (root == null) {
                     """{"attached":false,"message":"Run ares_project_inspect or ares_project_validate first."}"""
                 } else {
-                    AppJsonPretty.encodeToString(engine.validateProject(root))
+                    val baseObj = AppJson.parseToJsonElement(AppJsonPretty.encodeToString(engine.validateProject(root))).jsonObject
+                    val latestVerifyFile = File(root, ProjectGradleVerifier.LATEST_VERIFY_RELATIVE_PATH)
+                    if (!latestVerifyFile.isFile) {
+                        AppJsonPretty.encodeToString(JsonObject.serializer(), baseObj)
+                    } else {
+                        val latestVerify = runCatching { AppJson.parseToJsonElement(latestVerifyFile.readText()) }.getOrNull()
+                        val merged = buildJsonObject {
+                            baseObj.forEach { (k, v) -> put(k, v) }
+                            if (latestVerify != null) put("latestProjectVerify", latestVerify)
+                        }
+                        AppJsonPretty.encodeToString(JsonObject.serializer(), merged)
+                    }
                 }
             }
             textResource(request.uri, "application/json", json)
         }
 
         server.addResource(
-            uri = "ares://runs", name = "Recorded runs",
+            uri = "ares://runs",
+            name = "Recorded runs",
             description = "Latest 100 completed recordings in the active Studio workspace, newest first.",
             mimeType = "application/json",
         ) { request -> textResource(request.uri, "application/json", engine.bridgeClient.recordedRuns()) }
 
+        server.addResource(
+            uri = "ares://templates/catalog",
+            name = "ARES Built-In Templates, Presets & Vendor Profiles Catalog",
+            description = "JSON inventory of all 31 subsystem templates, 4 drivetrain presets, 4 field presets, and 8 vendor SDK scaffold profiles.",
+            mimeType = "application/json",
+        ) { request ->
+            textResource(request.uri, "application/json", SchemaExemplarCatalog.renderTemplatesCatalogJson())
+        }
+
         server.addResourceTemplate(
-            uriTemplate = "ares://runs/{sessionId}", name = "Recorded run evidence",
+            uriTemplate = "ares://runs/{sessionId}",
+            name = "Recorded run evidence",
             description = "Run-wide measured summaries with units, sample times, source digests and topic inventory. Null metrics are unavailable.",
             mimeType = "application/json",
         ) { request, _ ->
@@ -116,7 +142,7 @@ internal object AresMcpResources {
         server.addResourceTemplate(
             uriTemplate = "ares://schemas/{documentKind}",
             name = "ARES Canonical Document Schema Reference",
-            description = "Schema fields and validation rules for subsystem, drivetrain, superstructure, routine, controls, or tuning.",
+            description = "Schema fields, contracts, and canonical codec-validated JSON exemplar for subsystem, drivetrain, superstructure, routine, controls, controller, tuning, project, action-catalog, autonomous-catalog, or field.",
             mimeType = "text/markdown",
         ) { request, _ ->
             val docKind = request.uri.substringAfter("ares://schemas/").trim().lowercase()
@@ -126,7 +152,7 @@ internal object AresMcpResources {
         server.addResourceTemplate(
             uriTemplate = "ares://cookbook/{league}/{pattern}",
             name = "ARES Code Cookbook",
-            description = "Working zero-GC Kotlin patterns: ftc/hardware-io, ftc/teleop-context, frc/swerve-season-reducer, frc/phoenix-talonfx-io, shared/mock-io-unit-test.",
+            description = "Working zero-GC Kotlin patterns: ftc/hardware-io, ftc/teleop-context, ftc/limelight-pinpoint, frc/swerve-season-reducer, frc/phoenix-talonfx-io, frc/photon-vision, shared/redux-slice, shared/mock-io-unit-test, shared/mock-io-test.",
             mimeType = "text/markdown",
         ) { request, _ ->
             val suffix = request.uri.substringAfter("ares://cookbook/").trim().lowercase()
@@ -173,22 +199,14 @@ internal object AresMcpResources {
         |6. **Truth Separation**: Never consume `ARES/TruePose` or `simTruth` inside estimators or controllers.
     """.trimMargin()
 
-    private fun schemaReference(kind: String): String = when (kind) {
-        "subsystem" -> "## `.ares/subsystems/<id>.aressubsystem`\nCanonical fields: `schemaVersion=11`, `documentId` (lowercase slug), `uid`, `displayName`, `kotlinTypeName` (PascalCase), `platform` (`FTC|FRC|XRP`), `hardware[]`, `stateFields[]`, `controlLoops[]`, `tuningParameters[]`, `template`, `implementation` (`kind`: `DECLARATIVE_GENERATED|GENERATED_STARTER|HAND_AUTHORED`), `safety`."
-        "drivetrain" -> "## `.ares/drivetrains/<id>.aresdrivetrain`\nCanonical fields: `schemaVersion=1`, `uid`, `drivebaseId`, `kind` (`FTC_MECANUM|FRC_SWERVE|XRP_DIFFERENTIAL|...`), `platform`, `components[]`, `geometry` (`wheelDiameterMeters`, `trackWidthMeters`, `wheelBaseMeters`, `driveGearRatio`, `maxLinearSpeedMetersPerSecond`, `maxAngularSpeedRadiansPerSecond`), `localization`."
-        "superstructure" -> "## `.ares/superstructures/<id>.aressuperstructure`\nCanonical fields: `superstructureId`, `initialStateId`, `faultStateId`, `disabledStateId`, `disabledPolicy=FORCE_SAFE_AND_REJECT_REQUESTS`, `states[]` (every state commands the exact same target field set), `transitions[]`, `interlocks[]`, `healthFallbacks[]`."
-        "routine" -> "## `.ares/routines/<id>.aresroutine`\nCanonical fields: `schemaVersion=2`, `documentId`, `revision`, `name`, `description`, `steps[]` (`ACTION`, `DRIVE_TO`, `WAIT`, `WAIT_UNTIL`, `TOGETHER`, `FIRST_TO_FINISH`, `DEADLINE`, `CALL`, `REPEAT`). Register in `.ares/autonomous-catalog.json` to expose on INIT selector."
-        "controls" -> "## `.ares/controls/<id>.arescontrols`\nBinds `CONTROLLER_PROFILE` slots (`ftc-driver`, `frc-driver`) to catalog action keys or drivetrain axes (`vx`, `vy`, `omega`) with deadbands, exponents, and chord windows."
-        "tuning" -> "## `.ares/tuning/*.arestuning` & `.ares/local/tuning/*.arestuning`\nCanonical profiles (`CANONICAL_CHECKED_IN`) live in `.ares/tuning/`; local experiments (`LOCAL_EXPERIMENTAL`, no promotion block) live in `.ares/local/tuning/`. Parameter values must satisfy declared `[minimum, maximum]` bounds."
-        else -> "## Unknown schema '$kind'\nSupported kinds: `subsystem`, `drivetrain`, `superstructure`, `routine`, `controls`, `tuning`."
-    }
+    private fun schemaReference(kind: String): String = SchemaExemplarCatalog.renderSchemaReference(kind)
 
-    private fun cookbookSnippet(path: String): String = when (path) {
+    private fun cookbookSnippet(path: String): String = SchemaExemplarCatalog.cookbookSnippet(path) ?: when (path) {
         "ftc/hardware-io" -> "### FTC Hardware IO Cookbook\nCache encoder/limit reads once inside `readInputs()`, stamp `lastFeedbackMillis = com.areslib.util.RobotClock.currentTimeMillis()`, enforce freshness & finite bounds inside `writeOutputs()`, and zero all motors in `disable()`, `stop()`, and `close()`."
         "ftc/teleop-context" -> "### FTC TeleOp Context Cookbook\nAvoid allocations inside `runOpMode()` loops; delegate velocity commands in CCW-positive radians/sec and coerce finite stick axes."
         "frc/swerve-season-reducer" -> "### FRC Swerve Season Reducer Cookbook\nKeep `*State` data classes immutable (`val` properties only), return `state.copy(...)`, and never import `com.ctre.*` or `com.revrobotics.*` into reducer files."
         "frc/phoenix-talonfx-io" -> "### FRC Phoenix TalonFX IO Cookbook\nApply `NeutralOut()` in `disable()`/`stop()`/`close()`, clamp requested voltage within `[-12.0, 12.0]`, and stamp cached sensor signals with `RobotClock.currentTimeMillis()`."
         "shared/mock-io-unit-test" -> "### Shared Mock-IO Unit Test Cookbook\nCall `RobotClock.useMockTime(1_000L)` inside `try { ... } finally { RobotClock.useSystemTime() }`, verifying actuation, stale-feedback zeroing, and disable neutralization."
-        else -> "### Cookbook index\nAvailable patterns: `ftc/hardware-io`, `ftc/teleop-context`, `frc/swerve-season-reducer`, `frc/phoenix-talonfx-io`, `shared/mock-io-unit-test`."
+        else -> "### Cookbook index\nAvailable patterns: `ftc/hardware-io`, `ftc/teleop-context`, `ftc/limelight-pinpoint`, `frc/swerve-season-reducer`, `frc/phoenix-talonfx-io`, `frc/photon-vision`, `shared/redux-slice`, `shared/mock-io-unit-test`, `shared/mock-io-test`."
     }
 }

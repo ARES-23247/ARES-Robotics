@@ -37,7 +37,7 @@ class StudioBridgeClientTest {
                         pid = 9999999L,
                         port = 54321,
                         bearerToken = "secret",
-                        studioVersion = "7.0.79",
+                        studioVersion = "7.0.81",
                         startedAtEpochMillis = 1_700_000_000_000L,
                     ),
                 ),
@@ -69,7 +69,7 @@ class StudioBridgeClientTest {
                 McpBridgeHealthResponse.serializer(),
                 McpBridgeHealthResponse(
                     ok = true,
-                    studioVersion = "7.0.79",
+                    studioVersion = "7.0.81",
                     pid = currentPid,
                     activeProjectRoot = "C:/robot",
                     projectLoaded = true,
@@ -110,7 +110,7 @@ class StudioBridgeClientTest {
                         pid = currentPid,
                         port = port,
                         bearerToken = expectedToken,
-                        studioVersion = "7.0.79",
+                        studioVersion = "7.0.81",
                         activeProjectRoot = "C:/robot",
                         startedAtEpochMillis = 1_700_000_000_000L,
                     ),
@@ -119,7 +119,7 @@ class StudioBridgeClientTest {
             val client = StudioBridgeClient(bridgeDir = bridgeDir, isPidAlive = { true })
             val health = client.health()
             assertTrue(health.connected)
-            assertEquals("7.0.79", health.studioVersion)
+            assertEquals("7.0.81", health.studioVersion)
             assertEquals("rev-abc", health.projectRevision)
 
             val reload = client.notifyReload("C:/robot", expectedRevision = "rev-abc", reason = "test")
@@ -135,7 +135,7 @@ class StudioBridgeClientTest {
                         pid = currentPid,
                         port = port,
                         bearerToken = "wrong-token",
-                        studioVersion = "7.0.79",
+                        studioVersion = "7.0.81",
                         startedAtEpochMillis = 1_700_000_000_000L,
                     ),
                 ),

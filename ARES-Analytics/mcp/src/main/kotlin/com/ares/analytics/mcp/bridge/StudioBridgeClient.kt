@@ -70,7 +70,7 @@ class StudioBridgeClient(
                 bridgeFilePath = bridgeFile.absolutePath,
                 port = descriptor.port,
                 studioVersion = descriptor.studioVersion,
-                activeProjectRoot = descriptor.activeProjectRoot,
+                activeProjectRoot = null,
                 fallbackReason = "Studio PID ${descriptor.pid} is no longer running; operating in offline headless mode.",
             )
         }
@@ -85,7 +85,7 @@ class StudioBridgeClient(
                         bridgeFilePath = bridgeFile.absolutePath,
                         port = descriptor.port,
                         studioVersion = descriptor.studioVersion,
-                        activeProjectRoot = descriptor.activeProjectRoot,
+                        activeProjectRoot = null,
                         fallbackReason = "Studio bridge rejected health probe (${response.status.value}); using headless mode.",
                     )
                 }
@@ -95,7 +95,7 @@ class StudioBridgeClient(
                     bridgeFilePath = bridgeFile.absolutePath,
                     port = descriptor.port,
                     studioVersion = body.studioVersion,
-                    activeProjectRoot = body.activeProjectRoot,
+                    activeProjectRoot = if (body.ok) body.activeProjectRoot else null,
                     projectLoaded = body.projectLoaded,
                     projectRevision = body.projectRevision,
                 )
@@ -106,7 +106,7 @@ class StudioBridgeClient(
                 bridgeFilePath = bridgeFile.absolutePath,
                 port = descriptor.port,
                 studioVersion = descriptor.studioVersion,
-                activeProjectRoot = descriptor.activeProjectRoot,
+                activeProjectRoot = null,
                 fallbackReason = "Studio bridge unreachable (${error.message ?: "connection failed"}); using headless mode.",
             )
         }
