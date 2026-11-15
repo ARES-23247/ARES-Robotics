@@ -75,6 +75,7 @@ internal data class WorkspaceRouteState(
     val runsReloadTrigger: Int,
     val primarySessionId: String?,
     val targetSelection: TargetSelection,
+    val liveRobotIp: String = "127.0.0.1",
     val simulatorRunning: Boolean,
     val localSimulatorOnline: Boolean,
     val nt4Connected: Boolean,
@@ -151,6 +152,8 @@ internal fun WorkspaceRouteHost(
             onOpenRunHistory = { actions.navigate(NavigationTarget.RUN_HISTORY) },
             onOpenHelp = { actions.navigate(NavigationTarget.ACADEMY) },
             onMissionSnapshotChanged = actions.updateMissionSnapshot,
+            liveRobotIp = state.liveRobotIp,
+            hardwareSetupService = scope.hardwareSetup,
         )
 
         NavigationTarget.PATH_PLANNER -> PathPlannerScreen(

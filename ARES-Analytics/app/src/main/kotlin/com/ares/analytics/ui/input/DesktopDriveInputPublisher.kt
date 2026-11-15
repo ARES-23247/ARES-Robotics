@@ -11,6 +11,7 @@ import com.ares.analytics.service.GamepadState
 import com.ares.analytics.service.Nt4ClientService
 import com.ares.analytics.service.XrpLinkService
 import com.ares.analytics.service.XrpRequestedMode
+import com.ares.analytics.service.isLoopbackDriveControlHost
 import com.ares.analytics.shared.models.League
 import com.areslib.math.InputMath
 import com.areslib.telemetry.schema.DesktopDriveFrameGate
@@ -388,9 +389,11 @@ internal fun XrpDriveInputPublisher(
     gamepadState: StateFlow<GamepadState>,
     connected: Boolean,
     controlSurfaceActive: Boolean,
+    requireActiveSurfaceForAutonomous: Boolean = !isLoopbackDriveControlHost(xrpLinkService.serverHost),
 ) {
     val keyboardSnapshot = remember(keyboardState) { MutableStateFlow(keyboardState.driveSnapshot()) }
     val latestControlSurfaceActive by rememberUpdatedState(controlSurfaceActive)
+    val latestRequireActiveSurfaceForAuto by rememberUpdatedState(requireActiveSurfaceForAutonomous)
     LaunchedEffect(keyboardState) {
         snapshotFlow { keyboardState.driveSnapshot() }.collect { keyboardSnapshot.value = it }
     }
@@ -402,11 +405,23 @@ internal fun XrpDriveInputPublisher(
             try {
                 while (currentCoroutineContext().isActive) {
                     val keyboard = keyboardSnapshot.value
-                    val request = xrpLinkService.controlRequest.value
+                    var request = xrpLinkService.controlRequest.value
+                    val mustLatchStop = when (request.mode) {
+                        XrpRequestedMode.TELEOP -> !latestControlSurfaceActive || !keyboard.enabled
+                        XrpRequestedMode.AUTONOMOUS -> latestRequireActiveSurfaceForAuto && !latestControlSurfaceActive
+                        else -> false
+                    }
+                    if (mustLatchStop) {
+                        // Advance controlRevision atomically to STOPPED instead of sending STOP under
+                        // an existing TELEOP/AUTO revision (which would latch protocol lockout on XRP)
+                        // and ensure TeleOp/Auto never auto-resumes when window focus returns.
+                        xrpLinkService.requestStop()
+                        request = xrpLinkService.controlRequest.value
+                    }
                     val teleOpArmed = request.mode == XrpRequestedMode.TELEOP &&
                         latestControlSurfaceActive && keyboard.enabled
                     val autonomousArmed = request.mode == XrpRequestedMode.AUTONOMOUS &&
-                        latestControlSurfaceActive
+                        (!latestRequireActiveSurfaceForAuto || latestControlSurfaceActive)
                     val armed = teleOpArmed || autonomousArmed
                     val intent = if (teleOpArmed) desktopDriveIntent(
                             keyboard = keyboard,
@@ -436,11 +451,12 @@ internal fun XrpDriveInputPublisher(
                 }
             } finally {
                 withContext(NonCancellable) {
-                    val request = xrpLinkService.controlRequest.value
+                    xrpLinkService.requestStop()
+                    val stopRequest = xrpLinkService.controlRequest.value
                     xrpLinkService.publishControl(
                         sessionId = sessionId,
                         sequence = sequence,
-                        requestRevision = request.revision + 1L,
+                        requestRevision = stopRequest.revision,
                         armed = false,
                         vx = 0.0,
                         vy = 0.0,

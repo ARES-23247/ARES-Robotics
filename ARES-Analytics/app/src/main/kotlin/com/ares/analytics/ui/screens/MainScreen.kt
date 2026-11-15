@@ -19,7 +19,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ares.analytics.di.ServiceRegistry
 import com.ares.analytics.service.BuildExecutionPhase
-import com.ares.analytics.service.isLoopbackDriveControlHost
 import com.ares.analytics.service.project.ProjectExecutionCommand
 import com.ares.analytics.shared.*
 import com.ares.analytics.shared.models.*
@@ -29,9 +28,6 @@ import com.ares.analytics.domain.navigation.PitDeepLinkRequest
 import com.ares.analytics.domain.navigation.StrategyDeepLinkRequest
 import com.ares.analytics.ui.components.Sidebar
 import com.ares.analytics.ui.components.core.TargetSelection
-import com.ares.analytics.ui.input.DesktopDriveInputPublisher
-import com.ares.analytics.ui.input.DesktopDriveKeyDispatcher
-import com.ares.analytics.ui.input.XrpDriveInputPublisher
 import com.ares.analytics.ui.components.dashboard.DashboardMissionSnapshot
 import com.ares.analytics.ui.components.dashboard.LocalSimulatorLaunchRequest
 import com.ares.analytics.ui.components.dashboard.DashboardWidgetRegistry
@@ -229,15 +225,8 @@ fun MainScreen(services: ServiceRegistry) {
     var pitDeepLink by remember(currentConfig.id) { mutableStateOf(PitDeepLinkRequest()) }
     var strategyDeepLink by remember(currentConfig.id) { mutableStateOf(StrategyDeepLinkRequest()) }
     var targetSelection by remember(currentConfig.id) { mutableStateOf(TargetSelection.LIVE_ROBOT) }
-    var liveRobotIp by remember(currentConfig.id, currentConfig.nt4Host) {
-        mutableStateOf(currentConfig.nt4Host ?: "192.168.43.1")
-    }
-    LaunchedEffect(activeNav, targetSelection, isRobotLinkConnected) {
-        if (activeNav != NavigationTarget.DASHBOARD || !isRobotLinkConnected) {
-            services.keyboardDriveState.disarm()
-        } else {
-            services.keyboardDriveState.releaseAll()
-        }
+    var liveRobotIp by remember(currentConfig.id, currentConfig.league, currentConfig.nt4Host) {
+        mutableStateOf(defaultLiveRobotHost(currentConfig.league, currentConfig.nt4Host))
     }
     val isLiveRobotOnline by services.targetScannerService.isLiveRobotOnline.collectAsState()
     val isLocalSimOnline by services.targetScannerService.isLocalSimOnline.collectAsState()
@@ -247,32 +236,16 @@ fun MainScreen(services: ServiceRegistry) {
         isLocalSimOnline
     }
     val dashboardWindowFocused = androidx.compose.ui.platform.LocalWindowInfo.current.isWindowFocused
-    LaunchedEffect(dashboardWindowFocused) {
-        if (!dashboardWindowFocused) services.keyboardDriveState.disarm()
-    }
     val isAnyOverlayActive = isTerminalOpen || commandPaletteOpen || coachDrawerOpen ||
         workspacePendingDeletion != null || deployDialogOpen
-    LaunchedEffect(isAnyOverlayActive) {
-        if (isAnyOverlayActive) services.keyboardDriveState.disarm()
-    }
-    val localSimLoopbackConnected = targetSelection == TargetSelection.LOCAL_SIM && isRobotLinkConnected &&
-        isLoopbackDriveControlHost(if (currentConfig.league == League.XRP) services.xrpLinkService.serverHost else services.nt4ClientService.serverIp)
-    val localSimulatorControlAuthorized = !isAnyOverlayActive && dashboardWindowFocused &&
-        activeNav == NavigationTarget.DASHBOARD && localSimLoopbackConnected
-    DesktopDriveInputPublisher(
-        nt4ClientService = services.nt4ClientService,
-        keyboardState = services.keyboardDriveState,
-        gamepadState = services.gamepadService.gamepad1State,
-        connected = localSimLoopbackConnected && currentConfig.league != League.XRP,
-        controlSurfaceActive = localSimulatorControlAuthorized,
+    BindDesktopDriveControl(
+        services = services,
         league = currentConfig.league,
-    )
-    XrpDriveInputPublisher(
-        xrpLinkService = services.xrpLinkService,
-        keyboardState = services.keyboardDriveState,
-        gamepadState = services.gamepadService.gamepad1State,
-        connected = localSimLoopbackConnected && currentConfig.league == League.XRP,
-        controlSurfaceActive = localSimulatorControlAuthorized,
+        targetSelection = targetSelection,
+        activeNav = activeNav,
+        dashboardWindowFocused = dashboardWindowFocused,
+        isAnyOverlayActive = isAnyOverlayActive,
+        isRobotLinkConnected = isRobotLinkConnected,
     )
     val unmanagedSimulatorOnline = compatibleLocalSimOnline && !isSimRunning
     val simulationProduct = robotStudioShellState.simulationProduct
@@ -324,10 +297,6 @@ fun MainScreen(services: ServiceRegistry) {
             LocalSimulatorLaunchRequest.NONE -> Unit
         }
     }
-    DesktopDriveKeyDispatcher(
-        state = services.keyboardDriveState,
-        controlSurfaceActive = localSimulatorControlAuthorized,
-    )
 
     LaunchedEffect(currentConfig, runsIndexReloadTrigger) {
         robotStudioViewModel.load(currentConfig)
@@ -450,6 +419,8 @@ fun MainScreen(services: ServiceRegistry) {
                     requestSimulatorLaunch = requestSimulatorLaunch,
                     onStopAll = {
                         pendingSimulatorLaunch = false
+                        services.keyboardDriveState.disarm()
+                        services.xrpLinkService.disarmLiveControl()
                         services.projectBuildService.killActiveBuild()
                         services.robotDeploymentService.cancel()
                         services.simulatorProcessService.stop()
@@ -462,6 +433,19 @@ fun MainScreen(services: ServiceRegistry) {
                     onCloseTerminal = { mainViewModel.onIntent(MainIntent.SetTerminalOpen(false)) },
                     onNavigateBack = { mainViewModel.onIntent(MainIntent.NavigateBack) },
                     onNavigateForward = { mainViewModel.onIntent(MainIntent.NavigateForward) },
+                    onEscapeEmergencyStop = {
+                        if (activeNav == NavigationTarget.DASHBOARD && currentConfig.league == League.XRP &&
+                            (services.xrpLinkService.liveControlAuthorized.value || services.keyboardDriveState.enabled ||
+                                services.xrpLinkService.controlRequest.value.mode != com.ares.analytics.service.XrpRequestedMode.STOPPED)
+                        ) {
+                            services.keyboardDriveState.disarm()
+                            services.xrpLinkService.requestStop()
+                            services.xrpLinkService.disarmLiveControl()
+                            true
+                        } else {
+                            false
+                        }
+                    },
                 )
             }
     ) {
@@ -570,6 +554,8 @@ fun MainScreen(services: ServiceRegistry) {
                         onRunSim = requestSimulatorLaunch,
                         onStopAll = {
                             pendingSimulatorLaunch = false
+                            services.keyboardDriveState.disarm()
+                            services.xrpLinkService.disarmLiveControl()
                             services.projectBuildService.killActiveBuild()
                             services.robotDeploymentService.cancel()
                             services.simulatorProcessService.stop()
@@ -608,6 +594,7 @@ fun MainScreen(services: ServiceRegistry) {
                                 runsReloadTrigger = runsIndexReloadTrigger,
                                 primarySessionId = primarySessionId,
                                 targetSelection = targetSelection,
+                                liveRobotIp = liveRobotIp,
                                 simulatorRunning = isSimRunning,
                                 localSimulatorOnline = compatibleLocalSimOnline,
                                 nt4Connected = isRobotLinkConnected,

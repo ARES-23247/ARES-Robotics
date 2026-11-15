@@ -48,6 +48,7 @@ internal fun handleMainScreenPreviewKeyEvent(
     onCloseTerminal: () -> Unit,
     onNavigateBack: () -> Unit,
     onNavigateForward: () -> Unit,
+    onEscapeEmergencyStop: (() -> Boolean)? = null,
 ): Boolean {
     if (keyEvent.type != KeyEventType.KeyDown) return false
     val isCtrl = keyEvent.isCtrlPressed
@@ -109,7 +110,7 @@ internal fun handleMainScreenPreviewKeyEvent(
                 onCloseTerminal()
                 true
             }
-            else -> false
+            else -> onEscapeEmergencyStop?.invoke() == true
         }
     }
     return false

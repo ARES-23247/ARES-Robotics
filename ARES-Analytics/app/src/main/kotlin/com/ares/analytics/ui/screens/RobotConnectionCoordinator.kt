@@ -25,11 +25,16 @@ internal fun RobotConnectionCoordinator(
     canonicalContentHash: String?,
     focusRequester: FocusRequester,
 ) {
-    LaunchedEffect(liveRobotIp, config.league, config.projectPath, canonicalContentHash) {
+    LaunchedEffect(liveRobotIp, config.league, config.projectPath, targetSelection, canonicalContentHash) {
         val xrpPort = runCatching { loadXrpMetadata(config)?.requireXrpRuntimeOptions()?.port }.getOrNull()
+        val ownsSingleSlotXrpLink = config.league == League.XRP && targetSelection == TargetSelection.LIVE_ROBOT
         services.targetScannerService.startScanning(
             liveRobotHost = liveRobotIp,
             port = xrpPort ?: defaultPort(config.league),
+            skipLiveRobotProbe = ownsSingleSlotXrpLink,
+            liveRobotOnlineOverride = if (ownsSingleSlotXrpLink) {
+                { services.xrpLinkService.isConnected.value }
+            } else null,
         )
     }
 

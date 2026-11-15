@@ -310,8 +310,9 @@ class XrpLinkServiceTest {
             }
             assertEquals("192.168.4.1", service.serverHost)
             withTimeout(3_000) {
-                while (telemetry.latestValues["ARES/TruePose/0"]?.value != 1.25) delay(10)
+                while (telemetry.latestValues["ARES/EstimatedPose/0"]?.value != 1.25) delay(10)
             }
+            assertEquals(null, telemetry.latestValues["ARES/TruePose/0"], "Non-loopback physical XRP must not publish simulator-only ARES/TruePose/*")
             assertFalse(service.publishControl("remote-session", 0, 1, true, 0.5, 0.0, 0.0))
             assertFalse(
                 service.publishFieldConfig(
@@ -320,6 +321,144 @@ class XrpLinkServiceTest {
             )
             delay(200)
             assertTrue(received.isEmpty(), "Non-loopback XRP link must never transmit control or field frames")
+        } finally {
+            holdPeer.complete(Unit)
+            service.disposeAndJoin()
+            telemetry.disposeAndJoin()
+            database.closeAndJoin()
+            withContext(Dispatchers.IO) { server.close() }
+            serverJob.join()
+        }
+    }
+
+    @Test
+    fun `non-loopback XRP allows INIT TeleOp and Auto after explicit peer authorization and revokes cleanly`() = runBlocking {
+        val database = DatabaseService(tempDir.resolve("authorized-remote-xrp.duckdb").toString())
+        val telemetry = Nt4ClientService(database)
+        val server = ServerSocket(0)
+        val service = XrpLinkService(telemetry) {
+            object : java.net.Socket() {
+                override fun connect(endpoint: java.net.SocketAddress, timeout: Int) {
+                    super.connect(java.net.InetSocketAddress("127.0.0.1", server.localPort), timeout)
+                }
+            }
+        }
+        val received = java.util.Collections.synchronizedList(mutableListOf<String>())
+        val holdPeer = kotlinx.coroutines.CompletableDeferred<Unit>()
+        val serverJob = launch(Dispatchers.IO) {
+            server.accept().use { socket ->
+                val writer = socket.getOutputStream().bufferedWriter()
+                writer.write(
+                    "{\"protocol\":\"ares-xrp/1\",\"type\":\"hello\",\"role\":\"robot\"," +
+                        "\"projectId\":\"remote-project\",\"canonicalContentSha256\":\"${"a".repeat(64)}\"," +
+                        "\"contentSha256\":\"${"a".repeat(64)}\",\"drivetrainType\":\"differential\"}\n",
+                )
+                writer.flush()
+                val reader = socket.getInputStream().bufferedReader()
+                while (!holdPeer.isCompleted) {
+                    socket.soTimeout = 100
+                    val line = runCatching { reader.readLine() }.getOrNull()
+                    if (line != null) {
+                        received.add(line)
+                    } else if (socket.isClosed) {
+                        break
+                    }
+                }
+            }
+        }
+        try {
+            assertFalse(service.authorizeLiveControl(), "Live authorization must fail when disconnected")
+            service.start("192.168.4.1", server.localPort, "remote-project", "a".repeat(64))
+            withTimeout(3_000) {
+                while (!service.isConnected.value) delay(10)
+            }
+            assertFalse(service.liveControlAuthorized.value)
+            assertFalse(service.publishControl("s1", 0, 1, false, 0.0, 0.0, 0.0, command = "INIT"))
+
+            assertTrue(service.authorizeLiveControl())
+            assertTrue(service.liveControlAuthorized.value)
+            assertFalse(
+                service.publishFieldConfig(
+                    """{"id":"tabletop","revision":1,"fieldType":"xrp","widthMeters":2.54,"heightMeters":1.4224}""",
+                ),
+                "Field mutation must stay blocked on physical non-loopback XRP even when control is authorized",
+            )
+            assertTrue(service.publishControl("s1", 1, 2, false, 0.0, 0.0, 0.0, command = "INIT"))
+            assertTrue(service.publishControl("s1", 2, 3, true, 0.4, 0.0, 0.25, command = "START_TELEOP"))
+            assertTrue(
+                service.publishControl(
+                    sessionId = "s1",
+                    sequence = 3,
+                    requestRevision = 4,
+                    armed = true,
+                    vx = 0.0,
+                    vy = 0.0,
+                    omega = 0.0,
+                    command = "START_AUTO",
+                    selectedOpMode = "auto-forward",
+                ),
+            )
+
+            service.revokeLiveControl()
+            assertFalse(service.liveControlAuthorized.value)
+            assertEquals(XrpRequestedMode.STOPPED, service.controlRequest.value.mode)
+            assertFalse(service.publishControl("s1", 4, 5, true, 0.4, 0.0, 0.0, command = "START_TELEOP"))
+
+            withTimeout(3_000) {
+                while (received.size < 4) delay(10)
+            }
+            val parsed = received.map { JsonParser.parseString(it).asJsonObject }
+            assertEquals("INIT", parsed[0]["command"].asString)
+            assertEquals("START_TELEOP", parsed[1]["command"].asString)
+            assertEquals("START_AUTO", parsed[2]["command"].asString)
+            assertEquals("auto-forward", parsed[2]["selectedOpMode"].asString)
+            assertEquals("STOP", parsed[3]["command"].asString)
+            assertFalse(parsed[3]["armed"].asBoolean)
+        } finally {
+            holdPeer.complete(Unit)
+            service.disposeAndJoin()
+            telemetry.disposeAndJoin()
+            database.closeAndJoin()
+            withContext(Dispatchers.IO) { server.close() }
+            serverJob.join()
+        }
+    }
+
+    @Test
+    fun `disconnect and stop automatically revoke live XRP control authorization`() = runBlocking {
+        val database = DatabaseService(tempDir.resolve("revoke-disconnect-xrp.duckdb").toString())
+        val telemetry = Nt4ClientService(database)
+        val server = ServerSocket(0)
+        val service = XrpLinkService(telemetry) {
+            object : java.net.Socket() {
+                override fun connect(endpoint: java.net.SocketAddress, timeout: Int) {
+                    super.connect(java.net.InetSocketAddress("127.0.0.1", server.localPort), timeout)
+                }
+            }
+        }
+        val holdPeer = kotlinx.coroutines.CompletableDeferred<Unit>()
+        val serverJob = launch(Dispatchers.IO) {
+            server.accept().use { socket ->
+                val writer = socket.getOutputStream().bufferedWriter()
+                writer.write(
+                    "{\"protocol\":\"ares-xrp/1\",\"type\":\"hello\",\"role\":\"robot\"," +
+                        "\"projectId\":\"remote-project\",\"canonicalContentSha256\":\"${"a".repeat(64)}\"," +
+                        "\"contentSha256\":\"${"a".repeat(64)}\",\"drivetrainType\":\"differential\"}\n",
+                )
+                writer.flush()
+                holdPeer.await()
+            }
+        }
+        try {
+            service.start("192.168.4.1", server.localPort, "remote-project", "a".repeat(64))
+            withTimeout(3_000) {
+                while (!service.isConnected.value) delay(10)
+            }
+            assertTrue(service.authorizeLiveControl())
+            assertTrue(service.liveControlAuthorized.value)
+            service.stop()
+            assertFalse(service.isConnected.value)
+            assertFalse(service.liveControlAuthorized.value)
         } finally {
             holdPeer.complete(Unit)
             service.disposeAndJoin()

@@ -106,9 +106,22 @@ open class Nt4ClientService(
     )
     val consoleFlow: SharedFlow<ConsoleMessage> = _consoleFlow.asSharedFlow()
 
+    private val externalFlushStarted = java.util.concurrent.atomic.AtomicBoolean(false)
+
+    private fun ensureExternalTelemetryFlusher() {
+        if (!externalFlushStarted.compareAndSet(false, true)) return
+        serviceScope.launch(Dispatchers.IO) {
+            while (isActive) {
+                delay(250L)
+                if (!isConnected.value) flushPendingFrames()
+            }
+        }
+    }
+
     /** Accepts normalized telemetry from a non-NT4 platform transport such as the XRP link. */
     suspend fun acceptExternalLiveTelemetry(key: String, value: Double, stringValue: String? = null) {
         require(value.isFinite()) { "External live telemetry must be finite" }
+        ensureExternalTelemetryFlusher()
         val nowMs = System.currentTimeMillis()
         val cleanKey = com.ares.analytics.service.log.TelemetryTopicExtractor.normalizeTopic(key.trimStart('/'))
         recordIncomingFrame(cleanKey, value, stringValue, nowMs, nowMs * 1_000L, liveReceiptTimestampUs())

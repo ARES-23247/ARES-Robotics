@@ -12,12 +12,13 @@ import java.awt.event.AWTEventListener
 import java.awt.event.KeyEvent
 
 /**
- * Applies one native desktop key transition to the armed local-control state.
+ * Applies one native desktop key transition to the armed drive-control state.
  *
  * Compose controls such as buttons, menus, and text fields can become the focused AWT child and
  * consume a key before a root `Modifier.onPreviewKeyEvent` observes it. The desktop dispatcher is
- * intentionally installed at the window event-queue boundary; it remains inert until the local
- * simulator Dashboard is active and local control has been explicitly armed.
+ * intentionally installed at the window event-queue boundary; it remains inert until the Dashboard
+ * drive surface is active (loopback simulator for FTC/FRC/XRP, or an explicitly operator-authorized
+ * XRP Driver Station) and drive control has been explicitly armed.
  */
 internal fun applyDesktopDriveKey(
     state: KeyboardDriveState,
@@ -33,8 +34,8 @@ internal fun applyDesktopDriveKey(
         return false
     }
 
-    // Track physical key state only while the loopback simulator surface is armed. The publisher
-    // independently enforces the loopback-only destination boundary, and a Ctrl-modified key
+    // Track physical key state only while an authorized control surface is armed. Publishers
+    // independently enforce loopback/peer-authorization boundaries, and a Ctrl-modified key
     // release still clears a movement key instead of leaving it latched.
     return when (keyCode) {
         KeyEvent.VK_W -> updateDriveKey(isPressed, controlDown) { state.isWPressed = it }
@@ -58,10 +59,10 @@ internal fun applyDesktopDriveKey(
 
 private inline fun updateDriveKey(
     isPressed: Boolean,
-    controlDown: Boolean,
+    modifierDown: Boolean,
     update: (Boolean) -> Unit,
 ): Boolean {
-    if (isPressed && controlDown) return false
+    if (isPressed && modifierDown) return false
     update(isPressed)
     return true
 }

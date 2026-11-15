@@ -34,15 +34,24 @@ class TargetScannerService {
      * @param liveRobotHost IP address or hostname of the live robot controller (e.g., `"192.168.43.1"`).
      * @param port platform link port: NT4 uses 5810 and XRP uses its dedicated JSON link port.
      */
-    fun startScanning(liveRobotHost: String, port: Int = 5810) {
+    fun startScanning(
+        liveRobotHost: String,
+        port: Int = 5810,
+        skipLiveRobotProbe: Boolean = false,
+        liveRobotOnlineOverride: (() -> Boolean)? = null,
+    ) {
         scannerJob?.cancel()
         scannerJob = serviceScope.launch {
             while (isActive) {
                 // Check Local Sim
                 _isLocalSimOnline.value = checkPort("127.0.0.1", port)
 
-                // Check Live Robot
-                _isLiveRobotOnline.value = checkPort(liveRobotHost, port)
+                // Check Live Robot (skip active TCP probing when a single-slot XRP server owns the link)
+                _isLiveRobotOnline.value = if (skipLiveRobotProbe) {
+                    liveRobotOnlineOverride?.invoke() ?: false
+                } else {
+                    checkPort(liveRobotHost, port)
+                }
 
                 delay(2000) // Poll every 2 seconds
             }
