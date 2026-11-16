@@ -30,7 +30,7 @@ dependencies {
     implementation("io.ktor:ktor-client-content-negotiation:3.5.2")
 
     // Serialization
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.11.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.13.0")
 
     // Google OIDC ID-token verification
     implementation("com.google.api-client:google-api-client:2.9.1")
