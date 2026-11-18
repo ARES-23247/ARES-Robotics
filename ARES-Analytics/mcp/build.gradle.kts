@@ -77,7 +77,7 @@ dependencies {
     implementation("io.modelcontextprotocol:kotlin-sdk-server:0.16.0")
     implementation("io.modelcontextprotocol:kotlin-sdk-client:0.16.0")
 
-    implementation("io.ktor:ktor-client-cio:3.5.2")
+    implementation("io.ktor:ktor-client-cio:3.6.1")
     implementation("io.ktor:ktor-client-content-negotiation:3.5.2")
     implementation("io.ktor:ktor-serialization-kotlinx-json:3.5.2")
 

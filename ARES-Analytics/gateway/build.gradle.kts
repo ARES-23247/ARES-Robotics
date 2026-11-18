@@ -26,7 +26,7 @@ dependencies {
     implementation("io.ktor:ktor-server-body-limit:3.5.2")
 
     // Ktor HTTP client (for GitHub API, Vertex AI)
-    implementation("io.ktor:ktor-client-cio:3.5.2")
+    implementation("io.ktor:ktor-client-cio:3.6.1")
     implementation("io.ktor:ktor-client-content-negotiation:3.5.2")
 
     // Serialization

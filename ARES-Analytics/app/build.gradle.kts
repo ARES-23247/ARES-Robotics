@@ -115,7 +115,7 @@ dependencies {
     implementation("org.duckdb:duckdb_jdbc:1.5.5.1")
 
     // Networking — Ktor client
-    implementation("io.ktor:ktor-client-cio:3.5.2")
+    implementation("io.ktor:ktor-client-cio:3.6.1")
     implementation("io.ktor:ktor-client-java:3.5.2")
     implementation("io.ktor:ktor-client-okhttp:3.5.2")
     implementation("io.ktor:ktor-client-websockets:3.5.2")
