@@ -27,7 +27,7 @@ dependencies {
 
     // Ktor HTTP client (for GitHub API, Vertex AI)
     implementation("io.ktor:ktor-client-cio:3.5.2")
-    implementation("io.ktor:ktor-client-content-negotiation:3.5.2")
+    implementation("io.ktor:ktor-client-content-negotiation:3.6.1")
 
     // Serialization
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.11.0")
