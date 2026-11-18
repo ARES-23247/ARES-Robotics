@@ -6,49 +6,42 @@ object MockIoTestScaffoldRenderer {
         packageName: String,
         className: String,
         subjectClassName: String,
+        ftc: Boolean,
     ): String = """
         |// ARES OWNERSHIP: USER-OWNED
         |package $packageName
         |
         |import com.areslib.util.RobotClock
-        |import kotlin.test.Test
-        |import kotlin.test.assertEquals
+        |import ${if (ftc) "org.junit.Test" else "org.junit.jupiter.api.Test"}
+        |import ${if (ftc) "org.junit.Assert.assertEquals" else "org.junit.jupiter.api.Assertions.assertEquals"}
         |
-        |/**
-        | * Deterministic fake-IO unit test template for $subjectClassName.
-        | * Verifies configure -> enable -> bounded output -> stale feedback -> disable neutralization.
-        | */
         |class $className {
-        |    private var lastAppliedOutput: Double = Double.NaN
-        |    private var measuredPosition: Double = 0.0
-        |
         |    @Test
         |    fun disablesAndStaleFeedbackFailClosedToZeroOutput() {
+        |        var lastOutput = Double.NaN
+        |        val adapter = $subjectClassName({ lastOutput = it }, { 0.0 })
         |        RobotClock.useMockTime(1_000L)
         |        try {
-        |            val configured = true
-        |            var enabled = true
-        |            var lastFeedbackMillis = RobotClock.currentTimeMillis()
-        |            fun step(target: Double) {
-        |                val fresh = (RobotClock.currentTimeMillis() - lastFeedbackMillis) <= 250L
-        |                if (!configured || !enabled || !fresh || !target.isFinite()) {
-        |                    lastAppliedOutput = 0.0
-        |                    return
-        |                }
-        |                lastAppliedOutput = (target - measuredPosition).coerceIn(-1.0, 1.0)
-        |            }
-        |
-        |            step(0.5)
-        |            assertEquals(0.5, lastAppliedOutput, 1e-9)
+        |            adapter.configure()
+        |            adapter.readInputs()
+        |            adapter.enable()
+        |            adapter.${if (ftc) "setTargetPower" else "setTargetVoltage"}(0.5)
+        |            adapter.writeOutputs()
+        |            assertEquals(0.5, lastOutput, 1e-9)
         |
         |            RobotClock.useMockTime(2_000L)
-        |            step(0.5)
-        |            assertEquals(0.0, lastAppliedOutput, 1e-9)
+        |            adapter.writeOutputs()
+        |            assertEquals(0.0, lastOutput, 1e-9)
         |
-        |            lastFeedbackMillis = RobotClock.currentTimeMillis()
-        |            enabled = false
-        |            step(0.5)
-        |            assertEquals(0.0, lastAppliedOutput, 1e-9)
+        |            adapter.readInputs()
+        |            adapter.writeOutputs()
+        |            assertEquals(0.0, lastOutput, 1e-9)
+        |            adapter.enable()
+        |            adapter.${if (ftc) "setTargetPower" else "setTargetVoltage"}(0.5)
+        |            adapter.writeOutputs()
+        |            assertEquals(0.5, lastOutput, 1e-9)
+        |            adapter.disable()
+        |            assertEquals(0.0, lastOutput, 1e-9)
         |        } finally {
         |            RobotClock.useSystemTime()
         |        }

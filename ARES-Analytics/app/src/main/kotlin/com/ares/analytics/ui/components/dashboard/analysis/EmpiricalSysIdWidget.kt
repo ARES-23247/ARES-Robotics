@@ -80,21 +80,24 @@ fun EmpiricalSysIdWidget(
         setpointTopic,
         gravityMode,
         catalog.timestampRange,
+        catalog.generation,
     ) {
-        val volts = loadTopicScalarSamples(databaseService, primarySessionId, voltageTopic, catalog.timestampRange, nt4ClientService)
-        val vels = loadTopicScalarSamples(databaseService, primarySessionId, velocityTopic, catalog.timestampRange, nt4ClientService)
-        val pos = loadTopicScalarSamples(databaseService, primarySessionId, positionTopic, catalog.timestampRange, nt4ClientService)
-        val sp = loadTopicScalarSamples(databaseService, primarySessionId, setpointTopic, catalog.timestampRange, nt4ClientService)
-        val measuredForStep = if (setpointTopic?.contains("Position", ignoreCase = true) == true && pos.isNotEmpty()) pos else vels
+        value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
+            val volts = loadTopicScalarSamples(databaseService, primarySessionId, voltageTopic, catalog.timestampRange, nt4ClientService)
+            val vels = loadTopicScalarSamples(databaseService, primarySessionId, velocityTopic, catalog.timestampRange, nt4ClientService)
+            val pos = loadTopicScalarSamples(databaseService, primarySessionId, positionTopic, catalog.timestampRange, nt4ClientService)
+            val sp = loadTopicScalarSamples(databaseService, primarySessionId, setpointTopic, catalog.timestampRange, nt4ClientService)
+            val measuredForStep = if (setpointTopic?.contains("Position", ignoreCase = true) == true && pos.isNotEmpty()) pos else vels
 
-        val aligned = EmpiricalStepSysIdAnalyzer.alignSamples(
-            voltageSamples = volts,
-            velocitySamples = vels,
-            positionSamples = pos,
-        )
-        val fit = EmpiricalStepSysIdAnalyzer.fitFeedforward(aligned, gravityMode)
-        val step = EmpiricalStepSysIdAnalyzer.analyzeStepResponse(sp, measuredForStep)
-        value = Triple(aligned, fit, step)
+            val aligned = EmpiricalStepSysIdAnalyzer.alignSamples(
+                voltageSamples = volts,
+                velocitySamples = vels,
+                positionSamples = pos,
+            )
+            val fit = EmpiricalStepSysIdAnalyzer.fitFeedforward(aligned, gravityMode)
+            val step = EmpiricalStepSysIdAnalyzer.analyzeStepResponse(sp, measuredForStep)
+            Triple(aligned, fit, step)
+        }
     }
 
     val (alignedSamples, fit, stepMetrics) = analysisState
@@ -115,6 +118,7 @@ fun EmpiricalSysIdWidget(
             modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
+            catalog.latestSampleMs?.let { Text("Latest live sample · $it ms", color = AresTextSecondary, fontSize = 10.sp) }
             FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 AnalysisTopicSelectorChip("Volts", voltageTopic, topics, onSelect = { voltageTopic = it })
                 AnalysisTopicSelectorChip("Vel", velocityTopic, topics, onSelect = { velocityTopic = it })

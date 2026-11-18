@@ -37,9 +37,19 @@ object TelemetryMetricCatalog {
     val BATTERY_VOLTAGE = TelemetryMetric(
         id = "battery_voltage",
         canonicalKey = "Robot/BatteryVoltage",
-        aliases = setOf("Battery/Voltage", "DSLog/BatteryVoltage"),
+        aliases = setOf("Battery/Voltage", "DSLog/BatteryVoltage", "Power/BatteryVoltage", "BatteryVoltage", "PDH/Voltage", "PDP/Voltage"),
         unit = TelemetryUnit.VOLT,
         expectedRateHz = 1.0..100.0
+    )
+
+    val TOTAL_BATTERY_CURRENT = TelemetryMetric(
+        id = "total_battery_current",
+        canonicalKey = "Robot/TotalCurrentAmps",
+        aliases = setOf(
+            "Battery/CurrentAmps", "Battery/Current", "PDH/TotalCurrent", "PDP/TotalCurrent",
+            "TotalCurrent", "Power/TotalCurrent", "PowerDistribution/TotalCurrent", "PowerDistribution/TotalCurrentAmps",
+        ),
+        unit = TelemetryUnit.AMPERE,
     )
 
     val LOOP_TIME = TelemetryMetric(
@@ -87,6 +97,7 @@ object TelemetryMetricCatalog {
 
     val definitions: List<TelemetryMetric> = listOf(
         BATTERY_VOLTAGE,
+        TOTAL_BATTERY_CURRENT,
         LOOP_TIME,
         DRIVE_VOLTAGE,
         DRIVE_VELOCITY,

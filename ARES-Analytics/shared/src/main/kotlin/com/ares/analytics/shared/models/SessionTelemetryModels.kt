@@ -84,7 +84,12 @@ data class SessionSummary(
     val cloudBundleVersion: Int = 0,
     /** Stable league/team/season/robot boundary that owns the cloud object. */
     val cloudWorkspaceKey: String? = null,
-)
+    /** Null denotes a legacy summary whose zero sentinel cannot establish a measurement. */
+    val observedMetrics: Set<String>? = null,
+) {
+    fun observedMetric(key: String, value: Double): Double? =
+        value.takeIf { it.isFinite() && (observedMetrics?.contains(key) ?: (it != 0.0)) }
+}
 
 fun SessionSummary.allowsAutomaticExternalUpdates(): Boolean = !tags.isSimulationSessionTags()
 

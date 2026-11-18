@@ -138,6 +138,7 @@ class AresMcpStdioServerTest {
                         "ares://project/summary",
                         "ares://project/catalog",
                         "ares://verification/latest",
+                        "ares://runs",
                     ),
                     resourceUris,
                 )
@@ -149,6 +150,7 @@ class AresMcpStdioServerTest {
                 assertEquals(
                     setOf(
                         "ares://schemas/{documentKind}",
+                        "ares://runs/{sessionId}",
                         "ares://cookbook/{league}/{pattern}",
                     ),
                     templateUris,

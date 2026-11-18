@@ -390,8 +390,10 @@ class HeadlessProjectMutators(
         require(league == AresLeague.FTC || league == AresLeague.FRC) {
             "Kotlin scaffolding supports FTC and FRC projects; found $league"
         }
-        val className = name.trim().replaceFirstChar { it.uppercaseChar() }
-        require(className.matches(Regex("[A-Za-z][A-Za-z0-9_]{0,63}"))) {
+        val requestedName = name.trim().replaceFirstChar { it.uppercaseChar() }
+        val kind = kindRaw.trim().uppercase()
+        val className = if (kind == "UNIT_TEST" && !requestedName.endsWith("Test")) requestedName + "Test" else requestedName
+        require(requestedName.matches(Regex("[A-Za-z][A-Za-z0-9_]{0,63}"))) {
             "Scaffold name must be a valid Kotlin identifier: '$name'"
         }
         val defaultPkg = when (league) {
@@ -400,7 +402,9 @@ class HeadlessProjectMutators(
             AresLeague.XRP -> error("Unsupported")
         }
         val pkg = packageName?.takeIf { it.isNotBlank() } ?: defaultPkg
-        val kind = kindRaw.trim().uppercase()
+        require(kind != "UNIT_TEST" || className != "Test") {
+            "Name the test after its hardware adapter, for example LiftHardwareIoTest for LiftHardwareIo."
+        }
         val rendered = when (kind) {
             "HARDWARE_IO" -> if (league == AresLeague.FTC) {
                 FtcKotlinScaffoldRenderer.renderHardwareIo(FtcKotlinScaffoldRenderer.FtcScaffoldInput(pkg, className))
@@ -433,7 +437,8 @@ class HeadlessProjectMutators(
             "UNIT_TEST" -> MockIoTestScaffoldRenderer.renderUnitTest(
                 packageName = pkg,
                 className = className,
-                subjectClassName = className.removeSuffix("Test").ifEmpty { "Mechanism" },
+                ftc = league == AresLeague.FTC,
+                subjectClassName = className.removeSuffix("Test"),
             )
             else -> throw IllegalArgumentException(
                 "Unsupported scaffold kind '$kindRaw'; expected HARDWARE_IO, SEASON_REDUX_SLICE, TELEOP_OPMODE, AUTO_OPMODE, TIMED_ROBOT_HOOK, or UNIT_TEST.",

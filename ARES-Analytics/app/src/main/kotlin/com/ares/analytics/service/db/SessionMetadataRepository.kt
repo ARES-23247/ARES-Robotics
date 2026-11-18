@@ -159,7 +159,7 @@ internal class SessionMetadataRepository(
 
     suspend fun insertSessionSummary(summary: SessionSummary) = withDbLock {
         conn.prepareStatement(
-            "INSERT OR REPLACE INTO session_summaries (session_id, team_id, season_id, robot_id, created_at, duration_ms, min_battery_voltage, max_ekf_drift, avg_loop_time_ms, p95_loop_time_ms, motor_current_averages, vision_acceptance_rate, avg_cross_track_error, avg_battery_resistance, max_motor_temps, avg_vision_latency_ms, tags, match_number, alliance_color) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+            "INSERT OR REPLACE INTO session_summaries (session_id, team_id, season_id, robot_id, created_at, duration_ms, min_battery_voltage, max_ekf_drift, avg_loop_time_ms, p95_loop_time_ms, motor_current_averages, vision_acceptance_rate, avg_cross_track_error, avg_battery_resistance, max_motor_temps, avg_vision_latency_ms, tags, match_number, alliance_color, observed_metrics) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
         ).use { ps ->
             ps.setString(1, summary.sessionId)
             ps.setString(2, summary.teamId)
@@ -180,6 +180,7 @@ internal class SessionMetadataRepository(
             ps.setString(17, Json.encodeToString(summary.tags))
             summary.matchNumber?.let { ps.setLong(18, it.toLong()) } ?: ps.setNull(18, java.sql.Types.BIGINT)
             ps.setString(19, summary.allianceColor)
+            ps.setString(20, summary.observedMetrics?.let { Json.encodeToString(it) })
             ps.executeUpdate()
         }
     }
@@ -353,7 +354,7 @@ internal class SessionMetadataRepository(
         )
     }
 
-    private fun ResultSet.toSessionSummary(): SessionSummary {
+    internal fun ResultSet.toSessionSummary(): SessionSummary {
         val matchNum = getLong("match_number")
         val matchNumFinal = if (wasNull()) null else matchNum.toInt()
 
@@ -365,6 +366,7 @@ internal class SessionMetadataRepository(
             createdAt = getLong("created_at"),
             durationMs = getLong("duration_ms"),
             minBatteryVoltage = getDouble("min_battery_voltage"),
+            observedMetrics = getString("observed_metrics")?.let { Json.decodeFromString<Set<String>>(it) },
             maxEkfDrift = getDouble("max_ekf_drift"),
             avgLoopTimeMs = getDouble("avg_loop_time_ms"),
             p95LoopTimeMs = getDouble("p95_loop_time_ms"),

@@ -305,7 +305,7 @@ class DatabaseBackupExporter(
 
     private fun insertSessionSummaryLocked(summary: SessionSummary) {
         conn.prepareStatement(
-            "INSERT OR REPLACE INTO session_summaries (session_id, team_id, season_id, robot_id, created_at, duration_ms, min_battery_voltage, max_ekf_drift, avg_loop_time_ms, p95_loop_time_ms, motor_current_averages, vision_acceptance_rate, avg_cross_track_error, avg_battery_resistance, max_motor_temps, avg_vision_latency_ms, tags, match_number, alliance_color) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+            "INSERT OR REPLACE INTO session_summaries (session_id, team_id, season_id, robot_id, created_at, duration_ms, min_battery_voltage, max_ekf_drift, avg_loop_time_ms, p95_loop_time_ms, motor_current_averages, vision_acceptance_rate, avg_cross_track_error, avg_battery_resistance, max_motor_temps, avg_vision_latency_ms, tags, match_number, alliance_color, observed_metrics) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
         ).use { statement ->
             statement.setString(1, summary.sessionId)
             statement.setString(2, summary.teamId)
@@ -327,6 +327,7 @@ class DatabaseBackupExporter(
             summary.matchNumber?.let { statement.setLong(18, it.toLong()) }
                 ?: statement.setNull(18, java.sql.Types.BIGINT)
             statement.setString(19, summary.allianceColor)
+            statement.setString(20, summary.observedMetrics?.let { Json.encodeToString(it) })
             statement.executeUpdate()
         }
     }

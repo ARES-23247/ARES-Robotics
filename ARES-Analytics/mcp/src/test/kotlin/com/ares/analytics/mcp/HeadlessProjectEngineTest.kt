@@ -49,6 +49,35 @@ class HeadlessProjectEngineTest {
         return engine to HeadlessProjectMutators(engine)
     }
 
+    @Test
+    fun `collisions and invalid starter archives leave team files intact`() = runBlocking {
+        val temporary = Files.createTempDirectory("ares-staged-init-").toFile()
+        try {
+            val destination = temporary.resolve("team").apply { mkdir() }
+            val readme = destination.resolve("README.md")
+            val original = byteArrayOf(0, 13, 10, 127)
+            readme.writeBytes(original)
+            val (engine, mutators) = createEngine(temporary)
+            val preview = mutators.scaffoldKotlin(destination, "FTC", "UNIT_TEST", "Lift")
+            assertTrue(preview.relativePath.endsWith("/LiftTest.kt"))
+            assertTrue("val adapter = Lift(" in preview.generatedCode)
+            assertFailsWith<IllegalArgumentException> { engine.initProject(destination, "FTC", displayName = "Test") }
+            kotlin.test.assertContentEquals(original, readme.readBytes())
+            assertEquals(listOf("README.md"), destination.list()?.toList())
+
+            val archives = temporary.resolve("archives").apply { mkdir() }
+            val name = resolveTemplateDir().listFiles()!!.first { it.name.startsWith("ARES-FTC-Starter") }.name
+            archives.resolve(name).writeText("Incomplete archive")
+            val broken = HeadlessProjectEngine(StudioBridgeClient(temporary.resolve("bridge")), templateDir = archives)
+            val missing = temporary.resolve("new")
+            assertFailsWith<IllegalArgumentException> { broken.initProject(missing, "FTC", displayName = "Test") }
+            assertFalse(missing.exists())
+            assertTrue(temporary.list()!!.none { it.startsWith(".ares-init-") })
+        } finally {
+            temporary.deleteRecursively()
+        }
+    }
+
     private fun smokeSubsystemJson(documentId: String = "intake", kotlinType: String = "IntakeSubsystem"): String = """
         |{
         |  "schemaVersion": 11,

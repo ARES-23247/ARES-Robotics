@@ -239,6 +239,7 @@ class DatabaseSchemaInitializer(
                 );
 
             """.trimIndent())
+            st.execute("ALTER TABLE session_summaries ADD COLUMN IF NOT EXISTS observed_metrics VARCHAR")
             // Telemetry is an immutable, append-only analytical fact table. DuckDB creates an ART
             // index for every primary/unique constraint and explicit CREATE INDEX. Those indexes
             // add no useful ordering guarantee here (sample_order already preserves source order),

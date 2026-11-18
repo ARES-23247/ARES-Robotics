@@ -311,6 +311,18 @@ jobs:
             -ParesRepository=${{ steps.repository.outputs.uri }} \
             --no-parallel --no-daemon --console=plain
 
+      - name: Verify external MCP stdio from a long Windows install path
+        if: runner.os == 'Windows'
+        working-directory: ARES-Analytics
+        shell: pwsh
+        env:
+          ARES_VERSION: ${{ needs.candidate.outputs.ares-version }}
+          ARES_REPOSITORY: ${{ steps.repository.outputs.uri }}
+        run: |
+          .\gradlew.bat :mcp:installDist "-ParesVersion=${{ needs.candidate.outputs.ares-version }}" "-ParesRepository=${{ steps.repository.outputs.uri }}"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python ../scripts/verify_windows_mcp_launcher.py mcp/build/install/mcp ../scripts/ares-mcp.ps1
+
       - name: Record Windows installer trust evidence
         if: runner.os == 'Windows'
         shell: pwsh

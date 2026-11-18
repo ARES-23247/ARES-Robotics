@@ -119,6 +119,7 @@ class ServiceRegistry {
     val mcpBridgeServer by lazy {
         com.ares.analytics.desktop.McpBridgeServer(
             projectSession = projectSession,
+            readRun = { identity, id -> databaseService.recordedRunResource(identity, id) },
         )
     }
     val projectExecutionCoordinator by lazy {

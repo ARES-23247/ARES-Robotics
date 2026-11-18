@@ -74,6 +74,12 @@ class McpBridgeServerTest {
                 }
                 assertEquals(HttpStatusCode.Unauthorized, unauth.status)
 
+                val runs = "http://127.0.0.1:" + descriptor.port + "/v1/mcp/runs"
+                assertEquals(HttpStatusCode.Unauthorized, client.get(runs).status)
+                assertEquals(HttpStatusCode.NotFound, client.get(runs + "?sessionId=absent") {
+                    header(HttpHeaders.Authorization, "Bearer " + descriptor.bearerToken)
+                }.status)
+
                 // Authorized health probe reports loaded project
                 val healthResp = client.get("http://127.0.0.1:${descriptor.port}/v1/mcp/health") {
                     header(HttpHeaders.Authorization, "Bearer ${descriptor.bearerToken}")

@@ -89,3 +89,15 @@ dependencies {
     testImplementation(kotlin("test"))
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.11.0")
 }
+
+// cmd.exe expands APP_HOME for every jar. Java expands lib/* without the batch line limit.
+tasks.startScripts {
+    doLast {
+        val script = windowsScript
+        val lines = script.readLines()
+        require(lines.count { it.startsWith("set CLASSPATH=") } == 1)
+        script.writeText(lines.joinToString("\r\n", postfix = "\r\n") {
+            if (it.startsWith("set CLASSPATH=")) "set CLASSPATH=%APP_HOME%\\lib\\*" else it
+        })
+    }
+}

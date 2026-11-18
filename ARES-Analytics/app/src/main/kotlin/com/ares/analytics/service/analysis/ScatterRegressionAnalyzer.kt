@@ -168,7 +168,8 @@ object ScatterRegressionAnalyzer {
         )
         if (scatter.points.size < 8 || (scatter.xMax - scatter.xMin) < 1.5) return null
         // Physical battery sag has negative dV/dI slope; convert V/A -> mOhm (* -1000)
-        val rIntMilliOhms = (-scatter.slope * 1000.0).coerceAtLeast(0.0)
+        if (scatter.slope >= 0.0 || scatter.rSquared < 0.5) return null
+        val rIntMilliOhms = -scatter.slope * 1000.0
         val voc = scatter.intercept
         if (!rIntMilliOhms.isFinite() || !voc.isFinite()) return null
 

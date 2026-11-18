@@ -221,10 +221,14 @@ class DatabaseService(
         sql: String,
         rowLimit: Int = QueryResult.DEFAULT_RAW_QUERY_ROW_LIMIT
     ): QueryResult = transactionCoordinator.readOnlyQueries.executeRaw(sql, rowLimit)
+    internal suspend fun recordedRunResource(identity: com.areslib.project.AresProjectIdentityDocument, id: String?) =
+        com.ares.analytics.service.db.RecordedRunResource(transactionCoordinator, sessionMetadataRepo).read(identity, id)
+
     suspend fun executeAiQuery(
         sql: String,
+        workspace: com.ares.analytics.shared.models.WorkspaceConfig,
         rowLimit: Int = QueryResult.DEFAULT_RAW_QUERY_ROW_LIMIT,
-    ): QueryResult = transactionCoordinator.readOnlyQueries.executeRaw(AiSqlQueryGuard.validate(sql), rowLimit)
+    ): QueryResult = transactionCoordinator.readOnlyQueries.executeForWorkspace(sql, workspace, rowLimit)
     suspend fun executeQueryWithParams(sql: String, params: List<Any>): QueryResult =
         transactionCoordinator.readOnlyQueries.executeWithParams(sql, params)
     internal suspend fun executeTelemetryQueryWithParams(sessionId: String, sql: String, params: List<Any>): QueryResult =

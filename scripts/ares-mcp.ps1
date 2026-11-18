@@ -48,7 +48,7 @@ if ($env:ARES_REPOSITORY) {
 
 Push-Location $AnalyticsDir
 try {
-    & $Gradlew @GradleArgs 1>&2
+    & $Gradlew @GradleArgs | ForEach-Object { [Console]::Error.WriteLine($_) }
     if ($LASTEXITCODE -ne 0) {
         exit $LASTEXITCODE
     }
