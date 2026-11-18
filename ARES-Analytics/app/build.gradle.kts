@@ -120,7 +120,7 @@ dependencies {
     implementation("io.ktor:ktor-client-okhttp:3.5.2")
     implementation("io.ktor:ktor-client-websockets:3.5.2")
     implementation("io.ktor:ktor-client-content-negotiation:3.5.2")
-    implementation("io.ktor:ktor-serialization-kotlinx-json:3.5.2")
+    implementation("io.ktor:ktor-serialization-kotlinx-json:3.6.1")
 
     // Embedded OAuth loopback server
     implementation("io.ktor:ktor-server-core:3.5.2")

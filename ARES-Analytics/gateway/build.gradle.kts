@@ -19,7 +19,7 @@ dependencies {
     implementation("io.ktor:ktor-server-auth:3.5.2")
     implementation("io.ktor:ktor-server-cors:3.5.2")
     implementation("io.ktor:ktor-server-status-pages:3.5.2")
-    implementation("io.ktor:ktor-serialization-kotlinx-json:3.5.2")
+    implementation("io.ktor:ktor-serialization-kotlinx-json:3.6.1")
     implementation("io.ktor:ktor-server-rate-limit:3.5.2")
     implementation("io.ktor:ktor-server-forwarded-header:3.5.2")
     implementation("io.ktor:ktor-server-request-validation:3.5.2")
