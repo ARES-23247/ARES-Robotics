@@ -5,7 +5,7 @@ plugins {
     kotlin("plugin.serialization") version "2.4.21" apply false
     id("org.jetbrains.compose") version "1.12.0" apply false
     id("org.jetbrains.kotlin.plugin.compose") version "2.4.21" apply false
-    id("org.jetbrains.kotlinx.kover") version "0.9.9"
+    id("org.jetbrains.kotlinx.kover") version "0.9.11"
 }
 
 val aresVersionPolicy = listOf(
