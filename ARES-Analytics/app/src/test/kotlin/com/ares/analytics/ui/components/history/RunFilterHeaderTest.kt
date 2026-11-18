@@ -15,7 +15,6 @@ import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.unit.dp
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class RunFilterHeaderTest {
@@ -32,8 +31,12 @@ class RunFilterHeaderTest {
         onNodeWithText("Hide AI Analyst", useUnmergedTree = true)
             .assertIsDisplayed()
             .performSemanticsAction(SemanticsActions.GetTextLayoutResult) { assertTrue(it(layouts)) }
-        assertEquals(1, layouts.single().lineCount)
-        assertFalse(layouts.single().hasVisualOverflow)
+        val label = layouts.single()
+        assertEquals(1, label.lineCount)
+        assertEquals("Hide AI Analyst".length, label.getLineEnd(0, visibleEnd = true))
+        // Compose reports integer pixel bounds for fractional glyph measurements.
+        assertTrue(label.getLineRight(0) <= label.size.width + 1, "Text ends at ${label.getLineRight(0)} in ${label.size}")
+        assertTrue(label.getLineBottom(0) <= label.size.height + 1, "Line ends at ${label.getLineBottom(0)} in ${label.size}")
         onNodeWithText("Hide AI Analyst").performClick()
         onNodeWithText("AI Run Analyst").assertIsDisplayed()
     }
