@@ -21,6 +21,8 @@ The local repair branch is `codex/studio-environment-repairs`. The findings belo
 | Recorded run resources | A packaged external assistant read `ares://runs` and `ares://runs/{sessionId}` via the authenticated Studio bridge. The fixture returned 12 voltage readings from 11.78 to 12.00 V and 12 current readings from 0 to 11 A over 1,000–1,220 ms. Its source digest matched the CSV. Tests also covered an out-of-workspace run ID. |
 | Dependency publication | The audited main revision produced an attested candidate, including its Windows and macOS packages. Those artifacts predate the repair branch. The public Maven coordinate remains unavailable until approved promotion. [Nonpublishing candidate build](https://github.com/ARES-23247/ARES-Robotics/actions/runs/44328119758) |
 
+The repair checkout passed `studioReleaseVerification` using the downloaded, sealed ARESLib 20.0.6 Maven repository. The Studio app suite reported 2,965 passes and five skips. MCP passed 18 tests, shared passed 37, and the gateway passed 21. Four consumer round-trip tests, the dashboard performance gate, coverage checks, and repository policy checks also passed. The official template test exported, built, and tested fresh FTC, FRC, and XRP projects. Both JVM starters ran their generated adapter tests through their own Gradle wrappers. Verification used local data and simulated hardware, with live AI provider responses and physical robot deployment outside the checks performed.
+
 ## Findings to address first
 
 | Priority | Workflow and evidence | Repair and acceptance check |
