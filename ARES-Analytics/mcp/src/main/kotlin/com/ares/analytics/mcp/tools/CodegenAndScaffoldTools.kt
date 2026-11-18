@@ -59,7 +59,7 @@ internal object CodegenAndScaffoldTools {
                         listOf("HARDWARE_IO", "SEASON_REDUX_SLICE", "TELEOP_OPMODE", "AUTO_OPMODE", "TIMED_ROBOT_HOOK", "UNIT_TEST"),
                     )
                 }
-                putJsonObject("name") { stringProp("Primary Kotlin class/object name") }
+                putJsonObject("name") { stringProp("Kotlin class name. For UNIT_TEST, use the hardware adapter name or its Test-suffixed name in the same package.") }
                 putJsonObject("mode") { enumProp("PREVIEW (default) or APPLY", listOf("PREVIEW", "APPLY")) }
                 putJsonObject("packageName") { stringProp("Optional Kotlin package override") }
                 putJsonObject("relativePath") { stringProp("Optional repo-relative output path override") }

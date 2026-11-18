@@ -54,6 +54,7 @@ class McpBridgeServer(
     private val bridgeDirProvider: () -> File = AppDataPaths::rootDirectory,
     private val studioVersion: String = BuildConfig.VERSION,
     private val pid: Long = ProcessHandle.current().pid(),
+    private val readRun: suspend (com.areslib.project.AresProjectIdentityDocument, String?) -> kotlinx.serialization.json.JsonObject? = { _, _ -> null },
 ) : AutoCloseable {
 
     private val logger = LoggerFactory.getLogger(McpBridgeServer::class.java)
@@ -89,6 +90,7 @@ class McpBridgeServer(
             parentCoroutineContext = exceptionHandler,
         ) {
             routing {
+                get("/v1/mcp/runs") { handleRunRead(call) }
                 get("/v1/mcp/health") { handleHealth(call) }
                 get("/v1/health") { handleHealth(call) }
                 post("/v1/mcp/session/reload") { handleReload(call) }
@@ -119,6 +121,26 @@ class McpBridgeServer(
             runCatching { created.stop(100, 300) }
             scope.cancel()
             throw error
+        }
+    }
+
+    private suspend fun handleRunRead(call: ApplicationCall) {
+        if (!isAuthorized(call)) {
+            call.respondText("Unauthorized", status = HttpStatusCode.Unauthorized)
+            return
+        }
+        val state = projectSession.state.value
+        val identity = state.snapshot?.documents?.query?.metadata?.identity
+        if (state.phase != ProjectSessionPhase.READY || identity == null) {
+            call.respondText("Open a project with a workspace identity in Studio.", status = HttpStatusCode.Conflict)
+            return
+        }
+        val result = readRun(identity, call.request.queryParameters["sessionId"])
+        when {
+            projectSession.state.value !== state ->
+                call.respondText("Active workspace changed. Retry the read.", status = HttpStatusCode.Conflict)
+            result == null -> call.respondText("Run unavailable in this workspace.", status = HttpStatusCode.NotFound)
+            else -> call.respondText(result.toString(), ContentType.Application.Json)
         }
     }
 

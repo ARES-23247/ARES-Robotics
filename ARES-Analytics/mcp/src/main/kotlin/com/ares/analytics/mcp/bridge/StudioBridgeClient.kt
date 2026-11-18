@@ -9,6 +9,7 @@ import com.ares.analytics.shared.mcp.McpBridgeReloadResponse
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.cio.CIO
 import io.ktor.client.plugins.HttpTimeout
+import io.ktor.client.request.parameter
 import io.ktor.client.request.get
 import io.ktor.client.request.header
 import io.ktor.client.request.post
@@ -108,6 +109,25 @@ class StudioBridgeClient(
                 activeProjectRoot = descriptor.activeProjectRoot,
                 fallbackReason = "Studio bridge unreachable (${error.message ?: "connection failed"}); using headless mode.",
             )
+        }
+    }
+
+    suspend fun recordedRuns(id: String? = null): String {
+        val descriptor = readDescriptorOrNull()?.takeIf { isPidAlive(it.pid) }
+            ?: error("Open the workspace in Studio to read its recorded runs.")
+        return httpClientFactory().use { client ->
+            val response = client.get("http://127.0.0.1:" + descriptor.port + "/v1/mcp/runs") {
+                header(HttpHeaders.Authorization, "Bearer " + descriptor.bearerToken)
+                if (id != null) parameter("sessionId", id)
+            }
+            check(response.status == HttpStatusCode.OK) {
+                when (response.status) {
+                    HttpStatusCode.NotFound -> "Run unavailable in the active Studio workspace."
+                    HttpStatusCode.Conflict -> "Open a workspace in Studio and retry."
+                    else -> "Studio could not read recorded runs (HTTP " + response.status.value + ")."
+                }
+            }
+            response.bodyAsText()
         }
     }
 

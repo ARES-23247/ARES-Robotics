@@ -10,6 +10,21 @@ import kotlin.test.assertTrue
 
 class CohortStatisticsAnalyzerTest {
 
+    @Test
+    fun `only observed zero metrics count in a mixed cohort`() {
+        val measured = buildRun("recorded", 1L, emptyList(), 0.0)
+        val missing = buildRun("missing", 2L, emptyList(), 0.0)
+        val summary = measured.second.copy(observedMetrics = setOf("drift", "cross_track", "acceptance", "latency"))
+        for (id in listOf("max_ekf_drift_m", "cross_track_cm", "vision_acceptance_pct", "vision_latency_ms")) {
+            val stats = requireNotNull(CohortStatisticsAnalyzer.summarizeCohort(
+                "visible", listOf(measured.first, missing.first), mapOf("recorded" to summary, "missing" to missing.second),
+                emptyMap(), CohortStatisticsAnalyzer.defaultMetrics().single { it.id == id },
+            ))
+            assertEquals(1, stats.count)
+            assertEquals(0.0, stats.median)
+        }
+    }
+
     private fun buildRun(
         id: String,
         createdAt: Long,

@@ -1,5 +1,6 @@
 package com.ares.analytics.ui.components.dashboard.analysis
 
+import com.ares.analytics.shared.TelemetryMetricCatalog
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -45,11 +46,11 @@ fun XyScatterWidget(
     var yTopic by remember(primarySessionId) { mutableStateOf<String?>(null) }
 
     fun applyPresetTopics(selectedPreset: ScatterPresetKind, available: List<String>) {
-        if (available.isEmpty()) return
+        if (available.isEmpty()) { xTopic = null; yTopic = null; return }
         when (selectedPreset) {
             ScatterPresetKind.BATTERY_INTERNAL_RESISTANCE -> {
-                xTopic = pickBestTopic(available, "TotalCurrent", "PDH/TotalCurrent", "PDP/TotalCurrent", "Current") ?: available.first()
-                yTopic = pickBestTopic(available, "BatteryVoltage", "Voltage", excludeKeywords = listOf("Motor", "Applied")) ?: available.last()
+                xTopic = available.firstOrNull { TelemetryMetricCatalog.metricFor(it) == TelemetryMetricCatalog.TOTAL_BATTERY_CURRENT }
+                yTopic = available.firstOrNull { TelemetryMetricCatalog.metricFor(it) == TelemetryMetricCatalog.BATTERY_VOLTAGE }
             }
             ScatterPresetKind.MOTOR_TORQUE_SPEED -> {
                 xTopic = pickBestTopic(available, "ActualVelocity", "Velocity", "RPM") ?: available.first()
@@ -71,7 +72,7 @@ fun XyScatterWidget(
     }
 
     LaunchedEffect(topics, preset) {
-        if (topics.isNotEmpty() && (preset != ScatterPresetKind.CUSTOM || xTopic == null || yTopic == null)) {
+        if (preset != ScatterPresetKind.CUSTOM || xTopic !in topics || yTopic !in topics) {
             applyPresetTopics(preset, topics)
         }
     }
@@ -84,16 +85,19 @@ fun XyScatterWidget(
         preset,
         league,
         catalog.timestampRange,
+        catalog.generation,
     ) {
-        val xs = loadTopicScalarSamples(databaseService, primarySessionId, xTopic, catalog.timestampRange, nt4ClientService)
-        val ys = loadTopicScalarSamples(databaseService, primarySessionId, yTopic, catalog.timestampRange, nt4ClientService)
-        val reg = ScatterRegressionAnalyzer.analyzePair(xs, ys)
-        val battery = if (preset == ScatterPresetKind.BATTERY_INTERNAL_RESISTANCE) {
-            ScatterRegressionAnalyzer.analyzeBatteryInternalResistance(xs, ys, league)
-        } else {
-            null
+        value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
+            val xs = loadTopicScalarSamples(databaseService, primarySessionId, xTopic, catalog.timestampRange, nt4ClientService)
+            val ys = loadTopicScalarSamples(databaseService, primarySessionId, yTopic, catalog.timestampRange, nt4ClientService)
+            val reg = ScatterRegressionAnalyzer.analyzePair(xs, ys)
+            val battery = if (preset == ScatterPresetKind.BATTERY_INTERNAL_RESISTANCE) {
+                ScatterRegressionAnalyzer.analyzeBatteryInternalResistance(xs, ys, league)
+            } else {
+                null
+            }
+            (battery?.regression ?: reg) to battery
         }
-        value = (battery?.regression ?: reg) to battery
     }
 
     val (regression, batteryReport) = scatterState
@@ -119,6 +123,7 @@ fun XyScatterWidget(
             modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
+            catalog.latestSampleMs?.let { Text("Latest live sample · $it ms", color = AresTextSecondary, fontSize = 10.sp) }
             FlowRow(horizontalArrangement = Arrangement.spacedBy(5.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
                 ScatterPresetKind.entries.forEach { candidate ->
                     AnalysisModeChip(
@@ -153,7 +158,7 @@ fun XyScatterWidget(
                 )
             }
 
-            if (regression.points.size < 3) {
+            if (regression.points.size < 3 || (preset == ScatterPresetKind.BATTERY_INTERNAL_RESISTANCE && batteryReport == null)) {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -165,7 +170,12 @@ fun XyScatterWidget(
                 ) {
                     Text(
                         text = if (preset == ScatterPresetKind.BATTERY_INTERNAL_RESISTANCE) {
-                            "Select a run with TotalCurrent and BatteryVoltage telemetry (>= 1.5 A span) to estimate DC R_int (mΩ)."
+                            when {
+                                xTopic == null || yTopic == null -> "Insufficient evidence. Record total battery current and battery voltage."
+                                regression.points.size < 8 -> "Insufficient evidence. At least eight paired samples are required."
+                                regression.xMax - regression.xMin < 1.5 -> "Insufficient evidence. Current must span at least 1.5 A."
+                                else -> "Insufficient evidence. Voltage must fall as current rises, with R² of at least 0.50."
+                            }
                         } else {
                             "Select synchronized X and Y topics to render phase portraits and OLS correlation."
                         },

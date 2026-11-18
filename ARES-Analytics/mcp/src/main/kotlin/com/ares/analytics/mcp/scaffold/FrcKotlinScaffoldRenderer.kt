@@ -78,8 +78,12 @@ object FrcKotlinScaffoldRenderer {
         |
         |    fun writeOutputs(feedbackTimeoutMillis: Long = 250L) {
         |        val nowMillis = RobotClock.currentTimeMillis()
-        |        val fresh = lastFeedbackMillis != Long.MIN_VALUE && (nowMillis - lastFeedbackMillis) <= feedbackTimeoutMillis
-        |        if (!configured || !enabled || faulted || !fresh) {
+        |        val fresh = lastFeedbackMillis != Long.MIN_VALUE && nowMillis >= lastFeedbackMillis && (nowMillis - lastFeedbackMillis) <= feedbackTimeoutMillis
+        |        if (!fresh) {
+        |            disable()
+        |            return
+        |        }
+        |        if (!configured || !enabled || faulted) {
         |            applyVoltage(0.0)
         |            return
         |        }

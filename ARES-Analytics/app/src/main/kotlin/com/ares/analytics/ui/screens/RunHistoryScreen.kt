@@ -302,7 +302,7 @@ fun RunHistoryScreen(
 
             AnimatedVisibility(visible = isCohortExplorerOpen) {
                 RunCohortExplorerCard(
-                    sessions = sessions,
+                    sessions = filteredSessions,
                     summaries = summaries,
                     diagnosticsMap = diagnosticsMap,
                     motorNames = allMotorNames,
@@ -539,6 +539,7 @@ fun RunHistoryScreen(
                 }
             }
 
+            Text(listOf(workspace.teamId, workspace.seasonId, workspace.robotId).joinToString(" / "), color = AresTextSecondary)
             HorizontalDivider(color = AresBorder)
             val listState = rememberLazyListState()
             LaunchedEffect(analystChatHistory.size) {
@@ -645,7 +646,7 @@ fun RunHistoryScreen(
                             isAnalystLoading = true
                             scope.launch {
                                 try {
-                                    val reply = aiDiagnosticsService.requestSqlAnalysis(queryCopy)
+                                    val reply = aiDiagnosticsService.requestSqlAnalysis(queryCopy, workspace)
                                     analystChatHistory.add(Pair("analyst", reply))
                                 } catch (e: Exception) {
                                     analystChatHistory.add(Pair("analyst", "Error: ${e.message ?: "Failed to analyze query."}"))

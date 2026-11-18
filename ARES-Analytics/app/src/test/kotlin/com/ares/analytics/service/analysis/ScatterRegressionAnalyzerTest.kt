@@ -9,6 +9,15 @@ import kotlin.test.assertTrue
 class ScatterRegressionAnalyzerTest {
 
     @Test
+    fun `rising or constant voltage cannot establish battery sag`() {
+        val current = (0..10).map { TimedScalarSample(it * 20L, it.toDouble()) }
+        for (slope in listOf(0.0, 0.02)) {
+            val volts = current.map { TimedScalarSample(it.timestampMs, 12.0 + slope * it.value) }
+            kotlin.test.assertNull(ScatterRegressionAnalyzer.analyzeBatteryInternalResistance(current, volts))
+        }
+    }
+
+    @Test
     fun `battery internal resistance regression estimates R_int in milliohms and open circuit voltage`() {
         // V_batt = 12.75 - 0.0215 * I_total  => R_int = 21.5 mOhm, V_oc = 12.75 V
         val currentSamples = (0..120).map { i ->

@@ -39,6 +39,19 @@ internal class ReadOnlyQueryRepository(
         }
     }
 
+    suspend fun executeForWorkspace(
+        sql: String,
+        workspace: com.ares.analytics.shared.models.WorkspaceConfig,
+        rowLimit: Int,
+    ): QueryResult = withContext(Dispatchers.IO) {
+        val query = AiSqlQueryGuard.validate(sql)
+        java.sql.DriverManager.getConnection("jdbc:duckdb:").use { isolated ->
+            isolated.createStatement().use { it.execute("SET enable_external_access = false") }
+            withReadLock { connection.inReadSnapshot { WorkspaceAnalystSnapshot.copy(connection, isolated, workspace) } }
+            ReadOnlyQueryRepository(isolated, Mutex(), metrics).executeRaw(query, rowLimit)
+        }
+    }
+
     suspend fun executeRaw(
         sql: String,
         rowLimit: Int = QueryResult.DEFAULT_RAW_QUERY_ROW_LIMIT,

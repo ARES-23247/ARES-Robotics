@@ -5,6 +5,9 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import kotlinx.coroutines.flow.sample
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
@@ -29,33 +32,30 @@ import kotlinx.coroutines.withContext
 
 internal data class SessionTopicCatalog(
     val topics: List<String> = emptyList(),
+    val latestSampleMs: Long? = null,
+    val generation: Long = 0,
     val timestampRange: Pair<Long, Long>? = null,
 )
 
+@OptIn(kotlinx.coroutines.FlowPreview::class)
 @Composable
 internal fun rememberSessionTopicCatalog(
     databaseService: DatabaseService,
     sessionId: String?,
     nt4ClientService: Nt4ClientService?,
-    liveRefreshTick: Int = 0,
 ): SessionTopicCatalog {
-    val catalog by produceState(SessionTopicCatalog(), databaseService, sessionId, nt4ClientService, liveRefreshTick) {
-        value = withContext(Dispatchers.IO) {
-            if (!sessionId.isNullOrBlank()) {
-                val keys = databaseService.getDistinctTelemetryKeys(sessionId)
-                    .map { it.trimStart('/') }
-                    .distinct()
-                    .sorted()
-                val range = databaseService.getSessionTimestampRange(sessionId)
-                SessionTopicCatalog(topics = keys, timestampRange = range)
-            } else if (nt4ClientService != null) {
-                val keys = nt4ClientService.getActiveTopics()
-                    .map { it.trimStart('/') }
-                    .distinct()
-                    .sorted()
-                SessionTopicCatalog(topics = keys, timestampRange = null)
-            } else {
-                SessionTopicCatalog()
+    val catalog by produceState(SessionTopicCatalog(), databaseService, sessionId, nt4ClientService) {
+        value = SessionTopicCatalog()
+        if (!sessionId.isNullOrBlank() && sessionId != "live-telemetry") {
+            value = withContext(Dispatchers.IO) {
+                val topics = databaseService.getDistinctTelemetryKeys(sessionId).map { it.trimStart('/') }.distinct().sorted()
+                SessionTopicCatalog(topics = topics, timestampRange = databaseService.getSessionTimestampRange(sessionId))
+            }
+        } else if (nt4ClientService != null) {
+            fun topics() = nt4ClientService.getActiveTopics().map { it.trimStart('/') }.distinct().sorted()
+            value = SessionTopicCatalog(topics = topics())
+            nt4ClientService.uiTelemetryFlow.sample(500L).collect { frame ->
+                value = SessionTopicCatalog(topics(), frame.timestampMs, value.generation + 1)
             }
         }
     }
@@ -72,7 +72,7 @@ internal suspend fun loadTopicScalarSamples(
 ): List<TimedScalarSample> {
     val cleanTopic = topic?.trim()?.trimStart('/')?.takeIf { it.isNotEmpty() } ?: return emptyList()
     return withContext(Dispatchers.IO) {
-        if (!sessionId.isNullOrBlank()) {
+        if (!sessionId.isNullOrBlank() && sessionId != "live-telemetry") {
             val frames = if (timestampRange != null && timestampRange.second >= timestampRange.first) {
                 databaseService.getTelemetrySeries(
                     sessionId = sessionId,
@@ -150,36 +150,31 @@ internal fun AnalysisTopicSelectorChip(
             )
             Icon(Icons.Default.ArrowDropDown, contentDescription = null, tint = AresTextSecondary, modifier = Modifier.size(14.dp))
         }
-        DropdownMenu(
-            expanded = expanded,
-            onDismissRequest = { expanded = false },
-            modifier = Modifier.background(AresSurface).heightIn(max = 280.dp),
-        ) {
-            if (allowNone) {
-                DropdownMenuItem(
-                    text = { Text("None (Auto / Derive)", color = AresTextSecondary, fontSize = 11.sp) },
-                    onClick = {
-                        onSelect("")
-                        expanded = false
-                    },
-                )
+        if (expanded) {
+            var search by remember { mutableStateOf("") }
+            val matches = remember(search, availableTopics) {
+                availableTopics.filter { it.contains(search.trim(), ignoreCase = true) }
             }
-            availableTopics.take(80).forEach { topic ->
-                DropdownMenuItem(
-                    text = {
-                        Text(
-                            text = topic,
-                            color = if (topic == selectedTopic) AresCyan else AresTextPrimary,
-                            fontSize = 11.sp,
-                            fontFamily = FontFamily.Monospace,
-                        )
-                    },
-                    onClick = {
-                        onSelect(topic)
-                        expanded = false
-                    },
-                )
-            }
+            AlertDialog(
+                onDismissRequest = { expanded = false },
+                title = { Text("Choose $label") },
+                text = {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        OutlinedTextField(search, { search = it }, label = { Text("Search topics") }, singleLine = true)
+                        if (allowNone) TextButton(onClick = { onSelect(""); expanded = false }) { Text("None (Auto / Derive)") }
+                        if (matches.isEmpty()) Text("No matching topics")
+                        LazyColumn(Modifier.fillMaxWidth().heightIn(max = 280.dp)) {
+                            items(matches, key = { it }) { topic ->
+                                DropdownMenuItem(text = { Text(topic, fontFamily = FontFamily.Monospace) }, onClick = {
+                                    onSelect(topic)
+                                    expanded = false
+                                })
+                            }
+                        }
+                    }
+                },
+                confirmButton = { TextButton(onClick = { expanded = false }) { Text("Close") } },
+            )
         }
     }
 }

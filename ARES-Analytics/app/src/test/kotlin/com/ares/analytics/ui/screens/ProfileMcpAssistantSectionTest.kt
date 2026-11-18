@@ -13,13 +13,13 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.runComposeUiTest
 import com.ares.analytics.shared.mcp.McpBridgeDescriptor
 import com.ares.analytics.ui.theme.AresTheme
+import kotlinx.serialization.json.jsonObject
 import kotlin.test.Test
-import kotlin.test.assertTrue
 
 class ProfileMcpAssistantSectionTest {
 
     @Test
-    fun `shows offline status toggles toolsets and renders config snippets for all 5 clients`() = runComposeUiTest {
+    fun `shows offline status toggles toolsets and renders config snippets for all six clients`() = runComposeUiTest {
         setContent {
             AresTheme {
                 Surface {
@@ -56,33 +56,15 @@ class ProfileMcpAssistantSectionTest {
             },
         )
 
-        onNodeWithTag("mcp-client-claude").performClick()
-        onNodeWithTag("mcp-config-snippet").assert(
-            SemanticsMatcher("contains claude mcp add") { node ->
-                node.config.getOrElse(SemanticsProperties.Text) { emptyList() }
-                    .joinToString { it.text }
-                    .contains("claude mcp add ares-project")
-            },
-        )
-
-        onNodeWithTag("mcp-client-gemini").performClick()
-        onNodeWithTag("mcp-config-snippet").assert(
-            SemanticsMatcher("contains gemini settings hint") { node ->
-                node.config.getOrElse(SemanticsProperties.Text) { emptyList() }
-                    .joinToString { it.text }
-                    .contains("settings.json")
-            },
-        )
-
-        onNodeWithTag("mcp-client-vscode").performClick()
-        onNodeWithTag("mcp-config-snippet").assert(
-            SemanticsMatcher("contains vscode servers key") { node ->
-                node.config.getOrElse(SemanticsProperties.Text) { emptyList() }
-                    .joinToString { it.text }
-                    .contains("\"servers\"")
-            },
-        )
-        assertTrue(true)
+        for ((client, key) in listOf("claude" to "mcpServers", "gemini" to "mcpServers", "vscode" to "servers", "cursor" to "mcpServers")) {
+            onNodeWithTag("mcp-client-$client").performClick()
+            onNodeWithTag("mcp-config-snippet").assert(
+                SemanticsMatcher("valid JSON configuration for $client") { node ->
+                    val text = node.config.getOrElse(SemanticsProperties.Text) { emptyList() }.single().text
+                    kotlinx.serialization.json.Json.parseToJsonElement(text).jsonObject.keys == setOf(key)
+                },
+            )
+        }
     }
 
     @Test

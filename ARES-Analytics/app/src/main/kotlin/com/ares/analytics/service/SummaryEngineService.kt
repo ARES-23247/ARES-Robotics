@@ -70,6 +70,7 @@ class SummaryEngineService(
             robotId = session.robotId,
             createdAt = session.createdAt,
             durationMs = session.durationMs,
+            observedMetrics = aggregates.metrics.keys.toSet(),
             minBatteryVoltage = minBattery,
             maxEkfDrift = maxDrift,
             avgLoopTimeMs = avgLoop,

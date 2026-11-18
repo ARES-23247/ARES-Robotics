@@ -46,7 +46,7 @@ internal class SummaryMetricAggregator(private val query: suspend (String, List<
             }
             signal("battery", TelemetryMetricCatalog.BATTERY_VOLTAGE.keys)
             signal("loop", TelemetryMetricCatalog.LOOP_TIME.keys)
-            signal("total_current", listOf("Robot/TotalCurrentAmps", "Battery/CurrentAmps", "Battery/Current"))
+            signal("total_current", TelemetryMetricCatalog.TOTAL_BATTERY_CURRENT.keys)
             signal("drift_scalar", listOf("Drive/EkfDrift", "Drive/PoseError"))
             signal("drift_x", listOf("Drive/EKF_Drift_X"))
             signal("drift_y", listOf("Drive/EKF_Drift_Y"))

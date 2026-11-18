@@ -357,6 +357,7 @@ fun AiCoachPanel(
                                     onClick = {
                                         if (userQuestion.trim().isNotEmpty() && !isWaitingForReply) {
                                             val questionCopy = userQuestion.trim()
+                                            val priorMessages = chatHistory.toList()
                                             chatHistory.add(Pair("user", questionCopy))
                                             userQuestion = ""
                                             isWaitingForReply = true
@@ -372,7 +373,7 @@ fun AiCoachPanel(
                                                         summary = summary,
                                                         topology = topology
                                                     )
-                                                    val reply = aiDiagnosticsService.requestChatCoach(req, questionCopy, chatHistory.toList())
+                                                    val reply = aiDiagnosticsService.requestChatCoach(req, questionCopy, priorMessages)
                                                     chatHistory.add(Pair("coach", reply))
                                                 } catch (e: Exception) {
                                                     chatHistory.add(Pair("coach", "Error: ${e.message ?: "Failed to get reply."}"))

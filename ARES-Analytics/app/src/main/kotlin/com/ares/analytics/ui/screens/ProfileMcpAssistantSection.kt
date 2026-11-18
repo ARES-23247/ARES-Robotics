@@ -51,14 +51,18 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.putJsonObject
+import com.ares.analytics.mcp.bridge.StudioBridgeClient
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
 import java.io.File
 
-internal enum class McpAssistantClient(val slug: String, val label: String) {
-    ANTIGRAVITY("antigravity", "Antigravity"),
-    CODEX_CLI("codex", "Codex CLI"),
-    CLAUDE_CODE("claude", "Claude Code"),
-    GEMINI_CLI("gemini", "Gemini CLI"),
-    VSCODE_CURSOR("vscode", "VS Code / Cursor"),
+internal enum class McpAssistantClient(val slug: String, val label: String, val destination: String) {
+    ANTIGRAVITY("antigravity", "Antigravity", "Antigravity MCP configuration editor"),
+    CODEX_CLI("codex", "Codex CLI", "~/.codex/config.toml"),
+    CLAUDE_CODE("claude", "Claude Code", ".mcp.json"),
+    GEMINI_CLI("gemini", "Gemini CLI", "~/.gemini/settings.json"),
+    VSCODE("vscode", "VS Code", ".vscode/mcp.json"),
+    CURSOR("cursor", "Cursor", ".cursor/mcp.json"),
 }
 
 private val prettyMcpJson = Json { prettyPrint = true }
@@ -77,12 +81,14 @@ fun ProfileMcpAssistantSection(
     var selectedClient by remember { mutableStateOf(McpAssistantClient.ANTIGRAVITY) }
     var copiedNotice by remember { mutableStateOf<String?>(null) }
 
-    val snippet = remember(selectedClient, selectedToolset, detectedLauncherCommand, activeProjectPath) {
+    val scope = rememberCoroutineScope()
+    var checking by remember { mutableStateOf(false) }
+    var connection by remember(bridgeDescriptor, activeProjectPath) { mutableStateOf<String?>(null) }
+    val snippet = remember(selectedClient, selectedToolset, detectedLauncherCommand) {
         buildMcpClientSnippet(
             client = selectedClient,
             toolset = selectedToolset,
             launcherCommand = detectedLauncherCommand,
-            activeProjectPath = activeProjectPath,
         )
     }
 
@@ -119,7 +125,7 @@ fun ProfileMcpAssistantSection(
             }
 
             Text(
-                "Connect external coding agents to validate, mutate, and audit ARES robot projects safely over local stdio JSON-RPC.",
+                "Connect an assistant to review robot code and read recorded runs from the open Studio workspace.",
                 color = AresTextSecondary,
                 fontSize = 11.sp,
             )
@@ -162,6 +168,7 @@ fun ProfileMcpAssistantSection(
                 }
             }
 
+            Text(selectedClient.destination, color = AresTextSecondary, fontSize = 12.sp)
             Surface(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -197,10 +204,22 @@ fun ProfileMcpAssistantSection(
                     Icon(Icons.Default.ContentCopy, contentDescription = null, modifier = Modifier.size(16.dp))
                     Text(" Copy configuration", fontSize = 12.sp)
                 }
+                Button(enabled = !checking, onClick = {
+                    checking = true
+                    scope.launch {
+                        try {
+                            val status = StudioBridgeClient(StudioBridgeClient.resolveBridgeDir()).health()
+                            connection = if (status.connected) {
+                                "Connected to Studio " + status.studioVersion + " · " + (status.activeProjectRoot ?: "No open project")
+                            } else status.fallbackReason
+                        } finally { checking = false }
+                    }
+                }) { Text(if (checking) "Checking…" else "Check Studio connection") }
                 copiedNotice?.let { notice ->
                     Text(notice, color = AresGreen, fontSize = 11.sp, fontWeight = FontWeight.Medium)
                 }
             }
+            connection?.let { Text(it, color = AresTextSecondary, fontSize = 12.sp) }
         }
     }
 }
@@ -233,38 +252,17 @@ internal fun buildMcpClientSnippet(
     client: McpAssistantClient,
     toolset: McpToolsetMode,
     launcherCommand: Pair<String, List<String>>,
-    activeProjectPath: String? = null,
 ): String {
     val (command, baseArgs) = launcherCommand
     val fullArgs = baseArgs + listOf("--toolset", toolset.cliValue)
-    val projectNote = activeProjectPath?.takeIf { it.isNotBlank() }?.let { " (active workspace: $it)" }.orEmpty()
-
     return when (client) {
-        McpAssistantClient.ANTIGRAVITY -> renderJsonMcpServers(
-            topKey = "mcpServers",
-            command = command,
-            args = fullArgs,
-        )
-        McpAssistantClient.GEMINI_CLI -> buildString {
-            appendLine("# Add to ~/.gemini/settings.json$projectNote")
-            append(renderJsonMcpServers(topKey = "mcpServers", command = command, args = fullArgs))
-        }
-        McpAssistantClient.VSCODE_CURSOR -> buildString {
-            appendLine("# .vscode/mcp.json uses \"servers\"; .cursor/mcp.json uses \"mcpServers\"")
-            append(renderJsonMcpServers(topKey = "servers", command = command, args = fullArgs))
-        }
         McpAssistantClient.CODEX_CLI -> buildString {
-            appendLine("# ~/.codex/config.toml$projectNote")
             appendLine("[mcp_servers.ares_project]")
-            appendLine("command = ${tomlQuote(command)}")
-            appendLine("args = [${fullArgs.joinToString(", ") { tomlQuote(it) }}]")
-        }.trimEnd()
-        McpAssistantClient.CLAUDE_CODE -> buildString {
-            appendLine("# CLI setup$projectNote:")
-            appendLine("claude mcp add ares-project -- ${shellQuote(command)} ${fullArgs.joinToString(" ") { shellQuote(it) }}")
-            appendLine()
-            append(renderJsonMcpServers(topKey = "mcpServers", command = command, args = fullArgs))
-        }.trimEnd()
+            appendLine("command = " + tomlQuote(command))
+            append("args = [" + fullArgs.joinToString(", ") { tomlQuote(it) } + "]")
+        }
+        McpAssistantClient.VSCODE -> renderJsonMcpServers("servers", command, fullArgs)
+        else -> renderJsonMcpServers("mcpServers", command, fullArgs)
     }
 }
 
@@ -291,13 +289,6 @@ private fun renderJsonMcpServers(
 
 private fun tomlQuote(value: String): String =
     "\"" + value.replace("\\", "\\\\").replace("\"", "\\\"") + "\""
-
-private fun shellQuote(value: String): String =
-    if (value.any { it.isWhitespace() || it == '"' || it == '\\' }) {
-        "\"" + value.replace("\"", "\\\"") + "\""
-    } else {
-        value
-    }
 
 internal fun resolveDefaultMcpLauncherCommand(): Pair<String, List<String>> {
     val currentExe = ProcessHandle.current().info().command().orElse(null)?.let(::File)

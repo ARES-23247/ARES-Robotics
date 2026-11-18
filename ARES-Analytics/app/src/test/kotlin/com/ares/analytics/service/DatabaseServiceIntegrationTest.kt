@@ -4,6 +4,8 @@ import com.ares.analytics.shared.models.TelemetryFrame
 import com.ares.analytics.shared.models.Session
 import com.ares.analytics.shared.models.SessionSummary
 import com.ares.analytics.service.db.CloudImportStage
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
 import kotlinx.coroutines.test.runTest
 import java.io.IOException
 import java.nio.file.Files
@@ -15,6 +17,46 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class DatabaseServiceIntegrationTest {
+    @Test
+    fun `analyst and recorded run resources use the same workspace and preserve measured zeros`() = runTest {
+        withDatabase { database ->
+            val workspace = com.ares.analytics.shared.models.WorkspaceConfig(
+                teamId = "A", seasonId = "2026", robotId = "bot", projectPath = ".",
+                league = com.ares.analytics.shared.models.League.FTC,
+            )
+            val identity = com.areslib.project.AresProjectIdentityDocument("A", "2026", "bot", "Robot")
+            val measured = Session("measured", "A", "2026", "bot", 1000)
+            val missing = measured.copy(sessionId = "missing")
+            val elsewhere = measured.copy(sessionId = "elsewhere", robotId = "other")
+            for (session in listOf(measured, missing, elsewhere)) {
+                database.insertSession(session)
+                database.insertSessionSummary(SessionSummary(
+                    session.sessionId, session.teamId, session.seasonId, session.robotId, session.createdAt,
+                    observedMetrics = if (session == missing) emptySet() else setOf("drift"),
+                ))
+                database.insertAlert(com.ares.analytics.shared.models.AlertRecord(
+                    session.sessionId, session.sessionId, "voltage", 1001L,
+                ))
+            }
+            val counts = database.executeAiQuery(
+                "SELECT count(*), count(max_ekf_drift) FROM main.session_summaries", workspace,
+            )
+            assertEquals(listOf("2", "1"), counts.rows.single())
+            val joined = database.executeAiQuery(
+                "SELECT s.session_id FROM sessions s JOIN alerts a ON s.session_id = a.session_id ORDER BY s.session_id",
+                workspace,
+            )
+            assertEquals(listOf("measured", "missing"), joined.rows.map { it.single() })
+            val list = requireNotNull(database.recordedRunResource(identity, null))
+            assertEquals(2, list.getValue("runs").jsonArray.size)
+            assertNull(database.recordedRunResource(identity, elsewhere.sessionId))
+            fun metric(resource: kotlinx.serialization.json.JsonObject) =
+                resource.getValue("metrics").jsonObject.getValue("maximumEkfDrift").jsonObject.getValue("value")
+            assertEquals("0.0", metric(requireNotNull(database.recordedRunResource(identity, measured.sessionId))).toString())
+            assertEquals(kotlinx.serialization.json.JsonNull, metric(requireNotNull(database.recordedRunResource(identity, missing.sessionId))))
+        }
+    }
+
 
     @Test
     fun `mixed live and persistent frames are routed by each frame session`() = runTest {

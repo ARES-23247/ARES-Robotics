@@ -63,17 +63,20 @@ fun SignalSpectrumWidget(
         operation,
         fftOnDerived,
         catalog.timestampRange,
+        catalog.generation,
     ) {
-        val rawA = loadTopicScalarSamples(databaseService, primarySessionId, topicA, catalog.timestampRange, nt4ClientService)
-        val rawB = if (operation == DerivedChannelOperation.CHANNEL_DELTA) {
-            loadTopicScalarSamples(databaseService, primarySessionId, topicB, catalog.timestampRange, nt4ClientService)
-        } else {
-            emptyList()
+        value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
+            val rawA = loadTopicScalarSamples(databaseService, primarySessionId, topicA, catalog.timestampRange, nt4ClientService)
+            val rawB = if (operation == DerivedChannelOperation.CHANNEL_DELTA) {
+                loadTopicScalarSamples(databaseService, primarySessionId, topicB, catalog.timestampRange, nt4ClientService)
+            } else {
+                emptyList()
+            }
+            val derived = SignalMathEngine.applyOperation(operation, rawA, rawB)
+            val spectrumInput = if (fftOnDerived) derived else rawA
+            val spectrum = SignalMathEngine.computeSpectrum(spectrumInput, topPeakCount = 3)
+            Triple(rawA, derived, spectrum)
         }
-        val derived = SignalMathEngine.applyOperation(operation, rawA, rawB)
-        val spectrumInput = if (fftOnDerived) derived else rawA
-        val spectrum = SignalMathEngine.computeSpectrum(spectrumInput, topPeakCount = 3)
-        value = Triple(rawA, derived, spectrum)
     }
 
     val (_, derivedSamples, spectrum) = computed
@@ -95,6 +98,7 @@ fun SignalSpectrumWidget(
             modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
+            catalog.latestSampleMs?.let { Text("Latest live sample · $it ms", color = AresTextSecondary, fontSize = 10.sp) }
             FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 AnalysisTopicSelectorChip("Ch A", topicA, topics, onSelect = { topicA = it })
                 if (operation == DerivedChannelOperation.CHANNEL_DELTA) {

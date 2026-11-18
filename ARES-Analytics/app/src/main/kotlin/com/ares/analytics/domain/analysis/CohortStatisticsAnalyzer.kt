@@ -25,7 +25,7 @@ object CohortStatisticsAnalyzer {
                 unit = "V",
                 lowerIsBetter = false,
                 decimals = 2,
-                extract = { _, s, _ -> s?.minBatteryVoltage?.takeIf { it.isFinite() && it > 0.0 } },
+                extract = { _, s, _ -> s?.observedMetric("battery", s.minBatteryVoltage)?.takeIf { it >= 0.0 } },
             ),
             CohortMetricSpec(
                 id = "battery_resistance_mohm",
@@ -33,7 +33,7 @@ object CohortStatisticsAnalyzer {
                 unit = "mΩ",
                 lowerIsBetter = true,
                 decimals = 1,
-                extract = { _, s, _ -> s?.avgBatteryResistance?.takeIf { it.isFinite() && it > 0.0 }?.times(1000.0) },
+                extract = { _, s, _ -> s?.observedMetric("resistance", s.avgBatteryResistance)?.takeIf { it >= 0.0 }?.times(1000.0) },
             ),
             CohortMetricSpec(
                 id = "avg_loop_ms",
@@ -41,7 +41,7 @@ object CohortStatisticsAnalyzer {
                 unit = "ms",
                 lowerIsBetter = true,
                 decimals = 2,
-                extract = { _, s, _ -> s?.avgLoopTimeMs?.takeIf { it.isFinite() && it > 0.0 } },
+                extract = { _, s, _ -> s?.observedMetric("loop", s.avgLoopTimeMs)?.takeIf { it >= 0.0 } },
             ),
             CohortMetricSpec(
                 id = "p95_loop_ms",
@@ -49,7 +49,7 @@ object CohortStatisticsAnalyzer {
                 unit = "ms",
                 lowerIsBetter = true,
                 decimals = 2,
-                extract = { _, s, _ -> s?.p95LoopTimeMs?.takeIf { it.isFinite() && it > 0.0 } },
+                extract = { _, s, _ -> s?.observedMetric("loop_p95", s.p95LoopTimeMs)?.takeIf { it >= 0.0 } },
             ),
             CohortMetricSpec(
                 id = "cross_track_cm",
@@ -57,7 +57,7 @@ object CohortStatisticsAnalyzer {
                 unit = "cm",
                 lowerIsBetter = true,
                 decimals = 1,
-                extract = { _, s, _ -> s?.avgCrossTrackError?.takeIf { it.isFinite() && it >= 0.0 }?.times(100.0) },
+                extract = { _, s, _ -> s?.observedMetric("cross_track", s.avgCrossTrackError)?.takeIf { it.isFinite() && it >= 0.0 }?.times(100.0) },
             ),
             CohortMetricSpec(
                 id = "max_ekf_drift_m",
@@ -65,7 +65,7 @@ object CohortStatisticsAnalyzer {
                 unit = "m",
                 lowerIsBetter = true,
                 decimals = 3,
-                extract = { _, s, _ -> s?.maxEkfDrift?.takeIf { it.isFinite() && it >= 0.0 } },
+                extract = { _, s, _ -> s?.observedMetric("drift", s.maxEkfDrift)?.takeIf { it.isFinite() && it >= 0.0 } },
             ),
             CohortMetricSpec(
                 id = "vision_acceptance_pct",
@@ -73,7 +73,7 @@ object CohortStatisticsAnalyzer {
                 unit = "%",
                 lowerIsBetter = false,
                 decimals = 1,
-                extract = { _, s, _ -> s?.visionAcceptanceRate?.takeIf { it.isFinite() && it in 0.0..1.0 }?.times(100.0) },
+                extract = { _, s, _ -> s?.observedMetric("acceptance", s.visionAcceptanceRate)?.takeIf { it.isFinite() && it in 0.0..1.0 }?.times(100.0) },
             ),
             CohortMetricSpec(
                 id = "vision_latency_ms",
@@ -81,7 +81,7 @@ object CohortStatisticsAnalyzer {
                 unit = "ms",
                 lowerIsBetter = true,
                 decimals = 1,
-                extract = { _, s, _ -> s?.avgVisionLatencyMs?.takeIf { it.isFinite() && it >= 0.0 } },
+                extract = { _, s, _ -> s?.observedMetric("latency", s.avgVisionLatencyMs)?.takeIf { it.isFinite() && it >= 0.0 } },
             ),
             CohortMetricSpec(
                 id = "duration_s",
@@ -271,7 +271,8 @@ object CohortStatisticsAnalyzer {
         }
 
         val splitDesc = "${pairA.first} vs. ${pairB.first}"
-        val takeaway = buildPlainEnglishTakeaway(metric, statsA, statsB, medianDelta, pctDelta, effectLabel, improved)
+        val coverage = "${sessions.size} visible runs. Measured for ${statsA?.count ?: 0}/${pairA.second.size} in ${pairA.first} and ${statsB?.count ?: 0}/${pairB.second.size} in ${pairB.first}."
+        val takeaway = coverage + " " + buildPlainEnglishTakeaway(metric, statsA, statsB, medianDelta, pctDelta, effectLabel, improved)
         val markdown = buildMarkdownEvidenceBlock(metric, splitDesc, statsA, statsB, medianDelta, pctDelta, welchT, cohensD, effectLabel, takeaway)
 
         return CohortComparisonResult(

@@ -80,8 +80,12 @@ object FtcKotlinScaffoldRenderer {
         |
         |    fun writeOutputs(feedbackTimeoutMillis: Long = 250L) {
         |        val nowMillis = RobotClock.currentTimeMillis()
-        |        val fresh = lastFeedbackMillis != Long.MIN_VALUE && (nowMillis - lastFeedbackMillis) <= feedbackTimeoutMillis
-        |        if (!configured || !enabled || faulted || !fresh) {
+        |        val fresh = lastFeedbackMillis != Long.MIN_VALUE && nowMillis >= lastFeedbackMillis && (nowMillis - lastFeedbackMillis) <= feedbackTimeoutMillis
+        |        if (!fresh) {
+        |            disable()
+        |            return
+        |        }
+        |        if (!configured || !enabled || faulted) {
         |            applyMotorPower(0.0)
         |            return
         |        }
@@ -187,7 +191,7 @@ object FtcKotlinScaffoldRenderer {
             |        configured = true
             |        waitForStart()
             |        if (isStopRequested) {
-            |            stop()
+            |            neutralizeOutputs()
             |            return
             |        }
             |        enabled = true
@@ -200,13 +204,13 @@ object FtcKotlinScaffoldRenderer {
             |                stepControl(dtSeconds)
             |            }
             |        } finally {
-            |            stop()
+            |            neutralizeOutputs()
             |        }
             |    }
             |
             |    private fun stepControl(dtSeconds: Double) {
             |        if (!configured || !enabled || !dtSeconds.isFinite()) {
-            |            stop()
+            |            neutralizeOutputs()
             |            return
             |        }
             |        val forward = (-gamepad1.left_stick_y).toDouble()
@@ -215,7 +219,7 @@ object FtcKotlinScaffoldRenderer {
             |        telemetry.update()
             |    }
             |
-            |    fun stop() {
+            |    private fun neutralizeOutputs() {
             |        enabled = false
             |    }
             |}

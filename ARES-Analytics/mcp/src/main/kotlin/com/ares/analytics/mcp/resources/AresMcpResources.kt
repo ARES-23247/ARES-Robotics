@@ -93,6 +93,22 @@ internal object AresMcpResources {
             textResource(request.uri, "application/json", json)
         }
 
+        server.addResource(
+            uri = "ares://runs", name = "Recorded runs",
+            description = "Latest 100 completed recordings in the active Studio workspace, newest first.",
+            mimeType = "application/json",
+        ) { request -> textResource(request.uri, "application/json", engine.bridgeClient.recordedRuns()) }
+
+        server.addResourceTemplate(
+            uriTemplate = "ares://runs/{sessionId}", name = "Recorded run evidence",
+            description = "Run-wide measured summaries with units, sample times, source digests and topic inventory. Null metrics are unavailable.",
+            mimeType = "application/json",
+        ) { request, _ ->
+            val encodedId = request.uri.removePrefix("ares://runs/")
+            val id = java.net.URLDecoder.decode(encodedId.replace("+", "%2B"), Charsets.UTF_8)
+            textResource(request.uri, "application/json", engine.bridgeClient.recordedRuns(id))
+        }
+
         server.addResourceTemplate(
             uriTemplate = "ares://schemas/{documentKind}",
             name = "ARES Canonical Document Schema Reference",

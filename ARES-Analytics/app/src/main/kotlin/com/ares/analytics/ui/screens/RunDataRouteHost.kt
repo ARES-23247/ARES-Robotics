@@ -90,24 +90,26 @@ internal fun RunDataRouteHost(
     }
 
     NavigationTarget.RUN_HISTORY -> {
-        RunHistoryScreen(
-            databaseService = scope.database,
-            aiDiagnosticsService = scope.aiDiagnostics,
-            workspace = workspace,
-            reloadTrigger = reloadTrigger,
-            notebookCaptureService = scope.notebookCapture,
-            initialTagFilter = scope.pendingTagFilter.value,
-            onConsumeInitialTagFilter = { scope.pendingTagFilter.value = null },
-            onOpenImports = { actions.navigate(NavigationTarget.IMPORT_CENTER) },
-            onOpenHelp = { actions.navigate(NavigationTarget.ACADEMY) },
-            onOpenReplay = { sessionId -> actions.openDashboardReplay(sessionId, null) },
-            onOpenGuidedReview = { sessionId ->
-                scope.guidedAnalysis.openSession(sessionId)
-                actions.navigate(NavigationTarget.GUIDED_RUN_ANALYSIS)
-            },
-            onOpenMatchStrategy = { actions.navigate(NavigationTarget.MATCH_STRATEGY) },
-            onOpenNotebookEntry = actions.openNotebookEntry,
-        )
+        androidx.compose.runtime.key(workspace.teamId, workspace.seasonId, workspace.robotId) {
+            RunHistoryScreen(
+                databaseService = scope.database,
+                aiDiagnosticsService = scope.aiDiagnostics,
+                workspace = workspace,
+                reloadTrigger = reloadTrigger,
+                notebookCaptureService = scope.notebookCapture,
+                initialTagFilter = scope.pendingTagFilter.value,
+                onConsumeInitialTagFilter = { scope.pendingTagFilter.value = null },
+                onOpenImports = { actions.navigate(NavigationTarget.IMPORT_CENTER) },
+                onOpenHelp = { actions.navigate(NavigationTarget.ACADEMY) },
+                onOpenReplay = { sessionId -> actions.openDashboardReplay(sessionId, null) },
+                onOpenGuidedReview = { sessionId ->
+                    scope.guidedAnalysis.openSession(sessionId)
+                    actions.navigate(NavigationTarget.GUIDED_RUN_ANALYSIS)
+                },
+                onOpenMatchStrategy = { actions.navigate(NavigationTarget.MATCH_STRATEGY) },
+                onOpenNotebookEntry = actions.openNotebookEntry,
+            )
+        }
         true
     }
 

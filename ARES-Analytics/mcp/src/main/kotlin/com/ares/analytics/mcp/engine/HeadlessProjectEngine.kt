@@ -43,6 +43,9 @@ import kotlinx.serialization.Serializable
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.PrintStream
+import java.nio.file.Files
+import java.nio.file.LinkOption
+import java.nio.file.Path
 import java.security.MessageDigest
 import java.util.concurrent.atomic.AtomicReference
 
@@ -154,36 +157,62 @@ class HeadlessProjectEngine(
         initGit: Boolean = true,
     ): ProjectInitResult {
         val league = AresLeague.valueOf(leagueRaw.trim().uppercase())
-        val aresDir = File(targetDir, ".ares")
-        require(!aresDir.exists()) {
-            "Refusing to overwrite existing ARES project at '${targetDir.absolutePath}'; .ares already exists."
+        val target = targetDir.absoluteFile.toPath().normalize()
+        val parent = requireNotNull(target.parent) { "Choose a project directory below the filesystem root." }
+        require(!Files.isSymbolicLink(target) && !Files.exists(target.resolve(".ares"), LinkOption.NOFOLLOW_LINKS)) {
+            "Choose a new project destination. An existing .ares project or directory link cannot be replaced."
         }
-        val (sourceLabel, stream) = ProjectCodegenConventions.openStarterArchiveStream(league, templateDir)
-        stream.use { ProjectCodegenConventions.extractZipSafely(it, targetDir) }
-        val resolvedProjectId = ProjectCodegenConventions.personalizeExtractedProject(
-            root = targetDir,
-            teamId = teamId,
-            seasonId = seasonId,
-            robotId = robotId,
-            displayName = displayName,
-            projectIdOverride = projectIdHint,
-        )
-        val snapshotResult = if (initGit) {
-            JGitSnapshotSafety.createSnapshot(targetDir, slug = "init-$resolvedProjectId", initGitIfMissing = true)
-        } else {
-            null
+        Files.createDirectories(parent)
+        val staging = Files.createTempDirectory(parent, ".ares-init-")
+        try {
+            val root = staging.toFile()
+            val (source, stream) = ProjectCodegenConventions.openStarterArchiveStream(league, templateDir)
+            stream.use { ProjectCodegenConventions.extractZipSafely(it, root) }
+            val id = ProjectCodegenConventions.personalizeExtractedProject(
+                root, teamId, seasonId, robotId, displayName, projectIdHint,
+            )
+            val validation = summarizeValidation(root, loadBundle(root))
+            require(validation.league == league.name) { "Starter archive does not match the requested league $league." }
+            require(validation.valid) { "Starter validation failed: ${validation.issues}" }
+            val existingRepo = Files.exists(target.resolve(".git"), LinkOption.NOFOLLOW_LINKS)
+            val snapshot = if (initGit && !existingRepo) {
+                JGitSnapshotSafety.createSnapshot(root, "init-$id", initGitIfMissing = true).refName
+            } else null
+            val installedSnapshot = publishStarter(staging, target) {
+                if (initGit && existingRepo) JGitSnapshotSafety.createSnapshot(target.toFile(), "init-$id").refName
+                else snapshot
+            }
+            val path = target.toFile().canonicalPath
+            lastInspectedRoot.set(path)
+            return ProjectInitResult(path, league.name, id, displayName, source, installedSnapshot,
+                validation.copy(projectRoot = path))
+        } finally {
+            staging.toFile().deleteRecursively()
         }
-        lastInspectedRoot.set(targetDir.canonicalPathSafe())
-        val validation = validateProject(targetDir)
-        return ProjectInitResult(
-            projectRoot = targetDir.canonicalPathSafe(),
-            league = league.name,
-            projectId = resolvedProjectId,
-            displayName = displayName,
-            templateSource = sourceLabel,
-            snapshotRef = snapshotResult?.refName,
-            validation = validation,
-        )
+    }
+
+    private fun publishStarter(staging: Path, target: Path, finish: () -> String?): String? {
+        if (!Files.exists(target, LinkOption.NOFOLLOW_LINKS)) {
+            Files.move(staging, target)
+            return finish()
+        }
+        require(Files.isDirectory(target, LinkOption.NOFOLLOW_LINKS)) { "Destination must be a directory." }
+        val entries = Files.list(staging).use { it.sorted().toList() }
+        val collision = entries.firstOrNull { Files.exists(target.resolve(it.fileName), LinkOption.NOFOLLOW_LINKS) }
+        require(collision == null) { "Starter would replace existing entry: ${collision?.fileName}" }
+        val installed = mutableListOf<Path>()
+        try {
+            for (entry in entries) {
+                Files.move(entry, target.resolve(entry.fileName))
+                installed.add(entry)
+            }
+            return finish()
+        } catch (failure: Exception) {
+            for (entry in installed.asReversed()) {
+                runCatching { Files.move(target.resolve(entry.fileName), entry) }.onFailure(failure::addSuppressed)
+            }
+            throw failure
+        }
     }
 
     suspend fun resolveTargetRoot(explicitPath: String?): File {

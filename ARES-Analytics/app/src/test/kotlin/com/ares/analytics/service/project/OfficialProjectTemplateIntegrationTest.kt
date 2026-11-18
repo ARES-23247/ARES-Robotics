@@ -94,7 +94,27 @@ class OfficialProjectTemplateIntegrationTest {
             assertTrue(initialHistory.versions.single().message.contains("Create robot project"))
             if (league == League.FTC) assertTrue(File(result.destination, "local.properties").isFile)
             if (validateProjects) {
-                validateGeneratedProject(result.destination, league, validationRepository, validationVersion)
+                val samples = mutableListOf<File>()
+                try {
+                    if (league != League.XRP) {
+                        val bridge = com.ares.analytics.mcp.bridge.StudioBridgeClient(File(output, "test-bridge"))
+                        val engine = com.ares.analytics.mcp.engine.HeadlessProjectEngine(bridge)
+                        val scaffolds = com.ares.analytics.mcp.engine.HeadlessProjectMutators(engine)
+                        val kinds = mutableListOf("HARDWARE_IO" to "AcceptanceIo", "UNIT_TEST" to "AcceptanceIoTest")
+                        if (league == League.FTC) kinds += listOf("TELEOP_OPMODE" to "AcceptanceTeleOp", "AUTO_OPMODE" to "AcceptanceAuto")
+                        for ((kind, name) in kinds) {
+                            val preview = scaffolds.scaffoldKotlin(result.destination, league.name, kind, name)
+                            val sample = result.destination.resolve(preview.relativePath)
+                            sample.parentFile.mkdirs()
+                            check(sample.createNewFile())
+                            samples += sample
+                            sample.writeText(preview.generatedCode)
+                        }
+                    }
+                    validateGeneratedProject(result.destination, league, validationRepository, validationVersion)
+                } finally {
+                    samples.forEach { check(it.delete()) }
+                }
             }
 
             File(result.destination, ".ares/acceptance-checkpoint.txt").writeText("${league.name} zero-code journey complete")
