@@ -41,18 +41,38 @@ object RunDataDictionary {
             RowDefinition("Duration (s)", "Session Info", { _, summary, _ -> summary?.let { String.format("%.1fs", it.durationMs / 1000.0) } ?: "N/A" }, { _, summary, _ -> summary?.durationMs?.toDouble()?.div(1000.0) }),
 
             // Health
-            RowDefinition("Min Battery Voltage (V)", "System Health", { _, summary, _ -> summary?.let { String.format("%.2fV", it.minBatteryVoltage) } ?: "N/A" }, { _, summary, _ -> summary?.minBatteryVoltage }, { it < 9.5 }),
-            RowDefinition("Battery Resistance (Î©)", "System Health", { _, summary, _ -> summary?.let { String.format("%.3f Î©", it.avgBatteryResistance) } ?: "N/A" }, { _, summary, _ -> summary?.avgBatteryResistance }, { it > 0.15 }),
-            RowDefinition("Avg Loop Time (ms)", "System Health", { _, summary, _ -> summary?.let { String.format("%.2f ms", it.avgLoopTimeMs) } ?: "N/A" }, { _, summary, _ -> summary?.avgLoopTimeMs }, { it > 15.0 }),
-            RowDefinition("P95 Loop Time (ms)", "System Health", { _, summary, _ -> summary?.let { String.format("%.2f ms", it.p95LoopTimeMs) } ?: "N/A" }, { _, summary, _ -> summary?.p95LoopTimeMs }, { it > 25.0 }),
+            summaryRow("Min Battery Voltage (V)", "System Health", "battery", SessionSummary::minBatteryVoltage, "%.2fV") { it < 9.5 },
+            summaryRow("Battery Resistance (Ω)", "System Health", "resistance", SessionSummary::avgBatteryResistance, "%.3f Ω") { it > 0.15 },
+            summaryRow("Avg Loop Time (ms)", "System Health", "loop", SessionSummary::avgLoopTimeMs, "%.2f ms") { it > 15.0 },
+            summaryRow("P95 Loop Time (ms)", "System Health", "loop_p95", SessionSummary::p95LoopTimeMs, "%.2f ms") { it > 25.0 },
         ) + healthDiagnosticRows() + listOf(
             // Vision
-            RowDefinition("Max EKF Drift (m)", "Vision & Localization", { _, summary, _ -> summary?.let { String.format("%.3fm", it.maxEkfDrift) } ?: "N/A" }, { _, summary, _ -> summary?.maxEkfDrift }, { it > 0.10 }),
-            RowDefinition("Avg Cross-Track Error (m)", "Vision & Localization", { _, summary, _ -> summary?.let { String.format("%.3fm", it.avgCrossTrackError) } ?: "N/A" }, { _, summary, _ -> summary?.avgCrossTrackError }, { it > 0.10 }),
-            RowDefinition("Vision Latency (ms)", "Vision & Localization", { _, summary, _ -> summary?.let { String.format("%.1f ms", it.avgVisionLatencyMs) } ?: "N/A" }, { _, summary, _ -> summary?.avgVisionLatencyMs }, { it > 100.0 }),
-            RowDefinition("Vision Acceptance (%)", "Vision & Localization", { _, summary, _ -> summary?.let { String.format("%.1f%%", it.visionAcceptanceRate * 100.0) } ?: "N/A" }, { _, summary, _ -> summary?.visionAcceptanceRate }, { it < 0.60 }),
+            summaryRow("Max EKF Drift (m)", "Vision & Localization", "drift", SessionSummary::maxEkfDrift, "%.3fm") { it > 0.10 },
+            summaryRow("Avg Cross-Track Error (m)", "Vision & Localization", "cross_track", SessionSummary::avgCrossTrackError, "%.3fm") { it > 0.10 },
+            summaryRow("Vision Latency (ms)", "Vision & Localization", "latency", SessionSummary::avgVisionLatencyMs, "%.1f ms") { it > 100.0 },
+            summaryRow("Vision Acceptance (%)", "Vision & Localization", "acceptance", SessionSummary::visionAcceptanceRate, "%.1f%%", displayScale = 100.0) { it < 0.60 },
 
         ) + sysIdDiagnosticRows() + driverDiagnosticRows()
+    }
+
+    private fun summaryRow(
+        label: String,
+        category: String,
+        key: String,
+        read: (SessionSummary) -> Double,
+        format: String,
+        displayScale: Double = 1.0,
+        isAnomaly: (Double) -> Boolean,
+    ): RowDefinition {
+        fun measured(summary: SessionSummary?) = summary?.observedMetric(key, read(summary))
+        return RowDefinition(
+            label, category,
+            getValue = { _, summary, _ ->
+                measured(summary)?.let { String.format(Locale.ROOT, format, it * displayScale) } ?: "N/A"
+            },
+            getNumericValue = { _, summary, _ -> measured(summary) },
+            isAnomaly = isAnomaly,
+        )
     }
 
     fun buildMotorCurrentRows(allMotorNames: List<String>): List<RowDefinition> {

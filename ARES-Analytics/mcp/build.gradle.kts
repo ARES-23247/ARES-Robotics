@@ -15,7 +15,7 @@ val releaseVersions = Properties().apply {
 }
 
 val aresVersion = rootProject.extra["aresVersion"] as String
-val studioVersion = releaseVersions.getProperty("studioVersion")?.trim().orEmpty().ifEmpty { "7.0.79" }
+val studioVersion = releaseVersions.getProperty("studioVersion")?.trim().orEmpty().ifEmpty { "7.0.80" }
 val ftcStarterVersion = releaseVersions.getProperty("ftcStarterVersion")?.trim().orEmpty().ifEmpty { "20.0.6" }
 val frcStarterVersion = releaseVersions.getProperty("frcStarterVersion")?.trim().orEmpty().ifEmpty { "20.0.6" }
 val xrpStarterVersion = releaseVersions.getProperty("xrpStarterVersion")?.trim().orEmpty().ifEmpty { "3.0.70" }

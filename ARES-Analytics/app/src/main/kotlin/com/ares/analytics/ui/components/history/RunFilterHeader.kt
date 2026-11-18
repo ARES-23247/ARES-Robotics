@@ -62,10 +62,10 @@ fun RunFilterHeader(
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
+            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
                 val countSuffix = if (visibleRunCount != null && totalRunCount != null) {
                     if (visibleRunCount == totalRunCount) " ($totalRunCount runs)"
                     else " ($visibleRunCount of $totalRunCount runs)"
