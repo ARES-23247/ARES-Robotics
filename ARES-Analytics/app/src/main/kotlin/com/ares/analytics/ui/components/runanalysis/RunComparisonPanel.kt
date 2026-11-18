@@ -555,7 +555,7 @@ fun resolveStudentComparisonPreset(
             candidates.maxWithOrNull(compareBy<Session> { it.durationMs }.thenBy { it.createdAt }) ?: candidates.first()
         }
         StudentRunComparisonPreset.LATEST_VS_SIMULATOR_BASELINE -> {
-            candidates.firstOrNull { it.tags.isSimulationSessionTags() } ?: candidates.first()
+            candidates.firstOrNull { it.tags.isSimulationSessionTags() } ?: return null
         }
     }
 
@@ -658,7 +658,11 @@ fun StudentRunComparisonPresetBar(
                 ) {
                     Column {
                         Text(preset.label, color = AresTextPrimary, fontWeight = FontWeight.SemiBold, fontSize = 11.sp)
-                        resolved?.let { Text(it.summaryLabel, color = AresCyan, fontSize = 10.sp) }
+                        if (resolved != null) {
+                            Text(resolved.summaryLabel, color = AresCyan, fontSize = 10.sp)
+                        } else if (preset == StudentRunComparisonPreset.LATEST_VS_SIMULATOR_BASELINE) {
+                            Text("No earlier simulator run", color = AresTextSecondary, fontSize = 10.sp)
+                        }
                     }
                 }
             }

@@ -4022,7 +4022,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/history/RunDataDictionary.kt",
       "product": "ARES-Analytics",
-      "lines": 174,
+      "lines": 194,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -4472,7 +4472,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/runanalysis/RunComparisonPanel.kt",
       "product": "ARES-Analytics",
-      "lines": 689,
+      "lines": 693,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
