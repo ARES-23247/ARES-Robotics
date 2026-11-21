@@ -8,8 +8,9 @@ the state at the time they were written and are not operational instructions.
 - `ARES-23247/ARES-Robotics` is the only authoritative source repository.
 - Final ARES Maven artifacts are published first to the monorepo `maven` branch under immutable
   `org.aresfirst.ares` coordinates.
-- One protected Studio release contains the Windows MSI, macOS DMG, deterministic FTC and FRC
-  standalone starter archives, and SHA-256 checksums.
+- One protected Studio release contains the Windows MSI, macOS DMG, deterministic FTC, FRC, and XRP
+  standalone starter archives, Lightbot and BIOBUZZ example archives, SHA-256 checksums, and
+  `windows-installer-trust.json`.
 - Maven Central is an optional additional channel. It is never required to validate a release.
 - Old component repositories and their Maven/release assets remain readable so existing projects
   continue to resolve immutable releases.

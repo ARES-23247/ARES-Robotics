@@ -7,18 +7,19 @@ protected workflows named here are authoritative.
 ## Release verification
 
 `ARES-Analytics/gradlew studioReleaseVerification` is the complete deterministic Studio release
-contract. It runs all `app`, `shared`, and `gateway` tests, verifies each module's Kover line-coverage
+contract. It runs all `app`, `shared`, `gateway`, and `mcp` tests, verifies each module's Kover line-coverage
 floor, enforces the production-file size ratchet, checks release-version alignment, and runs the
 dashboard performance baseline. The protected distribution workflow must complete this task against
 the exact isolated ARES release-candidate repository before native packaging can start.
 
-The initial measured line-coverage baselines are:
+The initial measured line-coverage baselines and current enforced floors are:
 
 | Module | Measured baseline | Enforced floor |
 |---|---:|---:|
 | `app` | 38.61% | 38% |
-| `shared` | 54.56% | 52% |
-| `gateway` | 52.55% | 52% |
+| `shared` | 54.56% | 54% |
+| `gateway` | 52.55% | 54% |
+| `mcp` | — (added post-3.0.0) | 54% |
 
 Floors are ratchets, not targets. New work should raise them when durable coverage improves. A
 release must never lower a floor merely to make a failing build green.
@@ -35,6 +36,12 @@ ARESLib applies the same policy through `verifyAresLibSourceFileSizes` and
 `ARESLib-Kotlin/config/maintainability/large-production-kotlin-baseline.txt`. The aggregate
 `apiCheck` gate depends on that ratchet, so a published API cannot grow a grandfathered monolith or
 introduce a new production file above 500 lines without first extracting a cohesive component.
+
+Across the monorepo ledger (`scripts/generate_codebase_ledger.py` and
+`ARES-Analytics/config/maintainability/codebase_ledger.json`), tracked production Kotlin files follow
+three product tiers: 500 lines for `ARESLib-Kotlin/`, 1000 lines for `templates/` and `ARES-FRC/`, and
+750 lines for `ARES-Analytics/` and remaining products. `scripts/verify-monorepo-policy.ps1`
+additionally rejects any ARES-owned production `.kt`/`.java` file above 1000 lines.
 
 When changing a grandfathered file, extract one cohesive responsibility when practical. Prefer
 domain services, policies, codecs, and presentation components with direct tests over filename-only

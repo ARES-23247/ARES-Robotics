@@ -38,10 +38,15 @@ class MonorepoPolicyTest(unittest.TestCase):
             pins.append(f'{key}={hashlib.sha256(b"fixture archive").hexdigest()}')
         self.write('release/starter-artifacts.properties','\n'.join(pins)+'\n')
         for product in PRODUCTS: self.write(f'{product}/gradle.properties','# fixture\n')
+        for product in ('ARES-Analytics','ARES-FTC','ARES-FTC-Starter','ARES-FRC','ARES-FRC-Starter'):
+            self.write(f'{product}/gradle/wrapper/gradle-wrapper.properties',f'distributionSha256Sum={"a"*64}\n')
+        self.write('ARESLib-Kotlin/ares-micro/pyproject.toml','[project]\nname = "ares-micro"\nversion = "1.0.0"\n')
         for name in ('analytics-validation','build-distributions','codeql','monorepo-ci','verify-autos'):
             self.write(f'.github/workflows/{name}.yml','on:\n  pull_request:\n  merge_group:\n')
-        self.write('verify-autos.ps1','# fixture\n'); self.write('verify-autos.sh','# fixture\n')
-        self.write('ARES-Analytics/scripts/run-local-ares.ps1', '# release\\ares-versions.properties\n')
+        for entry in ('build.ps1','setup.ps1','verify-autos.ps1','ARES-Analytics/scripts/run-local-ares.ps1'):
+            text = '# release\\ares-versions.properties\n' if entry.endswith('run-local-ares.ps1') else '# fixture\n'
+            self.write(entry,text)
+        for entry in ('setup.sh','verify-autos.sh'): self.write(entry,'#!/usr/bin/env bash\n')
         guidance=['AGENTS.md','GEMINI.md','docs/agents/README.md','docs/agents/WORKSPACE_GUIDE.md','.agents/rules/ares-workspace.md','ARESLib-Kotlin/GEMINI.md','ARES-FTC-Starter/AGENTS.md','ARES-FRC-Starter/AGENTS.md','ARES-Analytics/docs/admin/GOOGLE_CLOUD_OAUTH.md','ARES-Analytics/docs/VALIDATION.md']
         guidance += ['.agents/skills/compose-desktop-tester/'+p for p in ['SKILL.md','references/startup-recovery.md','scripts/capture_app.ps1','scripts/inspect_app_window.ps1','scripts/interact_app.ps1']]
         for path in guidance: self.write(path,'# fixture\n')
@@ -141,5 +146,36 @@ class MonorepoPolicyTest(unittest.TestCase):
     def test_git_inventory_failure_is_not_an_empty_success(self):
         (self.root/'.git/index').write_bytes(b'corrupt fixture index')
         self.verify(False,'Unable to enumerate monorepo source files')
+
+    def test_ares_micro_pyproject_version_mismatch_is_rejected(self):
+        self.write('ARESLib-Kotlin/ares-micro/pyproject.toml','[project]\nname = "ares-micro"\nversion = "0.9.9"\n')
+        self.verify(False,'does not match aresVersion')
+
+    def test_publish_to_maven_local_in_python_setup_and_analytics_scripts_is_rejected(self):
+        for rel in ('scripts/helper.py','build.ps1','setup.sh','ARES-Analytics/scripts/custom.ps1'):
+            with self.subTest(path=rel):
+                self.setUp()
+                self.write(rel,'publishToMavenLocal\n')
+                self.verify(False,'Ambient Maven Local publication is forbidden')
+
+    def test_frc_starter_retired_namespace_is_rejected(self):
+        self.write('ARES-FRC-Starter/src/main/kotlin/Starter.kt','package com.areslib.starter\n')
+        self.verify(False,'retired library namespace')
+
+    def test_forward_slash_and_unix_local_paths_are_rejected(self):
+        for rel, body in (
+            ('docs/agents/WORKSPACE_GUIDE.md','C:/Users/alice/dev/ARES-Robotics\n'),
+            ('AGENTS.md','/home/alice/ARES-Robotics\n'),
+            ('setup.sh','# /home/alice/ARES-Robotics\n'),
+            ('ARES-Analytics/scripts/run-local-ares.ps1','# release\\ares-versions.properties\n# C:/Users/alice/tmp\n'),
+        ):
+            with self.subTest(path=rel):
+                self.setUp()
+                self.write(rel,body)
+                self.verify(False,'developer-specific workspace path')
+
+    def test_missing_wrapper_sha256_pin_is_rejected(self):
+        self.write('ARES-Analytics/gradle/wrapper/gradle-wrapper.properties','distributionUrl=https\\://example.invalid/gradle.zip\n')
+        self.verify(False,'must pin distributionSha256Sum')
 
 if __name__=='__main__': unittest.main()

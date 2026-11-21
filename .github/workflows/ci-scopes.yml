@@ -56,6 +56,7 @@ jobs:
   classify:
     name: Classify affected products
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     outputs:
       full: ${{ steps.classify.outputs.full }}
       lib: ${{ steps.classify.outputs.lib }}
@@ -73,9 +74,10 @@ jobs:
       packages: ${{ steps.classify.outputs.packages }}
       jvm: ${{ steps.classify.outputs.jvm }}
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
+          persist-credentials: false
       - name: Resolve scopes for the checked-out review tree
         id: classify
         env:

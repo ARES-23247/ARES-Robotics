@@ -84,6 +84,19 @@ foreach ($example in @('Lightbot', 'BIOBUZZ')) {
     }
 }
 
+$aresMicroPyproject = Join-Path $root 'ARESLib-Kotlin/ares-micro/pyproject.toml'
+if (-not (Test-Path -LiteralPath $aresMicroPyproject -PathType Leaf)) {
+    throw 'ARESLib-Kotlin/ares-micro/pyproject.toml is missing.'
+}
+$pyprojectContent = Get-Content -Raw -LiteralPath $aresMicroPyproject
+if ($pyprojectContent -notmatch '(?m)^\s*version\s*=\s*"([^"]+)"') {
+    throw 'ARESLib-Kotlin/ares-micro/pyproject.toml must declare a package version.'
+}
+$aresMicroVersion = $matches[1].Trim()
+if ($aresMicroVersion -ne $release['aresVersion']) {
+    throw "ARESLib-Kotlin/ares-micro/pyproject.toml version ($aresMicroVersion) does not match aresVersion ($($release['aresVersion']))."
+}
+
 $componentProperties = @(
     'ARESLib-Kotlin/gradle.properties',
     'ARES-FTC/gradle.properties',
@@ -95,6 +108,26 @@ $componentProperties = @(
 foreach ($path in $componentProperties) {
     $content = Get-Content -Raw -LiteralPath (Join-Path $root $path)
     if ($content -match '(?m)^aresVersion\s*=') { throw "$path duplicates the canonical ARES version." }
+}
+
+# Pin Gradle wrapper distribution checksums on non-ARESLib Gradle roots.
+# ARESLib-Kotlin/gradle/wrapper/gradle-wrapper.properties will add distributionSha256Sum
+# on the next coordinated aresVersion release bump so HEAD:ARESLib-Kotlin stays invariant here.
+foreach ($wrapperPath in @(
+    'ARES-Analytics/gradle/wrapper/gradle-wrapper.properties',
+    'ARES-FTC/gradle/wrapper/gradle-wrapper.properties',
+    'ARES-FTC-Starter/gradle/wrapper/gradle-wrapper.properties',
+    'ARES-FRC/gradle/wrapper/gradle-wrapper.properties',
+    'ARES-FRC-Starter/gradle/wrapper/gradle-wrapper.properties'
+)) {
+    $fullWrapperPath = Join-Path $root $wrapperPath
+    if (-not (Test-Path -LiteralPath $fullWrapperPath -PathType Leaf)) {
+        throw "Gradle wrapper properties file is missing: $wrapperPath"
+    }
+    $wrapperContent = Get-Content -Raw -LiteralPath $fullWrapperPath
+    if ($wrapperContent -notmatch '(?m)^distributionSha256Sum=[0-9a-fA-F]{64}\s*$') {
+        throw "$wrapperPath must pin distributionSha256Sum to a 64-character SHA-256 digest."
+    }
 }
 
 # Inventory source once. Git excludes ignored local exports/caches while retaining
@@ -114,7 +147,8 @@ foreach ($relativePath in $sourcePaths) {
         $relativePath -notmatch '(^|/)(build|\.gradle)/'
     $isProduction = $relativePath -match '(^|/)src/main/.*\.(kt|java)$' -and
         $relativePath -notmatch '(^|/)build/'
-    $isFrc = $relativePath -match '^ARES-FRC/src/.*\.(kt|java)$'
+    $isFrc = $relativePath -match '^ARES-FRC/src/.*\.(kt|java)$' -or
+        $relativePath -match '^ARES-FRC-Starter/src/main/.*\.(kt|java)$'
     if (-not ($isBuild -or $isProduction -or $isFrc)) { continue }
     $path = Join-Path $root $relativePath
     # An unstaged deletion still appears in the Git index. Check existing worktree bytes.
@@ -132,14 +166,21 @@ foreach ($buildFile in $buildFiles) {
 }
 
 $validationEntrypoints = @(
+    (Join-Path $root 'build.ps1'),
+    (Join-Path $root 'setup.ps1'),
+    (Join-Path $root 'setup.sh'),
     (Join-Path $root 'verify-autos.ps1'),
     (Join-Path $root 'verify-autos.sh')
 ) + @(
     Get-ChildItem -LiteralPath (Join-Path $root 'scripts') -File |
         Where-Object {
-            ($_.Extension -eq '.ps1' -or $_.Extension -eq '.sh') -and
+            ($_.Extension -in @('.ps1', '.sh', '.py')) -and
                 $_.Name -ne 'verify-monorepo-policy.ps1'
         } |
+        Select-Object -ExpandProperty FullName
+) + @(
+    Get-ChildItem -LiteralPath (Join-Path $root 'ARES-Analytics/scripts') -File |
+        Where-Object { $_.Extension -in @('.ps1', '.sh', '.py') } |
         Select-Object -ExpandProperty FullName
 ) + @(
     Get-ChildItem -LiteralPath (Join-Path $root '.github/workflows') -File |
@@ -147,6 +188,9 @@ $validationEntrypoints = @(
         Select-Object -ExpandProperty FullName
 )
 foreach ($entrypoint in $validationEntrypoints) {
+    if (-not (Test-Path -LiteralPath $entrypoint -PathType Leaf)) {
+        throw "Expected validation or setup entrypoint is missing: $entrypoint"
+    }
     $content = Get-Content -Raw -LiteralPath $entrypoint
     if ($content -match 'publishToMavenLocal') {
         throw "Ambient Maven Local publication is forbidden in validation entrypoints: $entrypoint"
@@ -227,7 +271,7 @@ foreach ($retiredType in $retiredProductionTypes) {
 }
 
 foreach ($source in $frcProductSources) {
-    if ((Get-Content -Raw -Encoding UTF8 -LiteralPath $source.FullName) -match '(?m)^\s*package\s+com\.areslib\.frc(?:\.|\s|$)') {
+    if ((Get-Content -Raw -Encoding UTF8 -LiteralPath $source.FullName) -match '(?m)^\s*package\s+com\.areslib(?:\.|\s|;|$)') {
         throw "ARES-FRC product source returned to the retired library namespace: $($source.FullName)"
     }
 }
@@ -253,12 +297,36 @@ $currentGuidance = @(
     'ARES-Analytics/docs/admin/GOOGLE_CLOUD_OAUTH.md',
     'ARES-Analytics/docs/VALIDATION.md'
 )
+$machineLocalPathPattern = '(?:[A-Za-z]:[/\\]Users[/\\][^/\\\s"''`]+|/home/[^/\s"''`]+)'
 foreach ($relativePath in $currentGuidance) {
     $path = Join-Path $root $relativePath
     if (-not (Test-Path -LiteralPath $path)) { throw "Current guidance file is missing: $relativePath" }
     $content = Get-Content -Raw -LiteralPath $path
-    if ($content -match 'C:\\Users\\david\\dev\\robotics\\ares') {
+    if ($content -match $machineLocalPathPattern) {
         throw "Current guidance contains a developer-specific workspace path: $relativePath"
+    }
+}
+$operationalScripts = @(
+    'build.ps1',
+    'setup.ps1',
+    'setup.sh',
+    'verify-autos.ps1',
+    'verify-autos.sh'
+) + @(
+    Get-ChildItem -LiteralPath (Join-Path $root 'scripts') -File |
+        Where-Object { ($_.Extension -in @('.ps1', '.sh')) -and $_.Name -ne 'verify-monorepo-policy.ps1' } |
+        ForEach-Object { "scripts/$($_.Name)" }
+) + @(
+    Get-ChildItem -LiteralPath (Join-Path $root 'ARES-Analytics/scripts') -File |
+        Where-Object { $_.Extension -in @('.ps1', '.sh', '.py') } |
+        ForEach-Object { "ARES-Analytics/scripts/$($_.Name)" }
+)
+foreach ($relativePath in $operationalScripts) {
+    $path = Join-Path $root $relativePath
+    if (-not (Test-Path -LiteralPath $path -PathType Leaf)) { continue }
+    $content = Get-Content -Raw -LiteralPath $path
+    if ($content -match $machineLocalPathPattern) {
+        throw "Operational script contains a developer-specific workspace path: $relativePath"
     }
 }
 

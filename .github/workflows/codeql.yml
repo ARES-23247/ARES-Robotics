@@ -13,7 +13,7 @@ permissions:
 
 concurrency:
   group: monorepo-codeql-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   changes:
@@ -29,15 +29,17 @@ jobs:
       contents: read
       security-events: write
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-java@v6
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@d1374f8ac74474200d16ef8ecee22c7ae7a51880 # v6.3.0
         with:
           distribution: temurin
           java-version: '17'
-      - uses: gradle/actions/setup-gradle@v6
+      - uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
 
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@v4
+        uses: github/codeql-action/init@1bd86f2fdb4b86187fa4059f16f31a3202acc9ea # v4.39.4
         with:
           languages: java-kotlin
           build-mode: manual
@@ -46,6 +48,9 @@ jobs:
               - ARESLib-Kotlin
               - ARES-FTC/TeamCode/src
               - ARES-FTC/simulator/src
+              - ARES-FTC/biobuzz/TeamCode/src
+              - ARES-FTC/biobuzz/simulator/src
+              - ARES-FTC/biobuzz/shared/src
               - ARES-FRC/src
               - ARES-FTC-Starter/TeamCode/src
               - ARES-FTC-Starter/simulator/src
@@ -62,6 +67,7 @@ jobs:
       - name: Compile all ARES-owned source boundaries
         shell: bash
         run: |
+          set -euo pipefail
           base="$(sed -n 's/^aresVersion=//p' release/ares-versions.properties)"
           candidate="${base}-rc.codeql.${GITHUB_SHA::12}"
           ./ARESLib-Kotlin/gradlew -p ARESLib-Kotlin classes testClasses publishReleaseValidation \
@@ -77,9 +83,38 @@ jobs:
             -ParesVersion="$candidate" -ParesRepository="$repository" --no-parallel --no-daemon --console=plain
           ./ARES-Analytics/gradlew -p ARES-Analytics :shared:classes :mcp:classes :app:classes :gateway:classes \
             -ParesVersion="$candidate" -ParesRepository="$repository" --no-parallel --no-daemon --console=plain
+          biobuzz_root="${RUNNER_TEMP}/biobuzz-codeql"
+          rm -rf "$biobuzz_root"
+          pwsh -NoProfile -File ./scripts/export-starter-mirrors.ps1 -OutputRoot "$biobuzz_root"
+          biobuzz_dir="$biobuzz_root/ARES-BIOBUZZ-Example"
+          rm -f \
+            "$biobuzz_dir/TeamCode/src/main/java/org/firstinspires/ftc/teamcode/opmodes/ARESStarterTeleOp.kt" \
+            "$biobuzz_dir/TeamCode/src/main/java/org/firstinspires/ftc/teamcode/vision/BiobuzzTagClusters.kt"
+          rm -rf "$biobuzz_dir/simulator/src" "$biobuzz_dir/shared/src"
+          cat > "$biobuzz_root/codeql-biobuzz-sources.gradle" <<EOF
+          gradle.projectsEvaluated {
+              def teamCode = rootProject.findProject(':TeamCode')
+              if (teamCode != null) {
+                  teamCode.android.sourceSets.main.java.srcDir('${GITHUB_WORKSPACE}/ARES-FTC/biobuzz/TeamCode/src/main/java')
+              }
+              def sim = rootProject.findProject(':simulator')
+              if (sim != null) {
+                  sim.sourceSets.main.java.srcDirs(
+                      '${GITHUB_WORKSPACE}/ARES-FTC/biobuzz/TeamCode/src/main/java',
+                      '${GITHUB_WORKSPACE}/ARES-FTC/biobuzz/shared/src/main/kotlin',
+                      '${GITHUB_WORKSPACE}/ARES-FTC/biobuzz/simulator/src/main/kotlin',
+                  )
+                  sim.sourceSets.test.java.srcDir('${GITHUB_WORKSPACE}/ARES-FTC/biobuzz/simulator/src/test/kotlin')
+              }
+          }
+          EOF
+          bash "$biobuzz_dir/gradlew" -p "$biobuzz_dir" \
+            --init-script "$biobuzz_root/codeql-biobuzz-sources.gradle" \
+            generateAresProject :TeamCode:assembleDebug :simulator:compileKotlin :simulator:compileTestKotlin \
+            -ParesVersion="$candidate" -ParesRepository="$repository" --no-parallel --no-daemon --console=plain
 
       - name: Analyze
-        uses: github/codeql-action/analyze@v4
+        uses: github/codeql-action/analyze@1bd86f2fdb4b86187fa4059f16f31a3202acc9ea # v4.39.4
 
   analyze-xrp-python:
     needs: changes
@@ -91,12 +126,14 @@ jobs:
       contents: read
       security-events: write
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-python@v6
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
         with:
           python-version: '3.11'
       - name: Initialize Python CodeQL
-        uses: github/codeql-action/init@v4
+        uses: github/codeql-action/init@1bd86f2fdb4b86187fa4059f16f31a3202acc9ea # v4.39.4
         with:
           languages: python
           config: |
@@ -113,15 +150,18 @@ jobs:
           ./ares generate
           ./ares verify
       - name: Analyze Python
-        uses: github/codeql-action/analyze@v4
+        uses: github/codeql-action/analyze@1bd86f2fdb4b86187fa4059f16f31a3202acc9ea # v4.39.4
 
   result:
     name: CodeQL validation result
     needs: [changes, analyze, analyze-xrp-python]
     if: always()
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - name: Check selected scope results
         env:
           NEEDS_JSON: ${{ toJSON(needs) }}
