@@ -177,11 +177,14 @@ fun TelemetryChartPanel(
         }
     }
 
-    // Live clock ticker to keep the chart scrolling smoothly even when stationary
-    LaunchedEffect(currentFrame?.sessionId) {
-        while (true) {
-            liveTime = currentFrame?.playheadMs ?: (System.currentTimeMillis() + serverTimeOffset)
-            kotlinx.coroutines.delay(100)
+    // Live clock ticker to keep the chart scrolling smoothly in live mode only.
+    val isReplayMode = currentFrame != null
+    LaunchedEffect(isReplayMode) {
+        if (!isReplayMode) {
+            while (true) {
+                liveTime = System.currentTimeMillis() + serverTimeOffset
+                kotlinx.coroutines.delay(100)
+            }
         }
     }
 

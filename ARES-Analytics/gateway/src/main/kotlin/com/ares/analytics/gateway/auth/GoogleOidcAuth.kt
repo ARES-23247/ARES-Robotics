@@ -14,8 +14,11 @@ import org.slf4j.LoggerFactory
 
 private val oidcLogger = LoggerFactory.getLogger("GoogleOidcAuth")
 
-private val clientId: String? =
-    System.getenv("GOOGLE_OIDC_CLIENT_ID")?.trim()?.takeIf(String::isNotEmpty)
+internal fun resolveGoogleOidcClientId(env: (String) -> String? = System::getenv): String? =
+    env("GOOGLE_OIDC_CLIENT_ID")?.trim()?.takeIf(String::isNotEmpty)
+        ?: env("ARES_GOOGLE_OAUTH_CLIENT_ID")?.trim()?.takeIf(String::isNotEmpty)
+
+private val clientId: String? = resolveGoogleOidcClientId()
 
 /**
  * Hoisted, lazily-built verifier. A new `NetHttpTransport()` + `GoogleIdTokenVerifier`

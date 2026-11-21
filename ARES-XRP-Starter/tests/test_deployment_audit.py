@@ -253,6 +253,23 @@ class DeploymentAuditTest(unittest.TestCase):
                 self.assertEqual(device.files[slot + "/main.py"].strip(), b"pass")
                 self.assertEqual(device.files["/ares_slots/slot-old/main.py"], b"pass")
 
+    def test_station_wifi_mode_requires_non_empty_xrp_secrets_before_staging(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / ".ares").mkdir()
+            (root / ".ares" / "project.json").write_text(
+                json.dumps({"schemaVersion": 5, "league": "XRP", "runtimeOptions": {"xrp": {"wifiMode": "STATION"}}}),
+                encoding="utf-8",
+            )
+            with mock.patch.object(xrp_device, "ROOT", root):
+                with self.assertRaisesRegex(xrp_device.DeviceError, "xrp_secrets.py"):
+                    xrp_device._require_station_secrets()
+                (root / "xrp_secrets.py").write_text('WIFI_PASSWORD = ""\n', encoding="utf-8")
+                with self.assertRaisesRegex(xrp_device.DeviceError, "WIFI_PASSWORD"):
+                    xrp_device._require_station_secrets()
+                (root / "xrp_secrets.py").write_text('WIFI_PASSWORD = "team-password"\n', encoding="utf-8")
+                self.assertEqual(xrp_device._require_station_secrets(), root / "xrp_secrets.py")
+
 
 class BootAuditTest(unittest.TestCase):
     def program(self, device):

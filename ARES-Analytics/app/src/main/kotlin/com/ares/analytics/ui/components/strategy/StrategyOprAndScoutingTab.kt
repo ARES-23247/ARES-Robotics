@@ -58,7 +58,7 @@ internal fun StrategyOprAndScoutingTab(
     val pitByTeam = remember(bundle.pitProfiles) {
         bundle.pitProfiles.associateBy { normalizeTeamNumber(it.teamNumber) }
     }
-    val allTeamNumbers = remember(oprSnapshot, pitByTeam, standSummaries, rankedRows, cleanOurTeam) {
+    val allTeamNumbers = remember(oprSnapshot, pitByTeam, standSummaries, rankedRows, cleanOurTeam, highlightedTeamNumber) {
         buildSet {
             cleanOurTeam?.let(::add)
             addAll(oprSnapshot.metricsByTeam.keys)

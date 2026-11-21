@@ -223,7 +223,8 @@ internal fun FrcStudioDriveCommand.copyIntoControllerFrame(
         reportedButtonCount = 124,
         sampleTimeNanos = nowNanos,
     )
-    // The checked-in controller profile inverts Xbox left-Y, left-X, and right-X exactly once.
+    // The checked-in controller profile inverts Xbox left-Y, left-X, and right-X exactly once,
+    // and StarterGeneratedCapabilities applies the single Red alliance inversion.
     frame.setAxis(1, (-vxMetersPerSecond / maximumTranslationMps).coerceIn(-1.0, 1.0))
     frame.setAxis(0, (-vyMetersPerSecond / maximumTranslationMps).coerceIn(-1.0, 1.0))
     frame.setAxis(4, (-omegaRadiansPerSecond / maximumAngularRps).coerceIn(-1.0, 1.0))

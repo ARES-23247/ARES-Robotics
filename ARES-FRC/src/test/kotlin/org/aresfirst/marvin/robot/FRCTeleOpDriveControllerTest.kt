@@ -141,6 +141,31 @@ class FRCTeleOpDriveControllerTest {
     }
 
     @Test
+    fun `leased dashboard frame on Red alliance applies single alliance inversion from driver perspective`() {
+        val gate = DesktopDriveFrameGate(timeoutMs = 500L)
+        val redFlags = ((1L shl 3) or (1L shl 4) or (1L shl 5)).toDouble() // TeleOp + field-centric + Red
+        assertTrue(gate.observe(dashboardFrame(sequence = 0L, flags = redFlags), timestampMs = 2_000L))
+        assertTrue(
+            gate.observe(
+                dashboardFrame(sequence = 1L, vx = 3.0, vy = -1.5, flags = redFlags),
+                timestampMs = 2_020L
+            )
+        )
+
+        requireNotNull(gate.takeIf { it.receiverReady(2_020L) }).applyTo(controllerState)
+        teleOpController.cachedAlliance = DriverStation.Alliance.Red
+        teleOpController.drivePeriodic()
+        assertTrue(
+            robot.store.state.drive.xVelocityMetersPerSecond < -2.5,
+            "Red driver-perspective forward (+vx) must invert once to -X in canonical Blue field coordinates"
+        )
+        assertTrue(
+            robot.store.state.drive.yVelocityMetersPerSecond > 1.0,
+            "Red driver-perspective right (-vy) must invert once to +Y in canonical Blue field coordinates"
+        )
+    }
+
+    @Test
     fun `five simulated minutes of FRC dashboard frames retain translation and rotation authority`() {
         val gate = DesktopDriveFrameGate(timeoutMs = 500L)
         val flags = ((1L shl 3) or (1L shl 4)).toDouble() // TeleOp + field-centric, Blue

@@ -119,9 +119,14 @@ class ImportCenterViewModel(
         }
     }
 
+    private val importGeneration = java.util.concurrent.atomic.AtomicLong(0L)
+
     private fun importFiles(files: List<File>) {
-        if (files.isEmpty() || importJob?.isActive == true || _state.value.retryingId != null) return
-        importJob = scope.launch {
+        if (files.isEmpty() || importJob?.isCompleted == false || _state.value.retryingId != null) return
+        val token = importGeneration.incrementAndGet()
+        lateinit var currentJob: kotlinx.coroutines.Job
+        currentJob = scope.launch {
+            if (importGeneration.get() != token) return@launch
             _state.update {
                 it.copy(
                     isImporting = true,
@@ -140,7 +145,9 @@ class ImportCenterViewModel(
                     .filter { it.isNotEmpty() }
                     .distinct()
 
-                _state.update { it.copy(importPhase = "Decoding bounded batches into the local workspace database…") }
+                if (importGeneration.get() == token) {
+                    _state.update { it.copy(importPhase = "Decoding bounded batches into the local workspace database…") }
+                }
                 val rawOutcome = manualLogImportService.importFiles(files, workspace)
                 var updatedSession = rawOutcome.session
                 val db = databaseService
@@ -162,46 +169,53 @@ class ImportCenterViewModel(
                 }
                 val outcome = rawOutcome.copy(session = updatedSession)
                 val snapshot = withContext(Dispatchers.IO) { archiveService.load(workspace.projectPath) }
-                _state.update {
-                    it.copy(
-                        snapshot = snapshot,
-                        isLoading = false,
-                        isImporting = false,
-                        importPhase = null,
-                        lastImport = outcome,
-                        pendingMatchNumber = "",
-                        message = if (outcome.wasAlreadyImported) {
-                            "These exact files were already imported. ARES reused the existing run instead of creating a duplicate."
-                        } else {
-                            "Import complete. The original files were not changed."
-                        },
-                    )
+                if (importGeneration.get() == token) {
+                    _state.update {
+                        it.copy(
+                            snapshot = snapshot,
+                            isLoading = false,
+                            isImporting = false,
+                            importPhase = null,
+                            lastImport = outcome,
+                            pendingMatchNumber = "",
+                            message = if (outcome.wasAlreadyImported) {
+                                "These exact files were already imported. ARES reused the existing run instead of creating a duplicate."
+                            } else {
+                                "Import complete. The original files were not changed."
+                            },
+                        )
+                    }
+                    onImportCompleted()
                 }
-                onImportCompleted()
             } catch (cancelled: CancellationException) {
-                _state.update {
-                    it.copy(
-                        isImporting = false,
-                        importPhase = null,
-                        message = "Import cancelled. No partial run is visible in Run History.",
-                    )
+                if (importGeneration.get() == token) {
+                    _state.update {
+                        it.copy(
+                            isImporting = false,
+                            importPhase = null,
+                            message = "Import cancelled. No partial run is visible in Run History.",
+                        )
+                    }
                 }
             } catch (failure: Throwable) {
                 val snapshot = runCatching { withContext(Dispatchers.IO) { archiveService.load(workspace.projectPath) } }
                     .getOrDefault(_state.value.snapshot)
-                _state.update {
-                    it.copy(
-                        snapshot = snapshot,
-                        isLoading = false,
-                        isImporting = false,
-                        importPhase = null,
-                        error = failure.actionableImportMessage(),
-                    )
+                if (importGeneration.get() == token) {
+                    _state.update {
+                        it.copy(
+                            snapshot = snapshot,
+                            isLoading = false,
+                            isImporting = false,
+                            importPhase = null,
+                            error = failure.actionableImportMessage(),
+                        )
+                    }
                 }
             } finally {
-                importJob = null
+                if (importJob === currentJob) importJob = null
             }
         }
+        importJob = currentJob
     }
 
     private fun cancelImport() {

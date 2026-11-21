@@ -98,7 +98,9 @@ internal inline fun <reified T> okJsonResult(payload: T): CallToolResult = CallT
 
 internal inline fun guardedTool(block: () -> CallToolResult): CallToolResult = try {
     block()
-} catch (error: Throwable) {
+} catch (cancelled: kotlinx.coroutines.CancellationException) {
+    throw cancelled
+} catch (error: Exception) {
     CallToolResult(
         content = listOf(
             TextContent(

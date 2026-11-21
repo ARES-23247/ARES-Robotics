@@ -115,6 +115,7 @@ class AlertEngineService(
     private data class SourceOrder(val timestampUs: Long, val sampleOrder: Long)
     private val lastSourceOrders = HashMap<RuleIdentity, SourceOrder>()
     private var evaluationTargetEpoch: Long? = null
+    private val engineLifecycleLock = Any()
     private var engineJob: Job? = null
     private val platformThresholds = PlatformAlertThresholds()
 
@@ -190,50 +191,58 @@ class AlertEngineService(
      * Starts the non-blocking telemetry evaluation coroutine collector.
      */
     fun startEngine() {
-        if (disposed) return
-        engineJob?.cancel()
-
         val store = nt4ClientService.telemetryStore
         val retained = IdentityHashMap<TelemetryPublication, Boolean>()
         store.publications.replayCache.forEach { retained[it] = true }
-        engineJob = serviceScope.launch(start = CoroutineStart.UNDISPATCHED) {
-            coroutineScope {
-                launch(start = CoroutineStart.UNDISPATCHED) {
-                    store.targetEpochs.collect {
-                        transitionMutex.withLock { selectTargetEpoch(store.currentTargetEpoch()) }
+        val jobToStart: Job
+        synchronized(engineLifecycleLock) {
+            if (disposed) return
+            engineJob?.cancel()
+            jobToStart = serviceScope.launch(start = CoroutineStart.LAZY) {
+                coroutineScope {
+                    launch(start = CoroutineStart.UNDISPATCHED) {
+                        store.targetEpochs.collect {
+                            transitionMutex.withLock {
+                                if (disposed) return@withLock
+                                selectTargetEpoch(store.currentTargetEpoch())
+                            }
+                        }
                     }
-                }
-                store.publications.collect { publication ->
-                    transitionMutex.withLock {
-                        ensureActive()
-                        val epoch = store.currentTargetEpoch()
-                        selectTargetEpoch(epoch)
-                        val frame = publication.frame
-                        if (publication.targetEpoch != epoch || retained.containsKey(publication)) return@withLock
-                        val key = normalizeTopic(frame.key)
-                        if (key in motorDiagnosticKeys) return@withLock
-                        val scalarKind = ScalarDiagnosticRules.kind(key)
-                        if (!rules.containsKey(key) && !isDiagnosticSignal(key, scalarKind)) return@withLock
-                        val identity = RuleIdentity(frame.sessionId, key)
-                        val previous = lastSourceOrders[identity]
-                        if (previous != null && (frame.timestampUs < previous.timestampUs ||
-                            (frame.timestampUs == previous.timestampUs && frame.sampleOrder <= previous.sampleOrder))) return@withLock
-                        lastSourceOrders[identity] = SourceOrder(frame.timestampUs, frame.sampleOrder)
-                        motorRoutes[key]?.let { evaluateMotorFrame(frame, it) }
-                        if (key in motorTemperatureKeys) rules.getOrPut(key) {
-                            ThresholdRule(key, "WARNING: Motor overheating (>70°C)!", maxValue = 70.0, audibleAlert = true)
+                    store.publications.collect { publication ->
+                        transitionMutex.withLock {
+                            ensureActive()
+                            if (disposed) return@withLock
+                            val epoch = store.currentTargetEpoch()
+                            selectTargetEpoch(epoch)
+                            val frame = publication.frame
+                            if (publication.targetEpoch != epoch || retained.containsKey(publication)) return@withLock
+                            val key = normalizeTopic(frame.key)
+                            if (key in motorDiagnosticKeys) return@withLock
+                            val scalarKind = ScalarDiagnosticRules.kind(key)
+                            if (!rules.containsKey(key) && !isDiagnosticSignal(key, scalarKind)) return@withLock
+                            val identity = RuleIdentity(frame.sessionId, key)
+                            val previous = lastSourceOrders[identity]
+                            if (previous != null && (frame.timestampUs < previous.timestampUs ||
+                                (frame.timestampUs == previous.timestampUs && frame.sampleOrder <= previous.sampleOrder))) return@withLock
+                            lastSourceOrders[identity] = SourceOrder(frame.timestampUs, frame.sampleOrder)
+                            motorRoutes[key]?.let { evaluateMotorFrame(frame, it) }
+                            if (key in motorTemperatureKeys) rules.getOrPut(key) {
+                                ThresholdRule(key, "WARNING: Motor overheating (>70°C)!", maxValue = 70.0, audibleAlert = true)
+                            }
+                            if (frame.stringValue != null || !frame.value.isFinite()) return@withLock
+                            if (scalarKind != null) {
+                                if (!ScalarDiagnosticRules.accepts(scalarKind, frame.value)) return@withLock
+                                rules.getOrPut(key) { ScalarDiagnosticRules.defaultRule(scalarKind, key) }
+                            }
+                            evaluateFrame(frame, key)
+                            evaluateLoopFrame(frame, key, identity)
                         }
-                        if (frame.stringValue != null || !frame.value.isFinite()) return@withLock
-                        if (scalarKind != null) {
-                            if (!ScalarDiagnosticRules.accepts(scalarKind, frame.value)) return@withLock
-                            rules.getOrPut(key) { ScalarDiagnosticRules.defaultRule(scalarKind, key) }
-                        }
-                        evaluateFrame(frame, key)
-                        evaluateLoopFrame(frame, key, identity)
                     }
                 }
             }
+            engineJob = jobToStart
         }
+        jobToStart.start()
     }
 
     /** Called while holding transitionMutex. Old persisted evidence remains in the database. */
@@ -259,7 +268,10 @@ class AlertEngineService(
      * Cancels the active telemetry evaluation coroutine job.
      */
     fun stop() {
-        engineJob?.cancel()
+        synchronized(engineLifecycleLock) {
+            engineJob?.cancel()
+            engineJob = null
+        }
         audioNotifier.stop()
     }
 
@@ -270,9 +282,12 @@ class AlertEngineService(
      * it leaves [serviceScope] reusable.
      */
     fun dispose() {
-        disposed = true
+        val jobToCancel = synchronized(engineLifecycleLock) {
+            disposed = true
+            engineJob.also { engineJob = null }
+        }
         audioNotifier.close()
-        engineJob?.cancel()
+        jobToCancel?.cancel()
         persistence.close()
         serviceScope.cancel()
     }
@@ -280,9 +295,13 @@ class AlertEngineService(
     /** Stop evaluation, drain accepted alert updates, then join before the database closes. */
     suspend fun disposeAndJoin(timeoutMs: Long = 5_000L): Boolean {
         require(timeoutMs > 0)
+        val jobToJoin = synchronized(engineLifecycleLock) {
+            disposed = true
+            engineJob.also { engineJob = null }
+        }
         transitionMutex.withLock { disposed = true }
         audioNotifier.close()
-        engineJob?.cancelAndJoin()
+        jobToJoin?.cancelAndJoin()
         if (!persistence.finish(timeoutMs)) return false
         serviceScope.coroutineContext[Job]?.cancelAndJoin()
         return true

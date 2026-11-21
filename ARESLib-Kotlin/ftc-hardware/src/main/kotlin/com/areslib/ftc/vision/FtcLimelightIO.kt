@@ -95,8 +95,15 @@ class FtcLimelightIO(
         rollRateDegPerSec: Double,
         linearVelocityMps: Double
     ) {
-        if (yawDegrees.isFinite()) {
+        if (closed || !yawDegrees.isFinite()) return
+        try {
             limelight.updateRobotOrientation(yawDegrees)
+        } catch (e: Throwable) {
+            val now = com.areslib.util.RobotClock.currentTimeMillis()
+            if (now - lastWarningTime > 5000L) {
+                System.err.println("FtcLimelightIO: Failed to update robot orientation: ${e.message}")
+                lastWarningTime = now
+            }
         }
     }
 

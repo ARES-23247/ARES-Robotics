@@ -63,10 +63,18 @@ class PathfindToPoseTask @kotlin.jvm.JvmOverloads constructor(
         // AllianceMirroring's RED branch is the involutive geometry operation. Authorship
         // metadata determines whether it is applied, so either alliance may be canonical.
         val transformSelector = if (shouldTransform) Alliance.RED else Alliance.BLUE
+        val fieldOrigin = if (costmap.origin.x == 0.0 && costmap.origin.y == 0.0) {
+            com.areslib.math.coordinate.FieldOrigin.CORNER
+        } else {
+            com.areslib.math.coordinate.FieldOrigin.CENTER
+        }
         val activeTargetPose = com.areslib.math.coordinate.AllianceMirroring.mirror(
-            targetPose,
-            transformSelector,
-            symmetry
+            pose = targetPose,
+            alliance = transformSelector,
+            symmetry = symmetry,
+            fieldLength = costmap.widthMeters,
+            fieldWidth = costmap.heightMeters,
+            fieldOrigin = fieldOrigin
         )
 
         val startTrans = Translation2d(startPose.x, startPose.y)

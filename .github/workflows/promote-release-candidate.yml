@@ -254,6 +254,10 @@ jobs:
 
       - name: Reverify promoted files after artifact transfer
         shell: bash
+        env:
+          CANDIDATE_RUN_ID: ${{ inputs.candidate_run_id }}
+          EXPECTED_ARES_VERSION: ${{ needs.verify-candidate.outputs.ares-version }}
+          EXPECTED_STUDIO_VERSION: ${{ needs.verify-candidate.outputs.studio-version }}
         run: |
           set -euo pipefail
           python scripts/release_candidate.py verify \
@@ -261,9 +265,9 @@ jobs:
             --manifest verified-candidate/release-candidate.json \
             --expected-repository "$GITHUB_REPOSITORY" \
             --expected-tree "$(git rev-parse 'HEAD^{tree}')" \
-            --expected-run-id "${{ inputs.candidate_run_id }}" \
-            --expected-ares-version "${{ needs.verify-candidate.outputs.ares-version }}" \
-            --expected-studio-version "${{ needs.verify-candidate.outputs.studio-version }}" >/dev/null
+            --expected-run-id "$CANDIDATE_RUN_ID" \
+            --expected-ares-version "$EXPECTED_ARES_VERSION" \
+            --expected-studio-version "$EXPECTED_STUDIO_VERSION" >/dev/null
 
       - uses: actions/download-artifact@v8
         if: inputs.windows_installer_trust == 'authenticode'
@@ -307,7 +311,9 @@ jobs:
         shell: bash
         run: |
           find verified-candidate/release-assets -type f \( -name '*.msi' -o -name '*.dmg' -o -name '*.zip' \) -print0 |
-            while IFS= read -r -d '' asset; do sha256sum "$asset" > "$asset.sha256"; done
+            while IFS= read -r -d '' asset; do
+              (cd "$(dirname "$asset")" && sha256sum "$(basename "$asset")" > "$(basename "$asset").sha256")
+            done
 
       - name: Publish immutable GitHub release
         uses: softprops/action-gh-release@v2

@@ -30,6 +30,7 @@ internal object GcAndClockRules {
         file.codeLines.forEachIndexed { index, codeLine ->
             val lineNumber = index + 1
             val rawLine = file.rawLines.getOrElse(index) { "" }.trim()
+            var enteredOnThisLine = false
 
             if (!insideHotMethod && !awaitingOpeningBrace && hotMethodStart.containsMatchIn(codeLine)) {
                 val opens = codeLine.count { it == '{' }
@@ -37,12 +38,15 @@ internal object GcAndClockRules {
                 if (opens > 0) {
                     braceDepth = opens - closes
                     insideHotMethod = braceDepth > 0
+                    enteredOnThisLine = true
                 } else if (codeLine.contains("=")) {
                     // Single-expression hot function (e.g., fun reduce(...) = listOf(...))
                     if (allocationPattern.containsMatchIn(codeLine)) {
                         findings += gcFinding(file.relativePath, lineNumber, rawLine)
                     }
-                    awaitingOpeningBrace = !codeLine.contains("when") && !codeLine.endsWith(")")
+                    // Only wait for a block if '=' ends a line or opens a multi-line body without terminating expression.
+                    val rhs = codeLine.substringAfter("=").trim()
+                    awaitingOpeningBrace = rhs.isEmpty() || rhs.startsWith("when")
                 } else {
                     awaitingOpeningBrace = true
                 }
@@ -53,6 +57,12 @@ internal object GcAndClockRules {
                     awaitingOpeningBrace = false
                     braceDepth = opens - closes
                     insideHotMethod = braceDepth > 0
+                    enteredOnThisLine = true
+                } else if (codeLine.contains("=")) {
+                    awaitingOpeningBrace = false
+                    if (allocationPattern.containsMatchIn(codeLine)) {
+                        findings += gcFinding(file.relativePath, lineNumber, rawLine)
+                    }
                 }
             }
 
@@ -62,7 +72,7 @@ internal object GcAndClockRules {
                 }
             }
 
-            if (insideHotMethod && !hotMethodStart.containsMatchIn(codeLine)) {
+            if (insideHotMethod && !enteredOnThisLine) {
                 braceDepth += codeLine.count { it == '{' } - codeLine.count { it == '}' }
                 if (braceDepth <= 0) {
                     insideHotMethod = false

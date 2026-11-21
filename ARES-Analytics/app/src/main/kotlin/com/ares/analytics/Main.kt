@@ -75,15 +75,22 @@ private fun launchDesktopApplication() {
     }
     Runtime.getRuntime().addShutdownHook(Thread { instanceLock.close() })
 
+    val activeServices = java.util.concurrent.atomic.AtomicReference<ServiceRegistry?>(null)
     DesktopCrashHandler.install {
-        // A crash on the AWT event thread leaves no usable window; a windowless JVM must not
-        // keep the single-instance lock alive for the next launch.
-        exitProcess(1)
+        // A crash on the AWT event thread leaves no usable window; clean up services/child
+        // processes through the emergency coordinator so no simulator or stale mcp-bridge survives.
+        val registry = activeServices.get()
+        if (registry != null) {
+            DesktopShutdownCoordinator.terminateForUnusableWindow("Uncaught AWT exception", registry)
+        } else {
+            exitProcess(1)
+        }
     }
 
     // The host outlives Compose so window effects, workspace scopes, and bootstrap IO have
     // completed cancellation before their database and service dependencies are disposed.
     val services = ServiceRegistry()
+    activeServices.set(services)
     val startupMachine = DesktopStartupMachine()
     val shutdownCoordinator = DesktopShutdownCoordinator(startupMachine)
     var disposed = false
@@ -189,7 +196,7 @@ private fun runDesktopComposition(
     }
 }
 
-internal suspend fun runDesktopServiceBootstrap(initializer: () -> Unit) {
+internal suspend fun runDesktopServiceBootstrap(initializer: suspend () -> Unit) {
     withContext(Dispatchers.IO) {
         initializer()
     }

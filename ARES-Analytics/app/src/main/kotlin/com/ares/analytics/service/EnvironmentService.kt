@@ -248,8 +248,12 @@ fun writeSecrets(
                 temporary.toPath(),
                 java.nio.file.attribute.PosixFilePermissions.fromString("rw-------")
             )
-        } catch (e: UnsupportedOperationException) {
-            // Windows / non-POSIX FS — no action possible.
+        } catch (_: UnsupportedOperationException) {
+            // Non-POSIX FS (Windows): restrict owner-only best-effort via File flags.
+            temporary.setReadable(false, false)
+            temporary.setReadable(true, true)
+            temporary.setWritable(false, false)
+            temporary.setWritable(true, true)
         }
         Files.write(
             temporary.toPath(),

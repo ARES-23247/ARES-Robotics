@@ -25,8 +25,13 @@ internal fun applyDesktopDriveKey(
     keyCode: Int,
     isPressed: Boolean,
     controlDown: Boolean = false,
+    textInputFocused: Boolean = false,
 ): Boolean {
     if (!controlSurfaceActive || !state.enabled || state.useGamepad) return false
+    if (textInputFocused) {
+        if (isPressed) state.releaseAll()
+        return false
+    }
 
     // Track physical key state only while the loopback simulator surface is armed. The publisher
     // independently enforces the loopback-only destination boundary, and a Ctrl-modified key
@@ -45,7 +50,6 @@ internal fun applyDesktopDriveKey(
         KeyEvent.VK_J -> updateDriveKey(isPressed, controlDown) { state.isJPressed = it }
         KeyEvent.VK_L -> updateDriveKey(isPressed, controlDown) { state.isLPressed = it }
         KeyEvent.VK_U -> updateDriveKey(isPressed, controlDown) { state.isUPressed = it }
-        KeyEvent.VK_I -> updateDriveKey(isPressed, controlDown) { state.isIPressed = it }
         KeyEvent.VK_SPACE -> updateDriveKey(isPressed, controlDown) { state.isSpacePressed = it }
         KeyEvent.VK_SHIFT -> updateDriveKey(isPressed, controlDown) { state.isShiftPressed = it }
         else -> false
@@ -75,12 +79,18 @@ fun DesktopDriveKeyDispatcher(
             if (event.id != KeyEvent.KEY_PRESSED && event.id != KeyEvent.KEY_RELEASED) {
                 false
             } else {
+                val focusOwner = focusManager.focusOwner
+                val textFocused = focusOwner is javax.swing.text.JTextComponent ||
+                    focusOwner?.inputContext?.let {
+                        focusOwner.inputMethodRequests != null
+                    } == true
                 applyDesktopDriveKey(
                     state = state,
                     controlSurfaceActive = activeNow.value,
                     keyCode = event.keyCode,
                     isPressed = event.id == KeyEvent.KEY_PRESSED,
-                    controlDown = event.isControlDown,
+                    controlDown = event.isControlDown || event.isAltDown || event.isMetaDown,
+                    textInputFocused = textFocused,
                 )
             }
         }

@@ -13,7 +13,7 @@ internal object SubsystemIoRenderingSupport {
         val body = if (recovery.enabled) {
             val actuator = document.hardware.single { it.hardwareId == recovery.actuatorId }
             """override fun commandAutomaticRecovery(value: Double): Boolean {
-    if (outputFaultLatched || !value.isFinite()) return false
+    if (closed || outputFaultLatched || !value.isFinite()) return false
     ${actuator.commandName()}(value)
     return !outputFaultLatched
 }

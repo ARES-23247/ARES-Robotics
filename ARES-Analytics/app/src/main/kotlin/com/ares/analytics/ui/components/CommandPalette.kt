@@ -40,8 +40,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
@@ -175,8 +178,10 @@ internal fun CommandPaletteSurfaceContent(
     val focusRequester = remember { FocusRequester() }
     val listState = rememberLazyListState()
 
-    val allProjectItems = remember(projectPath, projectItems) {
-        projectItems ?: discoverProjectCommandPaletteItems(projectPath)
+    val allProjectItems by produceState(initialValue = projectItems ?: emptyList(), projectPath, projectItems) {
+        value = projectItems ?: withContext(Dispatchers.IO) {
+            runCatching { discoverProjectCommandPaletteItems(projectPath) }.getOrDefault(emptyList())
+        }
     }
     val entries = remember(
         query,

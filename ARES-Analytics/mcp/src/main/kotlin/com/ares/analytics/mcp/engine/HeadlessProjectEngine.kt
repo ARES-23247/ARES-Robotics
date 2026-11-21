@@ -218,7 +218,9 @@ class HeadlessProjectEngine(
     suspend fun resolveTargetRoot(explicitPath: String?): File {
         if (!explicitPath.isNullOrBlank()) return File(explicitPath).canonicalFile
         val bridgeHealth = bridgeClient.health()
-        bridgeHealth.activeProjectRoot?.takeIf { it.isNotBlank() }?.let { return File(it).canonicalFile }
+        if (bridgeHealth.connected) {
+            bridgeHealth.activeProjectRoot?.takeIf { it.isNotBlank() }?.let { return File(it).canonicalFile }
+        }
         lastInspectedRoot.get()?.let { return File(it).canonicalFile }
         throw IllegalArgumentException("projectPath is required when no active Studio project is attached.")
     }

@@ -43,6 +43,11 @@ class GamePieceTelemetryTest {
         assertEquals(1.0, published[1], 0.0)
         assertEquals(17.0, published[2], 0.0)
         assertEquals(1.25, published[4], 0.0)
-        assertEquals(0.0, published.last(), 0.0)
+        val firstSequence = published.last()
+        assertTrue(firstSequence >= 0.0)
+
+        TelemetryPublisher.publishGamePieceFrame(frame, 1)
+        val second = NT4Server.getDoubleArray(TelemetryTopicConstants.GAME_PIECES_FRAME, DoubleArray(0))
+        assertEquals(firstSequence + 1.0, second.last(), 0.0)
     }
 }

@@ -105,7 +105,11 @@ internal object AresMcpResources {
             mimeType = "application/json",
         ) { request, _ ->
             val encodedId = request.uri.removePrefix("ares://runs/")
-            val id = java.net.URLDecoder.decode(encodedId.replace("+", "%2B"), Charsets.UTF_8)
+            val id = try {
+                java.net.URLDecoder.decode(encodedId.replace("+", "%2B"), Charsets.UTF_8)
+            } catch (_: IllegalArgumentException) {
+                throw IllegalArgumentException("Invalid percent-encoding in sessionId: '$encodedId'")
+            }
             textResource(request.uri, "application/json", engine.bridgeClient.recordedRuns(id))
         }
 
@@ -132,9 +136,11 @@ internal object AresMcpResources {
 
     private suspend fun resolveActiveOrLatestRoot(engine: HeadlessProjectEngine): File? {
         val bridge = engine.bridgeClient.health()
-        bridge.activeProjectRoot?.takeIf { it.isNotBlank() }?.let { path ->
-            val f = File(path)
-            if (f.isDirectory) return f
+        if (bridge.connected) {
+            bridge.activeProjectRoot?.takeIf { it.isNotBlank() }?.let { path ->
+                val f = File(path)
+                if (f.isDirectory) return f
+            }
         }
         return engine.latestProjectRoot()?.let(::File)?.takeIf { it.isDirectory }
     }

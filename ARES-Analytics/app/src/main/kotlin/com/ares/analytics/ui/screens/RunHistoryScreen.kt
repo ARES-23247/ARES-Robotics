@@ -326,16 +326,17 @@ fun RunHistoryScreen(
         ) {
             val horizontalScrollState = rememberScrollState()
             val verticalScrollState = rememberScrollState()
+            val sessionNumberById = remember(sessions) {
+                sessions.mapIndexed { idx, s -> s.sessionId to (idx + 1) }.toMap()
+            }
 
-            Row(modifier = Modifier.fillMaxSize()) {
-                // Left Column: Row Headers (Sticky)
+            Row(modifier = Modifier.fillMaxSize().verticalScroll(verticalScrollState)) {
+                // Left Column: Row Headers (Sticky horizontally, scrolls vertically with runs)
                 Column(
                     modifier = Modifier
                         .width(220.dp)
-                        .fillMaxHeight()
                         .background(AresSurfaceElevated)
                         .endBorder(1.dp, AresBorder)
-                        .verticalScroll(verticalScrollState)
                 ) {
                     // Header corner block
                     Box(
@@ -394,10 +395,10 @@ fun RunHistoryScreen(
                 }
 
                 // Right Section: Scrollable Columns (Runs)
-                Box(modifier = Modifier.weight(1f).fillMaxHeight()) {
+                Box(modifier = Modifier.weight(1f)) {
                     Row(
                         modifier = Modifier
-                            .fillMaxSize()
+                            .fillMaxWidth()
                             .horizontalScroll(horizontalScrollState)
                     ) {
                         filteredSessions.forEachIndexed { sessionIdx, session ->
@@ -407,9 +408,7 @@ fun RunHistoryScreen(
                             Column(
                                 modifier = Modifier
                                     .width(180.dp)
-                                    .fillMaxHeight()
                                     .endBorder(1.dp, AresBorder)
-                                    .verticalScroll(verticalScrollState)
                             ) {
                                 // Run Header block (click to edit metadata or jump to Replay / Notebook)
                                 Box(
@@ -429,7 +428,8 @@ fun RunHistoryScreen(
                                             horizontalArrangement = Arrangement.spacedBy(4.dp),
                                         ) {
                                             Text(
-                                                text = session.matchNumber?.let { "Match #$it" } ?: "Run #${sessions.indexOf(session) + 1}",
+                                                text = session.matchNumber?.let { "Match #$it" }
+                                                    ?: "Run #${sessionNumberById[session.sessionId] ?: (sessionIdx + 1)}",
                                                 fontWeight = FontWeight.Bold,
                                                 color = AresCyan,
                                                 fontSize = 12.sp,

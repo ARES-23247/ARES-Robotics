@@ -1,4 +1,3 @@
-import java.util.Properties
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
@@ -7,18 +6,11 @@ plugins {
     application
 }
 
-val versionsPropertiesFile = rootProject.projectDir.parentFile.resolve("release/ares-versions.properties")
-val releaseVersions = Properties().apply {
-    if (versionsPropertiesFile.isFile) {
-        versionsPropertiesFile.inputStream().use(::load)
-    }
-}
-
 val aresVersion = rootProject.extra["aresVersion"] as String
-val studioVersion = releaseVersions.getProperty("studioVersion")?.trim().orEmpty().ifEmpty { "7.0.80" }
-val ftcStarterVersion = releaseVersions.getProperty("ftcStarterVersion")?.trim().orEmpty().ifEmpty { "20.0.6" }
-val frcStarterVersion = releaseVersions.getProperty("frcStarterVersion")?.trim().orEmpty().ifEmpty { "20.0.6" }
-val xrpStarterVersion = releaseVersions.getProperty("xrpStarterVersion")?.trim().orEmpty().ifEmpty { "3.0.70" }
+val studioVersion = rootProject.extra["aresStudioVersion"] as String
+val ftcStarterVersion = rootProject.extra["aresFtcStarterVersion"] as String
+val frcStarterVersion = rootProject.extra["aresFrcStarterVersion"] as String
+val xrpStarterVersion = rootProject.extra["aresXrpStarterVersion"] as String
 
 val generatedMcpBuildConfigDir = layout.buildDirectory.dir("generated/source/mcpBuildConfig/main")
 
@@ -77,11 +69,11 @@ dependencies {
     implementation("io.modelcontextprotocol:kotlin-sdk-server:0.16.0")
     implementation("io.modelcontextprotocol:kotlin-sdk-client:0.16.0")
 
-    implementation("io.ktor:ktor-client-cio:3.5.2")
-    implementation("io.ktor:ktor-client-content-negotiation:3.5.2")
-    implementation("io.ktor:ktor-serialization-kotlinx-json:3.5.2")
+    implementation("io.ktor:ktor-client-cio:3.6.1")
+    implementation("io.ktor:ktor-client-content-negotiation:3.6.1")
+    implementation("io.ktor:ktor-serialization-kotlinx-json:3.6.1")
 
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.11.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.13.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.11.0")
     implementation("org.eclipse.jgit:org.eclipse.jgit:7.8.0.202609011348-r")
     implementation("ch.qos.logback:logback-classic:1.6.3")

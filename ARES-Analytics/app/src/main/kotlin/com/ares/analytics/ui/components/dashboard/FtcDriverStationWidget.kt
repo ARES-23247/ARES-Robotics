@@ -185,7 +185,7 @@ fun FtcDriverStationWidget(
                 cleanKey.startsWith("ARES/DriverStation/Telemetry/") -> frame.stringValue?.let { line ->
                     val indexPart = frame.key.substringAfterLast("/")
                     val idx = indexPart.toIntOrNull()
-                    if (idx != null) {
+                    if (idx != null && idx in 0 until MAX_DS_TELEMETRY_LINES) {
                         while (telemetryLines.size <= idx) {
                             telemetryLines.add("")
                         }
@@ -504,4 +504,6 @@ fun FtcDriverStationWidget(
         }
     }
 }
+
+private const val MAX_DS_TELEMETRY_LINES = 256
 

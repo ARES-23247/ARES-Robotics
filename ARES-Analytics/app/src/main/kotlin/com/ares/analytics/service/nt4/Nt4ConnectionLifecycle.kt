@@ -1,6 +1,7 @@
 package com.ares.analytics.service.nt4
 
 import com.ares.analytics.service.Nt4ConnectionMetrics
+import com.ares.analytics.service.isLoopbackDriveControlHost
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.okhttp.OkHttp
 import io.ktor.client.plugins.websocket.WebSockets
@@ -128,13 +129,6 @@ internal class Nt4ConnectionLifecycle(
             exception.printStackTrace()
         }
 
-        launch {
-            while (isActive) {
-                delay(1_000L)
-                flushPendingFrames()
-            }
-        }
-
         var retryDelay = INITIAL_RETRY_DELAY_MS
         while (isActive) {
             val clientName = "ARES-Analytics-${System.currentTimeMillis()}"
@@ -158,7 +152,7 @@ internal class Nt4ConnectionLifecycle(
                     successfulConnections.incrementAndGet()
                     connectedState.value = true
                     connectedAtMs = System.currentTimeMillis()
-                    outboundPublisher.attach(this)
+                    outboundPublisher.attach(this, isLoopback = isLoopbackDriveControlHost(host))
                     inboundRouter.clear()
                     try {
                         send(Frame.Text(outboundPublisher.fixedPublishMessage()))

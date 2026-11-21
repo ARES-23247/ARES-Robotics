@@ -10,7 +10,6 @@ on:
 
 permissions:
   contents: read
-  security-events: write
 
 concurrency:
   group: monorepo-codeql-${{ github.ref }}
@@ -26,6 +25,9 @@ jobs:
     name: CodeQL Java/Kotlin monorepo
     runs-on: ubuntu-latest
     timeout-minutes: 90
+    permissions:
+      contents: read
+      security-events: write
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-java@v6
@@ -51,6 +53,7 @@ jobs:
               - ARES-Analytics/app/src
               - ARES-Analytics/shared/src
               - ARES-Analytics/gateway/src
+              - ARES-Analytics/mcp/src
             paths-ignore:
               - ARES-FTC/FtcRobotController/**
               - ARES-FTC-Starter/FtcRobotController/**
@@ -72,7 +75,7 @@ jobs:
             -ParesVersion="$candidate" -ParesRepository="$repository" --no-parallel --no-daemon --console=plain
           ./ARES-FRC-Starter/gradlew -p ARES-FRC-Starter classes testClasses \
             -ParesVersion="$candidate" -ParesRepository="$repository" --no-parallel --no-daemon --console=plain
-          ./ARES-Analytics/gradlew -p ARES-Analytics :shared:classes :app:classes :gateway:classes \
+          ./ARES-Analytics/gradlew -p ARES-Analytics :shared:classes :mcp:classes :app:classes :gateway:classes \
             -ParesVersion="$candidate" -ParesRepository="$repository" --no-parallel --no-daemon --console=plain
 
       - name: Analyze
@@ -84,6 +87,9 @@ jobs:
     name: CodeQL XRP Python
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    permissions:
+      contents: read
+      security-events: write
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v6

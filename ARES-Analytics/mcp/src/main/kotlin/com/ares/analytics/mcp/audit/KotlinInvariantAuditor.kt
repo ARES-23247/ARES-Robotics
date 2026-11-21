@@ -48,13 +48,20 @@ internal data class ScannedSourceFile(
 object KotlinInvariantAuditor {
     fun auditProject(projectRoot: File, explicitRelativePaths: List<String> = emptyList()): AuditReport {
         val canonical = projectRoot.canonicalFile
+        val canonicalRootPath = canonical.toPath().toRealPath()
         val files = if (explicitRelativePaths.isNotEmpty()) {
             explicitRelativePaths.map { rel ->
-                val resolved = canonical.toPath().resolve(rel).normalize().toFile()
-                require(resolved.canonicalPath.startsWith(canonical.canonicalPath)) {
+                val resolved = canonicalRootPath.resolve(rel).normalize()
+                require(resolved.startsWith(canonicalRootPath)) {
                     "Audit path escapes project root: $rel"
                 }
-                resolved
+                val file = resolved.toFile()
+                if (file.exists()) {
+                    require(resolved.toRealPath().startsWith(canonicalRootPath)) {
+                        "Audit path escapes project root via symlink: $rel"
+                    }
+                }
+                file
             }.filter { it.isFile }
         } else {
             collectAuditableRobotSources(canonical)

@@ -48,6 +48,7 @@ internal fun StrategyAlliancePicklistTab(
     notebookCaptureService: EngineeringNotebookCaptureService?,
     onChangePreset: (PicklistWeightPreset) -> Unit,
     onSaveOverride: (TeamPicklistOverride) -> Unit,
+    onSaveOverrides: (List<TeamPicklistOverride>) -> Unit = { overrides -> overrides.forEach(onSaveOverride) },
     onStatusMessage: (String) -> Unit,
     onLoggedNotebookEntry: (String) -> Unit,
     modifier: Modifier = Modifier,
@@ -233,30 +234,14 @@ internal fun StrategyAlliancePicklistTab(
                             )
                         },
                         onMovePin = { delta ->
-                            if (idxInTier >= 0) {
-                                val targetIdx = (idxInTier + delta).coerceIn(0, tierRows.lastIndex)
-                                if (targetIdx != idxInTier) {
-                                    val neighbor = tierRows[targetIdx]
-                                    val neighborRank = (targetIdx + 1) * 10
-                                    val movedRank = if (delta < 0) neighborRank - 5 else neighborRank + 5
-                                    val nowMs = System.currentTimeMillis()
-                                    if (neighbor.override.pinnedRank == null) {
-                                        onSaveOverride(
-                                            neighbor.override.copy(
-                                                teamNumber = neighbor.teamNumber,
-                                                pinnedRank = neighborRank,
-                                                updatedAtMs = nowMs,
-                                            ),
-                                        )
-                                    }
-                                    onSaveOverride(
-                                        row.override.copy(
-                                            teamNumber = row.teamNumber,
-                                            pinnedRank = movedRank,
-                                            updatedAtMs = nowMs,
-                                        ),
-                                    )
-                                }
+                            val updates = computeSwappedTierPinOverrides(
+                                tierRows = tierRows,
+                                idxInTier = idxInTier,
+                                delta = delta,
+                                nowMs = System.currentTimeMillis(),
+                            )
+                            if (updates.isNotEmpty()) {
+                                onSaveOverrides(updates)
                             }
                         },
                         onUpdateDraftStatus = { status ->
@@ -270,6 +255,39 @@ internal fun StrategyAlliancePicklistTab(
                         },
                     )
                 }
+            }
+        }
+    }
+}
+
+internal fun computeSwappedTierPinOverrides(
+    tierRows: List<RankedPicklistTeamRow>,
+    idxInTier: Int,
+    delta: Int,
+    nowMs: Long,
+): List<TeamPicklistOverride> {
+    if (idxInTier !in tierRows.indices || delta == 0) return emptyList()
+    val targetIdx = (idxInTier + delta).coerceIn(0, tierRows.lastIndex)
+    if (targetIdx == idxInTier) return emptyList()
+    val reordered = tierRows.toMutableList()
+    val moved = reordered[idxInTier]
+    reordered[idxInTier] = reordered[targetIdx]
+    reordered[targetIdx] = moved
+    val maxAffectedIndex = maxOf(idxInTier, targetIdx)
+    return reordered.mapIndexedNotNull { idx, candidate ->
+        val shouldPin = idx <= maxAffectedIndex || candidate.override.pinnedRank != null
+        if (!shouldPin) {
+            null
+        } else {
+            val newRank = (idx + 1) * 10
+            if (candidate.override.pinnedRank == newRank && idx != idxInTier && idx != targetIdx) {
+                null
+            } else {
+                candidate.override.copy(
+                    teamNumber = candidate.teamNumber,
+                    pinnedRank = newRank,
+                    updatedAtMs = nowMs,
+                )
             }
         }
     }

@@ -110,19 +110,8 @@ open class Nt4ClientService(
     suspend fun acceptExternalLiveTelemetry(key: String, value: Double, stringValue: String? = null) {
         require(value.isFinite()) { "External live telemetry must be finite" }
         val nowMs = System.currentTimeMillis()
-        val liveReceiptUs = liveReceiptTimestampUs()
-        val frame = TelemetryFrame(
-            timestampMs = nowMs,
-            timestampUs = nowMs * 1_000L,
-            sessionId = LIVE_SESSION_ID,
-            key = com.ares.analytics.service.log.TelemetryTopicExtractor.normalizeTopic(key.removePrefix("/")),
-            value = value,
-            stringValue = stringValue,
-        )
-        pendingFrames.send(
-            frame.copy(timestampMs = liveReceiptUs / 1_000L, timestampUs = liveReceiptUs),
-        )
-        telemetryStore.accept(frame, notifyConsumers = !isReplayActive.value)
+        val cleanKey = com.ares.analytics.service.log.TelemetryTopicExtractor.normalizeTopic(key.trimStart('/'))
+        recordIncomingFrame(cleanKey, value, stringValue, nowMs, nowMs * 1_000L, liveReceiptTimestampUs())
     }
 
     private val _currentSession = MutableStateFlow<Session?>(null)
@@ -198,6 +187,12 @@ open class Nt4ClientService(
     private val flushMutex = kotlinx.coroutines.sync.Mutex()
     private val sessionMutex = kotlinx.coroutines.sync.Mutex()
     @Volatile private var lastLivePruneTimestampMs = Long.MIN_VALUE
+    private val pendingFrameFlusher = serviceScope.launch {
+        while (isActive) {
+            delay(1_000L)
+            flushPendingFrames()
+        }
+    }
     suspend fun flushPendingFrames(): Boolean = flushMutex.withLock {
         // Do not drain newer channel values behind a failed batch. Keeping one ordered retry
         // deque plus the bounded channel preserves arrival order and applies backpressure.
@@ -286,11 +281,15 @@ open class Nt4ClientService(
         valueBytes: ByteArray
     ): ByteArray = outboundPublisher.encodeNt4BinaryUpdate(pubuid, timestampUs, typeId, valueBytes)
 
-    suspend fun publishInputDouble(pubuid: Int, value: Double): Boolean =
-        outboundPublisher.publishInputDouble(pubuid, value)
+    suspend fun publishInputDouble(pubuid: Int, value: Double): Boolean {
+        if (pubuid in SIMULATOR_ONLY_FIXED_PUB_UIDS && !isLoopbackDriveControlHost(serverIp)) return false
+        return outboundPublisher.publishInputDouble(pubuid, value)
+    }
 
-    suspend fun publishInputString(pubuid: Int, value: String): Boolean =
-        outboundPublisher.publishInputString(pubuid, value)
+    suspend fun publishInputString(pubuid: Int, value: String): Boolean {
+        if (pubuid in SIMULATOR_ONLY_FIXED_PUB_UIDS && !isLoopbackDriveControlHost(serverIp)) return false
+        return outboundPublisher.publishInputString(pubuid, value)
+    }
 
     suspend fun stop(): Boolean {
         connectionLifecycle.stop()
@@ -610,10 +609,11 @@ open class Nt4ClientService(
     }
 
     suspend fun publishDouble(key: String, value: Double) {
-        val cleanKey = key.removePrefix("/")
+        val cleanKey = key.trimStart('/')
         require(!cleanKey.startsWith("ARES/Input/")) {
             "ARES/Input controls must use the atomic driveFrame publisher"
         }
+        if (!isDashboardDriverStationCommandAllowed(serverIp, cleanKey)) return
         val frame = TelemetryFrame(
             timestampMs = System.currentTimeMillis(),
             sessionId = _currentSession.value?.sessionId ?: "live-telemetry",
@@ -626,8 +626,9 @@ open class Nt4ClientService(
 
     /** Publishes a typed boolean topic; tuning must not encode booleans as doubles. */
     suspend fun publishBoolean(key: String, value: Boolean) {
-        val cleanKey = key.removePrefix("/")
+        val cleanKey = key.trimStart('/')
         require(!cleanKey.startsWith("ARES/Input/")) { "ARES/Input controls must use the atomic driveFrame publisher" }
+        if (!isDashboardDriverStationCommandAllowed(serverIp, cleanKey)) return
         telemetryStore.accept(TelemetryFrame(System.currentTimeMillis(), _currentSession.value?.sessionId ?: "live-telemetry", cleanKey, if (value) 1.0 else 0.0))
         outboundPublisher.publishBoolean(cleanKey, value)
     }
@@ -641,7 +642,7 @@ open class Nt4ClientService(
      * same connection remains live, then report the delivery attempt to the caller.
      */
     suspend fun publishString(key: String, value: String): Boolean {
-        val cleanKey = key.removePrefix("/")
+        val cleanKey = key.trimStart('/')
         require(!cleanKey.startsWith("ARES/Input/") || cleanKey in ALLOWED_INPUT_STRING_TOPICS) {
             "ARES/Input controls must use driveFrame; only field-configuration strings are separate"
         }
@@ -713,6 +714,7 @@ open class Nt4ClientService(
         private const val PERSISTENCE_BATCH_SIZE = 5_000
         private const val SIMULATOR_POSE_DIVERGENCE_LOG_THRESHOLD_M = 0.25
         private const val SIMULATOR_POSE_DIVERGENCE_LOG_INTERVAL_NS = 30_000_000_000L
+        private val SIMULATOR_ONLY_FIXED_PUB_UIDS = setOf(1_011, 1_012, 1_013, 1_014, 1_020)
         private val ALLOWED_INPUT_STRING_TOPICS = setOf(
             "ARES/Input/obstacles",
             "ARES/Input/fieldConfig",

@@ -31,6 +31,7 @@ import com.ares.analytics.shared.models.allowsAutomaticExternalUpdates
 import com.ares.analytics.shared.models.isSimulationSessionTags
 import com.ares.analytics.util.Sha256
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.math.BigDecimal
@@ -51,14 +52,15 @@ class EngineeringNotebookCaptureService(
     private val exportService: ExportService,
     private val clock: Clock = Clock.systemUTC(),
 ) {
+    private val saveMutex = kotlinx.coroutines.sync.Mutex()
+
     suspend fun listWorkspaceEntries(
         workspace: WorkspaceConfig,
         limit: Int = 500,
     ): List<EngineeringNotebookEntry> = withContext(Dispatchers.IO) {
         val target = workspace.toNotebookWorkspaceIdentity()
         val boundedLimit = limit.coerceIn(1, 1_000)
-        databaseService.integrations.listLatestNotebookEntries(boundedLimit)
-            .filter { entry -> entry.workspace == target }
+        databaseService.integrations.listLatestNotebookEntriesForWorkspace(target, boundedLimit)
     }
 
     suspend fun listRevisions(entryId: String): List<EngineeringNotebookEntry> = withContext(Dispatchers.IO) {
@@ -81,54 +83,59 @@ class EngineeringNotebookCaptureService(
         authorId: String? = null,
         externalUpdatesAllowed: Boolean = true,
     ): EngineeringNotebookEntry = withContext(Dispatchers.IO) {
-        val normalizedId = sanitizeEntryId(entryId) ?: "note-${UUID.randomUUID().toString().replace("-", "").take(12)}"
-        val workspaceIdentity = workspace.toNotebookWorkspaceIdentity()
-        val latest = databaseService.integrations.getLatestNotebookRevision(normalizedId)
-        val nextRevision = (latest?.revision ?: 0) + 1
-        val sanitizedBody = redactSecrets(markdownBody.trim())
-            .ifBlank { "# Untitled Engineering Entry\n" }
-            .take(MAX_DRAFT_MARKDOWN_CHARACTERS)
-        val sanitizedEvidence = evidence.map(::sanitizeEvidenceReference)
-            .distinctBy { "${it.kind}|${it.referenceId}" }
-        val cleanAuthor = authorId?.trim()?.takeIf(String::isNotBlank)?.take(128)
-        val nowMs = maxOf(clock.millis(), latest?.updatedAtMs ?: 0L, latest?.createdAtMs ?: 0L)
-        val createdAtMs = latest?.createdAtMs ?: nowMs
+        saveMutex.withLock {
+            val normalizedId = sanitizeEntryId(entryId) ?: "note-${UUID.randomUUID().toString().replace("-", "").take(12)}"
+            val workspaceIdentity = workspace.toNotebookWorkspaceIdentity()
+            val latest = databaseService.integrations.getLatestNotebookRevision(normalizedId)
+            require(latest == null || latest.workspace == workspaceIdentity) {
+                "Notebook entry '$normalizedId' belongs to another workspace"
+            }
+            val nextRevision = (latest?.revision ?: 0) + 1
+            val sanitizedBody = redactSecrets(markdownBody.trim())
+                .ifBlank { "# Untitled Engineering Entry\n" }
+                .take(MAX_DRAFT_MARKDOWN_CHARACTERS)
+            val sanitizedEvidence = evidence.map(::sanitizeEvidenceReference)
+                .distinctBy { "${it.kind}|${it.referenceId}" }
+            val cleanAuthor = authorId?.trim()?.takeIf(String::isNotBlank)?.take(128)
+            val nowMs = maxOf(clock.millis(), latest?.updatedAtMs ?: 0L, latest?.createdAtMs ?: 0L)
+            val createdAtMs = latest?.createdAtMs ?: nowMs
 
-        val contentHash = EngineeringNotebookHasher.sha256(
-            entryId = normalizedId,
-            revision = nextRevision,
-            entryType = entryType,
-            workspace = workspaceIdentity,
-            markdownBody = sanitizedBody,
-            evidence = sanitizedEvidence,
-            visibility = visibility,
-            humanAuthorId = cleanAuthor,
-            aiProvenance = null,
-        )
-        val entry = EngineeringNotebookEntry(
-            entryId = normalizedId,
-            revision = nextRevision,
-            entryType = entryType,
-            workspace = workspaceIdentity,
-            markdownBody = sanitizedBody,
-            evidence = sanitizedEvidence,
-            visibility = visibility,
-            reviewState = NotebookReviewState.DRAFT,
-            humanAuthorId = cleanAuthor,
-            humanReviewerId = null,
-            aiProvenance = null,
-            contentHash = contentHash,
-            createdAtMs = createdAtMs,
-            updatedAtMs = nowMs,
-        )
-        val allowExternal = externalUpdatesAllowed &&
-            sanitizedEvidence.none { it.label?.contains("simulation", ignoreCase = true) == true }
-        databaseService.saveEngineeringNotebookRevision(
-            entry = entry,
-            commitRange = null,
-            externalUpdatesAllowed = allowExternal,
-        )
-        entry
+            val contentHash = EngineeringNotebookHasher.sha256(
+                entryId = normalizedId,
+                revision = nextRevision,
+                entryType = entryType,
+                workspace = workspaceIdentity,
+                markdownBody = sanitizedBody,
+                evidence = sanitizedEvidence,
+                visibility = visibility,
+                humanAuthorId = cleanAuthor,
+                aiProvenance = null,
+            )
+            val entry = EngineeringNotebookEntry(
+                entryId = normalizedId,
+                revision = nextRevision,
+                entryType = entryType,
+                workspace = workspaceIdentity,
+                markdownBody = sanitizedBody,
+                evidence = sanitizedEvidence,
+                visibility = visibility,
+                reviewState = NotebookReviewState.DRAFT,
+                humanAuthorId = cleanAuthor,
+                humanReviewerId = null,
+                aiProvenance = null,
+                contentHash = contentHash,
+                createdAtMs = createdAtMs,
+                updatedAtMs = nowMs,
+            )
+            val allowExternal = externalUpdatesAllowed &&
+                sanitizedEvidence.none { it.label?.contains("simulation", ignoreCase = true) == true }
+            databaseService.saveEngineeringNotebookRevision(
+                entry = entry,
+                commitRange = null,
+                externalUpdatesAllowed = allowExternal,
+            )
+            entry
+        }
     }
 
     suspend fun approveRevision(
@@ -465,10 +472,11 @@ class EngineeringNotebookCaptureService(
             }
         }.distinctBy { it.referenceId }
 
-        val slug = Sha256.prefixHex("${comparison.metricId}|${comparison.splitDescription}", byteCount = 6)
+        val wsTag = workspaceScopeTag(workspace)
+        val slug = Sha256.prefixHex("${comparison.metricId}|${comparison.splitDescription}", byteCount = 5)
         return saveEditedEntry(
             workspace = workspace,
-            entryId = "cohort-${sanitizeSlug(comparison.metricId, 20)}-$slug",
+            entryId = "cohort-$wsTag-${sanitizeSlug(comparison.metricId, 16)}-$slug",
             entryType = NotebookEntryType.ENGINEERING_NOTE,
             markdownBody = markdown,
             evidence = refs,
@@ -488,10 +496,15 @@ class EngineeringNotebookCaptureService(
         val metricsMd = if (summary != null) {
             buildString {
                 appendLine("- **Duration**: `${String.format(Locale.US, "%.1f", summary.durationMs / 1000.0)} s`")
-                appendLine("- **Min Battery Voltage**: `${String.format(Locale.US, "%.2f", summary.minBatteryVoltage)} V`")
-                appendLine("- **Avg / P95 Loop Time**: `${String.format(Locale.US, "%.2f", summary.avgLoopTimeMs)} ms` / `${String.format(Locale.US, "%.2f", summary.p95LoopTimeMs)} ms`")
-                appendLine("- **Max EKF Drift**: `${String.format(Locale.US, "%.3f", summary.maxEkfDrift)} m`")
-                appendLine("- **Avg Cross-Track Error**: `${String.format(Locale.US, "%.1f", summary.avgCrossTrackError * 100.0)} cm`")
+                val minV = summary.observedMetric("battery", summary.minBatteryVoltage)?.let { "${String.format(Locale.US, "%.2f", it)} V" } ?: "Unavailable"
+                val loopAvg = summary.observedMetric("loop", summary.avgLoopTimeMs)?.let { "${String.format(Locale.US, "%.2f", it)} ms" } ?: "Unavailable"
+                val loopP95 = summary.observedMetric("loop_p95", summary.p95LoopTimeMs)?.let { "${String.format(Locale.US, "%.2f", it)} ms" } ?: "Unavailable"
+                val drift = summary.observedMetric("drift", summary.maxEkfDrift)?.let { "${String.format(Locale.US, "%.3f", it)} m" } ?: "Unavailable"
+                val cte = summary.observedMetric("cross_track", summary.avgCrossTrackError)?.let { "${String.format(Locale.US, "%.1f", it * 100.0)} cm" } ?: "Unavailable"
+                appendLine("- **Min Battery Voltage**: `$minV`")
+                appendLine("- **Avg / P95 Loop Time**: `$loopAvg` / `$loopP95`")
+                appendLine("- **Max EKF Drift**: `$drift`")
+                appendLine("- **Avg Cross-Track Error**: `$cte`")
             }.trim()
         } else {
             "- Recorded duration `${String.format(Locale.US, "%.1f", session.durationMs / 1000.0)} s` (precomputed summary pending)."
@@ -548,7 +561,7 @@ class EngineeringNotebookCaptureService(
         )
         return saveEditedEntry(
             workspace = workspace,
-            entryId = "pit-readiness-${formatted.entryIdSlug.take(36)}",
+            entryId = "pit-readiness-${workspaceScopeTag(workspace)}-${formatted.entryIdSlug.take(28)}",
             entryType = NotebookEntryType.ENGINEERING_NOTE,
             markdownBody = formatted.markdownBody,
             evidence = formatted.evidence,
@@ -570,7 +583,7 @@ class EngineeringNotebookCaptureService(
         )
         return saveEditedEntry(
             workspace = workspace,
-            entryId = "battery-fleet-${formatted.entryIdSlug.take(36)}",
+            entryId = "battery-fleet-${workspaceScopeTag(workspace)}-${formatted.entryIdSlug.take(28)}",
             entryType = NotebookEntryType.ENGINEERING_NOTE,
             markdownBody = formatted.markdownBody,
             evidence = formatted.evidence,
@@ -587,7 +600,7 @@ class EngineeringNotebookCaptureService(
         val formatted = StrategyNotebookCaptureFormatter.formatPreMatchBriefing(workspace, report)
         return saveEditedEntry(
             workspace = workspace,
-            entryId = "matchup-plan-${formatted.entryIdSlug.take(36)}",
+            entryId = "matchup-plan-${workspaceScopeTag(workspace)}-${formatted.entryIdSlug.take(28)}",
             entryType = NotebookEntryType.ENGINEERING_NOTE,
             markdownBody = formatted.markdownBody,
             evidence = formatted.evidence,
@@ -611,13 +624,18 @@ class EngineeringNotebookCaptureService(
         )
         return saveEditedEntry(
             workspace = workspace,
-            entryId = "picklist-${formatted.entryIdSlug.take(38)}",
+            entryId = "picklist-${workspaceScopeTag(workspace)}-${formatted.entryIdSlug.take(30)}",
             entryType = NotebookEntryType.ENGINEERING_NOTE,
             markdownBody = formatted.markdownBody,
             evidence = formatted.evidence,
             authorId = authorId,
             externalUpdatesAllowed = true,
         )
+    }
+
+    private fun workspaceScopeTag(workspace: WorkspaceConfig): String {
+        val id = workspace.toNotebookWorkspaceIdentity()
+        return Sha256.prefixHex("${id.teamId}|${id.seasonId}|${id.robotId}", byteCount = 3)
     }
 
     suspend fun buildWorkspacePortfolioMarkdown(

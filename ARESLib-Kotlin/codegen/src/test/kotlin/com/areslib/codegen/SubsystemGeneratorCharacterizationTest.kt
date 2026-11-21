@@ -23,14 +23,17 @@ class SubsystemGeneratorCharacterizationTest {
     // partial FRC constructor ownership, and invert solenoids/mocks consistently.
     // Generated FTC, FRC, and Mock IO adapters now cache prefix-qualified telemetry topic names per
     // prefix so steady-state 50 Hz telemetry logging allocates zero topic strings.
+    // Generated controllers now require sustained healthy dwell before resetting automatic recovery
+    // retry budgets and invoke io.safe() on non-finite PID outputs; generated IO adapters guard
+    // actuator commands and recovery paths against post-close execution.
     @Test
     fun `all supported FTC templates retain their deterministic artifact manifest`() {
-        assertEquals("d3d766803172abd666924f9d147012d20c78654e24c7612848029a0682dc4031", manifestDigest(SubsystemPlatform.FTC))
+        assertEquals("f48a5216e349e658cf1551a38eba4dc2173da14364755dbd2d484fd228ff6e75", manifestDigest(SubsystemPlatform.FTC))
     }
 
     @Test
     fun `all supported FRC templates retain their deterministic artifact manifest`() {
-        assertEquals("cf75e70b0a8e906c779d48f13e84c8673aee6b0ce18a73e9a2eebca06f628327", manifestDigest(SubsystemPlatform.FRC))
+        assertEquals("6d5fec859b7f8576cb4cda8fc0821f7eca5a58b15282060ad916ae242243f30a", manifestDigest(SubsystemPlatform.FRC))
     }
 
     private fun manifestDigest(platform: SubsystemPlatform): String {

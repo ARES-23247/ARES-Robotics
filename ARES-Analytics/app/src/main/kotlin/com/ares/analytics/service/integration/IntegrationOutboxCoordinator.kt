@@ -58,13 +58,16 @@ class IntegrationOutboxCoordinator(
         if (workerJob?.isActive == true) return
         workerJob = scope.launch {
             while (isActive) {
-                runCatching { drainOnce() }
-                    .onFailure { failure ->
-                        System.err.println(
-                            "[ARES-Analytics] Integration outbox pass failed: " +
-                                (failure.message ?: failure::class.java.simpleName)
-                        )
-                    }
+                try {
+                    drainOnce()
+                } catch (cancelled: kotlinx.coroutines.CancellationException) {
+                    throw cancelled
+                } catch (failure: Exception) {
+                    System.err.println(
+                        "[ARES-Analytics] Integration outbox pass failed: " +
+                            (failure.message ?: failure::class.java.simpleName)
+                    )
+                }
                 delay(pollIntervalMs)
             }
         }
@@ -96,6 +99,8 @@ class IntegrationOutboxCoordinator(
 
         val result = try {
             provider.deliver(claim.event)
+        } catch (cancelled: kotlinx.coroutines.CancellationException) {
+            throw cancelled
         } catch (failure: Exception) {
             IntegrationDeliveryResult.Retry(
                 errorKind = DeliveryErrorKind.UNKNOWN,

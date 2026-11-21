@@ -5,6 +5,8 @@ $ErrorActionPreference = 'Stop'
 [Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false)
 $OutputEncoding = [System.Text.UTF8Encoding]::new($false)
 $root = Split-Path -Parent $PSScriptRoot
+$rootFull = [System.IO.Path]::GetFullPath($root).TrimEnd([char]'\', [char]'/')
+$rootPrefix = $rootFull + [System.IO.Path]::DirectorySeparatorChar
 $historical = @(
     'ARESLib-Kotlin/audit_report_areslib_kotlin.md',
     'CLEAN_SLATE_ARCHITECTURE_COMPLETION.md',
@@ -61,6 +63,10 @@ foreach ($relativePath in $tracked) {
             if ([string]::IsNullOrWhiteSpace($target) -or $target -match '[{}<>*]') { continue }
             try { $target = [Uri]::UnescapeDataString($target) } catch { }
             $resolved = [System.IO.Path]::GetFullPath((Join-Path $directory $target))
+            $resolvedNorm = $resolved.TrimEnd([char]'\', [char]'/')
+            $insideRoot = $resolvedNorm.Equals($rootFull, [System.StringComparison]::OrdinalIgnoreCase) -or
+                $resolved.StartsWith($rootPrefix, [System.StringComparison]::OrdinalIgnoreCase)
+            if (-not $insideRoot) { $errors.Add("$normalized`:$lineNumber escapes repository root: $target"); continue }
             if (-not (Test-Path -LiteralPath $resolved)) { $errors.Add("$normalized`:$lineNumber points to missing local target: $target") }
         }
     }

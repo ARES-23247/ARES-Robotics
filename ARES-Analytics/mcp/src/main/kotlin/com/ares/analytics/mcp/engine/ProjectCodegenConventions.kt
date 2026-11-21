@@ -254,7 +254,14 @@ object ProjectCodegenConventions {
             drivetrainsDir.listFiles { f -> f.isFile && f.extension == "aresdrivetrain" }.orEmpty()
                 .map { file -> com.areslib.drivetrain.DrivetrainDocumentCodec.decode(file.readText()) }
         } else emptyList()
-        val declarations = drivetrains.flatMap { it.parameters } + components.flatMap { it.parameters }
+        val subsystemsDir = File(root, ".ares/subsystems")
+        val subsystems = if (subsystemsDir.isDirectory) {
+            subsystemsDir.listFiles { f -> f.isFile && f.extension == "aressubsystem" }.orEmpty()
+                .map { file -> com.areslib.subsystem.SubsystemDocumentCodec.decode(file.readText()) }
+        } else emptyList()
+        val declarations = drivetrains.flatMap { it.parameters } +
+            subsystems.flatMap { it.tuningParameters } +
+            components.flatMap { it.parameters }
         val tuningDir = File(root, ".ares/tuning")
         if (tuningDir.isDirectory) {
             tuningDir.listFiles { f -> f.isFile && f.extension == "arestuning" }.orEmpty().forEach { file ->

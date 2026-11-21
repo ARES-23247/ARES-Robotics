@@ -27,6 +27,9 @@ internal class Nt4OutboundPublisher(
     @Volatile
     private var session: DefaultClientWebSocketSession? = null
 
+    @Volatile
+    private var loopbackSession: Boolean = false
+
     private val connectionCounter = AtomicLong()
     @Volatile private var connectionId = 0L
 
@@ -52,20 +55,27 @@ internal class Nt4OutboundPublisher(
     private var nextPubUid = 2_000
     private val dynamicPubUids = ConcurrentHashMap(FIXED_PUBLISH_UIDS)
     private val publisherTypes = ConcurrentHashMap(FIXED_PUBLISH_TYPES)
+    private val simulatorOnlyPubUids = ConcurrentHashMap.newKeySet<Int>().apply {
+        addAll(SIMULATOR_ONLY_FIXED_PUB_UIDS)
+    }
     private val publishDoubleBuffer = ThreadLocal.withInitial { ByteArray(9) }
     private val publishDoubleArrayBuffer = ThreadLocal.withInitial { ByteArray(73) }
 
-    suspend fun attach(connectedSession: DefaultClientWebSocketSession) {
-        driveFramePublishMutex.withLock { driveFrameValidator.reset() }
-        serverTimeOffsetUs = null
-        bestClockRoundTripUs = Long.MAX_VALUE
-        connectionId = connectionCounter.incrementAndGet()
-        session = connectedSession
+    suspend fun attach(connectedSession: DefaultClientWebSocketSession, isLoopback: Boolean = false) {
+        driveFramePublishMutex.withLock {
+            driveFrameValidator.reset()
+            loopbackSession = isLoopback
+            serverTimeOffsetUs = null
+            bestClockRoundTripUs = Long.MAX_VALUE
+            connectionId = connectionCounter.incrementAndGet()
+            session = connectedSession
+        }
     }
 
     fun detach(connectedSession: DefaultClientWebSocketSession) {
         if (session === connectedSession) {
             session = null
+            loopbackSession = false
             serverTimeOffsetUs = null
         }
     }
@@ -108,10 +118,10 @@ internal class Nt4OutboundPublisher(
     }.toDouble()
 
     suspend fun publishDriveFrame(values: DoubleArray): Boolean = driveFramePublishMutex.withLock {
-        // The caller retains the buffer until this method returns. Validation and MessagePack
-        // encoding are synchronous inside this mutex, so a defensive second array copy only adds
-        // allocation pressure to the 50 Hz control path.
+        // Validate frame contract before transport gating so malformed or non-neutral-first
+        // drive frames fail fast even while disconnected.
         val pendingState = driveFrameValidator.validate(values)
+        if (!loopbackSession) return@withLock false
         if (!publishInputDoubleArray(DRIVE_FRAME_PUB_UID, values)) return@withLock false
         driveFrameValidator.commit(pendingState)
         true
@@ -204,12 +214,16 @@ internal class Nt4OutboundPublisher(
     }
 
     private suspend fun ensurePublisher(key: String, type: String): Int = dynamicPubMutex.withLock {
-        require(publisherTypes.putIfAbsent(key, type) in arrayOf(null, type)) {
-            "NT4 topic $key was already published with a different type"
+        val canonicalKey = key.trimStart('/')
+        require(publisherTypes.putIfAbsent(canonicalKey, type) in arrayOf(null, type)) {
+            "NT4 topic $canonicalKey was already published with a different type"
         }
-        dynamicPubUids[key] ?: nextPubUid++.also { id ->
-            dynamicPubUids[key] = id
-            session?.send(Frame.Text(buildPublishMessage(key, id, type)))
+        dynamicPubUids[canonicalKey] ?: nextPubUid++.also { id ->
+            dynamicPubUids[canonicalKey] = id
+            if (!com.ares.analytics.service.isDashboardDriverStationCommandAllowed("non-loopback", canonicalKey)) {
+                simulatorOnlyPubUids.add(id)
+            }
+            session?.send(Frame.Text(buildPublishMessage(canonicalKey, id, type)))
         }
     }
 
@@ -277,9 +291,11 @@ internal class Nt4OutboundPublisher(
         valueBytes: ByteArray,
         useServerReceiptTimestamp: Boolean = false,
     ): Boolean {
+        if (pubUid in simulatorOnlyPubUids && !loopbackSession) return false
         val offsetUs = serverTimeOffsetUs
         if (!useServerReceiptTimestamp && offsetUs == null) return false
         val connectedSession = session ?: return false
+        if (pubUid in simulatorOnlyPubUids && !loopbackSession) return false
         val timestampUs = if (useServerReceiptTimestamp) 0L else monotonicTimeUs() + requireNotNull(offsetUs)
         val buffer = encodeNt4BinaryUpdate(pubUid, timestampUs, typeId, valueBytes)
         return connectedSession.outgoing.trySend(Frame.Binary(true, buffer)).isSuccess
@@ -299,6 +315,7 @@ internal class Nt4OutboundPublisher(
 
     companion object {
         private const val DRIVE_FRAME_PUB_UID = 1_020
+        private val SIMULATOR_ONLY_FIXED_PUB_UIDS = setOf(1_011, 1_012, 1_013, 1_014, DRIVE_FRAME_PUB_UID)
         private const val MAX_STRING_BYTES = 65_536
         private val BOOLEAN_TRUE_BYTES = byteArrayOf(0xc3.toByte())
         private val BOOLEAN_FALSE_BYTES = byteArrayOf(0xc2.toByte())

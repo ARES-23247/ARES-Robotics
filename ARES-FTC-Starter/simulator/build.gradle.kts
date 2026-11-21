@@ -75,13 +75,3 @@ tasks.named<JavaExec>("run") {
     }
     args(argsList)
 }
-
-tasks.register<JavaExec>("runCalibrationVerification") {
-    group = "application"
-    mainClass.set("org.firstinspires.ftc.teamcode.CalibrationVerificationAppKt")
-    classpath = sourceSets.main.get().runtimeClasspath
-    workingDir(rootProject.projectDir)
-    javaLauncher.set(javaToolchains.launcherFor {
-        languageVersion.set(JavaLanguageVersion.of(21))
-    })
-}

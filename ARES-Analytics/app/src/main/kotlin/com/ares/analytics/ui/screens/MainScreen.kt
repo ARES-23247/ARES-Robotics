@@ -139,8 +139,16 @@ fun MainScreen(services: ServiceRegistry) {
     val isXrpConnected by services.xrpLinkService.isConnected.collectAsState()
     var stableProjectContentHash by remember(currentConfig?.id, currentConfig?.projectPath) { mutableStateOf<String?>(null) }
     LaunchedEffect(currentConfig?.id, currentConfig?.projectPath) {
+        val activeRoot = currentConfig?.projectPath?.takeIf(String::isNotBlank)?.let {
+            runCatching { java.io.File(it).toPath().toAbsolutePath().normalize() }.getOrNull()
+        }
         services.projectSession.state
-            .mapNotNull { it.revision?.canonicalContentSha256 }
+            .mapNotNull { state ->
+                val root = state.selection?.projectRoot?.let {
+                    runCatching { java.io.File(it).toPath().toAbsolutePath().normalize() }.getOrNull()
+                }
+                if (activeRoot != null && root == activeRoot) state.revision?.canonicalContentSha256 else null
+            }
             .distinctUntilChanged()
             .collect { stableProjectContentHash = it }
     }
@@ -206,7 +214,6 @@ fun MainScreen(services: ServiceRegistry) {
         if (stableProjectContentHash != null) robotStudioViewModel.refresh()
     }
     val primarySessionId = dashboardShellState.primarySessionId
-    val isConnected by services.nt4ClientService.isConnected.collectAsState()
     val processState by services.projectBuildService.processState.collectAsState()
     val deployExecutionState by services.robotDeploymentService.state.collectAsState()
     val adbConnected by services.adbService.connected.collectAsState()
@@ -216,13 +223,13 @@ fun MainScreen(services: ServiceRegistry) {
     val activeSimulationLeague = simulatorState.league
     val isBuildRunning = processState.buildRunning
     val buildExecutionState = processState.buildExecution
-    var deployDialogOpen by remember { mutableStateOf(false) }
-    var deployAwaitingConfirmation by remember { mutableStateOf(false) }
-    var hardwareStudioInitialTab by remember { mutableStateOf(HardwareStudioTab.DRIVETRAIN) }
+    var deployDialogOpen by remember(currentConfig.id) { mutableStateOf(false) }
+    var deployAwaitingConfirmation by remember(currentConfig.id) { mutableStateOf(false) }
+    var hardwareStudioInitialTab by remember(currentConfig.id) { mutableStateOf(HardwareStudioTab.DRIVETRAIN) }
     var pitDeepLink by remember(currentConfig.id) { mutableStateOf(PitDeepLinkRequest()) }
     var strategyDeepLink by remember(currentConfig.id) { mutableStateOf(StrategyDeepLinkRequest()) }
-    var targetSelection by remember { mutableStateOf(TargetSelection.LIVE_ROBOT) }
-    var liveRobotIp by remember(currentConfig.nt4Host) {
+    var targetSelection by remember(currentConfig.id) { mutableStateOf(TargetSelection.LIVE_ROBOT) }
+    var liveRobotIp by remember(currentConfig.id, currentConfig.nt4Host) {
         mutableStateOf(currentConfig.nt4Host ?: "192.168.43.1")
     }
     LaunchedEffect(activeNav, targetSelection, isRobotLinkConnected) {
@@ -466,7 +473,7 @@ fun MainScreen(services: ServiceRegistry) {
             // ── Sidebar ──────────────────────────────────────────────────────
             Sidebar(
                 activeTarget = activeNav,
-                isConnected = isConnected,
+                isConnected = isRobotLinkConnected,
                 adbConnected = adbConnected,
                 isSimRunning = isSimRunning,
                 league = currentConfig.league,
@@ -504,7 +511,7 @@ fun MainScreen(services: ServiceRegistry) {
                         targetSelection = targetSelection,
                         liveRobotIp = liveRobotIp,
                         isLiveRobotOnline = isLiveRobotOnline,
-                        isLocalSimOnline = isLocalSimOnline,
+                        isLocalSimOnline = compatibleLocalSimOnline,
                         isBuildRunning = isBuildRunning,
                         isSimRunning = isSimRunning,
                         simulatorLaunchRequestEnabled = simulatorLaunchRequestEnabled,
@@ -602,7 +609,7 @@ fun MainScreen(services: ServiceRegistry) {
                                 primarySessionId = primarySessionId,
                                 targetSelection = targetSelection,
                                 simulatorRunning = isSimRunning,
-                                localSimulatorOnline = isLocalSimOnline,
+                                localSimulatorOnline = compatibleLocalSimOnline,
                                 nt4Connected = isRobotLinkConnected,
                                 simulatorLaunchPreparationRunning = pendingSimulatorLaunch,
                                 simulatorLaunchRequiresVerification = simulatorLaunchRequiresVerification,

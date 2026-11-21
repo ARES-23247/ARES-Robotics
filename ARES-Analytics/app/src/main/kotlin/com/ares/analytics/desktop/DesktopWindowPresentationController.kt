@@ -234,8 +234,10 @@ internal class DesktopWindowPresentationController(
                             "terminating so the next launch can acquire app.lock."
                     )
                 }
-                // Compose-owned re-release; the repeating settlement check continues.
+                // Re-apply both Compose state and imperative AWT fallback so a no-op false->false
+                // state assignment cannot stall topmost settlement recovery.
                 onStartupAlwaysOnTopChange(false)
+                windowPort.clearAlwaysOnTop()
             }
         }
     }

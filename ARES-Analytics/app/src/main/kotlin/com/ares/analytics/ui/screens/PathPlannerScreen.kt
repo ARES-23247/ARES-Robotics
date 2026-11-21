@@ -31,6 +31,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -208,11 +209,15 @@ fun PathPlannerScreen(
             Waypoint(sample.x, sample.y, sample.headingRad)
         }
     }
-    val lightingPreviewModel = remember(projectPath) { RoutineLightingPreviewModel.load(projectPath) }
-    val lightingTimeline = remember(lightingPreviewModel, state.previewActions) {
-        lightingPreviewModel.compile(state.previewActions)
+    val lightingPreviewModel by produceState<RoutineLightingPreviewModel?>(initialValue = null, projectPath) {
+        value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            runCatching { RoutineLightingPreviewModel.load(projectPath) }.getOrNull()
+        }
     }
-    val lightingPreview = lightingTimeline.at(state.playbackTime)
+    val lightingTimeline = remember(lightingPreviewModel, state.previewActions) {
+        lightingPreviewModel?.compile(state.previewActions)
+    }
+    val lightingPreview = lightingTimeline?.at(state.playbackTime)
     val historyStack = remember(projectPath, state.routine.documentId) { WaypointHistoryStack() }
     var cursorPose by remember { mutableStateOf<Waypoint?>(null) }
     var showAllianceMirror by remember { mutableStateOf(false) }
@@ -351,14 +356,14 @@ fun PathPlannerScreen(
                             showPathControls = false,
                             showObstacleControls = false,
                             playbackPose = playbackPose,
-                            indicatorLights = lightingPreview.indicators.map { indicator ->
+                            indicatorLights = lightingPreview?.indicators.orEmpty().map { indicator ->
                                 IndicatorLightRenderState(
                                     position = indicator.position,
                                     forwardFraction = indicator.forwardFraction,
                                     leftFraction = indicator.leftFraction,
                                 )
                             },
-                            prismPulseWidthUs = lightingPreview.prismPulseWidthUs,
+                            prismPulseWidthUs = lightingPreview?.prismPulseWidthUs,
                             aprilTags = null,
                             onAprilTagsChanged = null,
                             initialViewRotation = state.viewRotation,

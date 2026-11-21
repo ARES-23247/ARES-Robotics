@@ -21,11 +21,10 @@ import com.qualcomm.robotcore.hardware.configuration.annotations.I2cDeviceType
  * ### Register Memory Map & Physical Units:
  * - Registers `0x00..0x07`: Analog input voltages ($V$), scaled from $0.0\text{V} \dots 3.3\text{V}$.
  * - Register `0x08`: Digital input logic pin bitmask.
- * - Registers `0x09..0x18`: 32-bit signed motor encoder count registers.
- * - Registers `0x18..0x1F`: 16-bit PWM pulse width channels ($\mu s$).
- * - Registers `0x20..0x5F`: I2C sub-device color ($RGB\alpha$) and proximity distance ($m$) channels.
+ * - Registers `0x09..0x18`: 32-bit signed motor encoder count registers (4 bytes/port, ports `0..3`).
+ * - Registers `0x20..0x5F`: I2C sub-device color ($RGB\alpha$, offsets `+0..+7`), proximity distance ($m$, `+8..+9`), and 16-bit PWM pulse width ($\mu s$, `+10..+11`) per port (`16` bytes/port).
  * - Registers `0x60..0xBF`: GoBilda Pinpoint odometry $X, Y$ ($mm$), heading ($\mu rad$), velocities ($mm/s, \mu rad/s$).
- * - Registers `0xC0..0xFF`: VL53L5CX 64-zone distance matrix ($mm$).
+ * - Registers `0xC0..0xFF`: VL53L5CX 32-zone distance matrix ($mm$) for port `0`.
  *
  * [pollHub] parses each SDK-owned I2C read into fixed-size primitive caches. Consumer accessors read
  * those caches and never perform hardware I/O, keeping control-loop work bounded and deterministic.
@@ -62,6 +61,9 @@ class SrsHubDriver(deviceClient: I2cDeviceSynch) : I2cDeviceSynchDevice<I2cDevic
     private val activePinpoints = BooleanArray(4)
     private val pendingPinpointResets = BooleanArray(4)
     private val pendingServoPositions = DoubleArray(4) { Double.NaN }
+    private val snapshotServoPositions = DoubleArray(4) { Double.NaN }
+    private val snapshotPinpointResets = BooleanArray(4)
+    private val snapshotActivePinpoints = BooleanArray(4)
     private val pingBuffers = Array(4) { byteArrayOf(1) }
     private val servoWriteBuffers = Array(4) { ByteArray(2) }
 
@@ -75,37 +77,49 @@ class SrsHubDriver(deviceClient: I2cDeviceSynch) : I2cDeviceSynchDevice<I2cDevic
     private val thread = Thread {
         while (running) {
             if (isInitialized) {
-                // 1. Process pending servo writes
+                // 1. Snapshot pending writes under lock, then perform blocking I2C writes unlocked
                 synchronized(lock) {
                     for (port in 0 until 4) {
-                        val pos = pendingServoPositions[port]
-                        if (!pos.isNaN()) {
-                            try {
-                                val raw = (pos.coerceIn(0.0, 1.0) * 65535.0).toInt()
-                                val buffer = servoWriteBuffers[port]
-                                buffer[0] = (raw and 0xFF).toByte()
-                                buffer[1] = ((raw shr 8) and 0xFF).toByte()
-                                deviceClient.write(16 + port * 2, buffer)
-                                pendingServoPositions[port] = Double.NaN
-                            } catch (_: Exception) {}
+                        snapshotServoPositions[port] = pendingServoPositions[port]
+                        pendingServoPositions[port] = Double.NaN
+                        snapshotPinpointResets[port] = pendingPinpointResets[port]
+                        pendingPinpointResets[port] = false
+                        snapshotActivePinpoints[port] = activePinpoints[port]
+                    }
+                }
+
+                for (port in 0 until 4) {
+                    val pos = snapshotServoPositions[port]
+                    if (!pos.isNaN()) {
+                        try {
+                            val raw = (pos.coerceIn(0.0, 1.0) * 65535.0).toInt()
+                            val buffer = servoWriteBuffers[port]
+                            buffer[0] = (raw and 0xFF).toByte()
+                            buffer[1] = ((raw shr 8) and 0xFF).toByte()
+                            deviceClient.write(16 + port * 2, buffer)
+                        } catch (_: Exception) {
+                            synchronized(lock) {
+                                if (pendingServoPositions[port].isNaN()) {
+                                    pendingServoPositions[port] = pos
+                                }
+                            }
                         }
                     }
                 }
 
-                // 2. Trigger resets and updates for active pinpoint sensors
-                synchronized(lock) {
-                    for (port in 0 until 4) {
-                        if (pendingPinpointResets[port]) {
-                            try {
-                                deviceClient.write(120 + port, pingBuffers[port])
-                                pendingPinpointResets[port] = false
-                            } catch (_: Exception) {}
+                // 2. Trigger resets and updates for active pinpoint sensors outside lock
+                for (port in 0 until 4) {
+                    if (snapshotPinpointResets[port]) {
+                        try {
+                            deviceClient.write(120 + port, pingBuffers[port])
+                        } catch (_: Exception) {
+                            synchronized(lock) { pendingPinpointResets[port] = true }
                         }
-                        if (activePinpoints[port]) {
-                            try {
-                                deviceClient.write(124 + port, pingBuffers[port])
-                            } catch (_: Exception) {}
-                        }
+                    }
+                    if (snapshotActivePinpoints[port]) {
+                        try {
+                            deviceClient.write(124 + port, pingBuffers[port])
+                        } catch (_: Exception) {}
                     }
                 }
 
@@ -179,22 +193,18 @@ class SrsHubDriver(deviceClient: I2cDeviceSynch) : I2cDeviceSynchDevice<I2cDevic
                     cachedEncoders[i] = readInt32(data, offset)
                 }
 
-                // 3b. Parse PWM Pulse Widths (Registers 24-31, 2 bytes per port)
-                for (i in 0 until 4) {
-                    val offset = 24 + i * 2
-                    cachedPwmPulseWidths[i] = (data[offset].toInt() and 0xFF) or ((data[offset + 1].toInt() and 0xFF) shl 8)
-                }
-
-                // 4. Parse APDS9151 and VL53L0X I2C Sub-devices (Registers 32-95, 16 bytes per port)
+                // 4. Parse APDS9151, VL53L0X, and PWM Pulse Widths (Registers 32-95, 16 bytes per port)
                 for (port in 0 until 4) {
                     val base = 32 + port * 16
                     cachedColorsRed[port] = (data[base].toInt() and 0xFF) or ((data[base + 1].toInt() and 0xFF) shl 8)
                     cachedColorsGreen[port] = (data[base + 2].toInt() and 0xFF) or ((data[base + 3].toInt() and 0xFF) shl 8)
                     cachedColorsBlue[port] = (data[base + 4].toInt() and 0xFF) or ((data[base + 5].toInt() and 0xFF) shl 8)
                     cachedColorsAlpha[port] = (data[base + 6].toInt() and 0xFF) or ((data[base + 7].toInt() and 0xFF) shl 8)
-                    
+
                     val rawDistMm = (data[base + 8].toInt() and 0xFF) or ((data[base + 9].toInt() and 0xFF) shl 8)
                     cachedI2cDistances[port] = rawDistMm / 1000.0 // mm to meters
+
+                    cachedPwmPulseWidths[port] = (data[base + 10].toInt() and 0xFF) or ((data[base + 11].toInt() and 0xFF) shl 8)
                 }
 
                 // 5. Parse Pinpoint Odometry data (Registers 96-191, 24 bytes per port)

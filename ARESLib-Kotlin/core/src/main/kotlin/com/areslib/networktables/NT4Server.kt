@@ -825,7 +825,7 @@ class NT4Server(
             val protocols: MutableList<IProtocol> = ArrayList()
             protocols.add(Protocol("v4.1.networktables.first.wpi.edu"))
             protocols.add(Protocol("rtt.networktables.first.wpi.edu"))
-            val draftProtocols = Draft_6455(Collections.emptyList(), protocols)
+            val draftProtocols = Draft_6455(Collections.emptyList(), protocols, MAX_DECODED_FRAME_BYTES)
             val server = NT4Server(InetSocketAddress(address, port), draftProtocols)
             serverInstance = server
             server.connectionLostTimeout = Int.MAX_VALUE

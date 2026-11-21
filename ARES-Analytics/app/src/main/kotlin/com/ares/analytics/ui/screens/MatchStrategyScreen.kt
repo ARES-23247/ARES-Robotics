@@ -80,6 +80,9 @@ fun MatchStrategyScreen(
     var selectedBriefingMatch by remember(strategyDeepLink.nonce) {
         mutableStateOf(strategyDeepLink.highlightedMatchNumber)
     }
+    var selectedBriefingMatchKey by remember(strategyDeepLink.nonce) {
+        mutableStateOf<String?>(null)
+    }
     LaunchedEffect(strategyDeepLink.nonce) {
         if (strategyDeepLink.nonce > 0) {
             activeTab = strategyDeepLink.tab
@@ -110,7 +113,6 @@ fun MatchStrategyScreen(
         value = withContext(Dispatchers.IO) {
             val sessions = if (workspace != null && workspace.teamId.isNotBlank()) {
                 databaseService.getSessionsForWorkspace(workspace.teamId, workspace.seasonId, workspace.robotId)
-                    .ifEmpty { databaseService.getSessions() }
             } else {
                 databaseService.getSessions()
             }.sortedByDescending { it.createdAt }
@@ -198,7 +200,11 @@ fun MatchStrategyScreen(
         val store = eventScoutingStore
         val ws = workspace
         if (store != null && ws != null) {
-            scoutingBundle = store.loadBundle(ws)
+            scoutingBundle = withContext(Dispatchers.IO) {
+                runCatching { store.loadBundle(ws) }.getOrElse {
+                    EventScoutingBundle(eventCode = ws.eventCode.orEmpty(), league = league)
+                }
+            }
         }
     }
 
@@ -356,15 +362,23 @@ fun MatchStrategyScreen(
                         } else {
                             scope.launch {
                                 syncInProgress = true
-                                runCatching { api.fetchWorkspaceEventMatchResults(ws) }
+                                runCatching {
+                                    withContext(Dispatchers.IO) { api.fetchWorkspaceEventMatchResults(ws) }
+                                }
                                     .onSuccess { fetched ->
                                         if (fetched.isEmpty()) {
                                             statusBanner = "No match scores returned for ${ws.eventCode ?: "event"}; check Event Code / API Key."
                                         } else {
-                                            scoutingBundle = store.upsertMatchResults(ws, fetched)
-                                            scoutingRefreshNonce += 1
-                                            if (matches.isEmpty()) onMatchesUpdated(fetched.map(EventMatchResult::toMatchInfo))
-                                            statusBanner = "Synced ${fetched.size} match record(s) into offline OPR store."
+                                            runCatching {
+                                                withContext(Dispatchers.IO) { store.upsertMatchResults(ws, fetched) }
+                                            }.onSuccess { updated ->
+                                                scoutingBundle = updated
+                                                scoutingRefreshNonce += 1
+                                                if (matches.isEmpty()) onMatchesUpdated(fetched.map(EventMatchResult::toMatchInfo))
+                                                statusBanner = "Synced ${fetched.size} match record(s) into offline OPR store."
+                                            }.onFailure { err ->
+                                                statusBanner = "Failed to persist synced scores: ${err.message}"
+                                            }
                                         }
                                     }
                                     .onFailure { err -> statusBanner = "Score sync failed: ${err.message}" }
@@ -386,7 +400,7 @@ fun MatchStrategyScreen(
                                         extensions = listOf("json", "csv"),
                                     )
                                 } ?: return@launch
-                                runCatching { store.importAndMergeFile(ws, file) }
+                                runCatching { withContext(Dispatchers.IO) { store.importAndMergeFile(ws, file) } }
                                     .onSuccess { (merged, summary) ->
                                         scoutingBundle = merged
                                         scoutingRefreshNonce += 1
@@ -412,7 +426,7 @@ fun MatchStrategyScreen(
                                         extensions = listOf("json"),
                                     )
                                 } ?: return@launch
-                                runCatching { store.exportBundleFile(ws, dest) }
+                                runCatching { withContext(Dispatchers.IO) { store.exportBundleFile(ws, dest) } }
                                     .onSuccess { statusBanner = "Exported scouting bundle: ${dest.name}" }
                                     .onFailure { err -> statusBanner = "Export failed: ${err.message}" }
                             }
@@ -422,27 +436,39 @@ fun MatchStrategyScreen(
                         val store = eventScoutingStore ?: return@StrategyOprAndScoutingTab
                         val ws = workspace ?: return@StrategyOprAndScoutingTab
                         scope.launch {
-                            scoutingBundle = store.upsertPitProfile(ws, profile)
-                            scoutingRefreshNonce += 1
-                            statusBanner = "Saved pit profile for Team #${profile.teamNumber}."
+                            runCatching { withContext(Dispatchers.IO) { store.upsertPitProfile(ws, profile) } }
+                                .onSuccess { updated ->
+                                    scoutingBundle = updated
+                                    scoutingRefreshNonce += 1
+                                    statusBanner = "Saved pit profile for Team #${profile.teamNumber}."
+                                }
+                                .onFailure { err -> statusBanner = "Failed to save pit profile: ${err.message}" }
                         }
                     },
                     onSaveStandObservation = { obs ->
                         val store = eventScoutingStore ?: return@StrategyOprAndScoutingTab
                         val ws = workspace ?: return@StrategyOprAndScoutingTab
                         scope.launch {
-                            scoutingBundle = store.upsertStandObservation(ws, obs)
-                            scoutingRefreshNonce += 1
-                            statusBanner = "Logged stand observation for Team #${obs.teamNumber} Match #${obs.matchNumber}."
+                            runCatching { withContext(Dispatchers.IO) { store.upsertStandObservation(ws, obs) } }
+                                .onSuccess { updated ->
+                                    scoutingBundle = updated
+                                    scoutingRefreshNonce += 1
+                                    statusBanner = "Logged stand observation for Team #${obs.teamNumber} Match #${obs.matchNumber}."
+                                }
+                                .onFailure { err -> statusBanner = "Failed to save stand observation: ${err.message}" }
                         }
                     },
                     onSaveManualMatchResult = { res ->
                         val store = eventScoutingStore ?: return@StrategyOprAndScoutingTab
                         val ws = workspace ?: return@StrategyOprAndScoutingTab
                         scope.launch {
-                            scoutingBundle = store.upsertMatchResults(ws, listOf(res))
-                            scoutingRefreshNonce += 1
-                            statusBanner = "Recorded score for ${res.compLevel} #${res.matchNumber}."
+                            runCatching { withContext(Dispatchers.IO) { store.upsertMatchResults(ws, listOf(res)) } }
+                                .onSuccess { updated ->
+                                    scoutingBundle = updated
+                                    scoutingRefreshNonce += 1
+                                    statusBanner = "Recorded score for ${res.compLevel} #${res.matchNumber}."
+                                }
+                                .onFailure { err -> statusBanner = "Failed to record score: ${err.message}" }
                         }
                     },
                     onJumpToPicklistTeam = { team ->
@@ -459,6 +485,8 @@ fun MatchStrategyScreen(
                     standSummaries = standSummaries,
                     selectedMatchNumber = selectedBriefingMatch,
                     onSelectMatchNumber = { selectedBriefingMatch = it },
+                    selectedMatchKey = selectedBriefingMatchKey,
+                    onSelectMatchKey = { selectedBriefingMatchKey = it },
                     exportService = resolvedExportService,
                     notebookCaptureService = notebookCaptureService,
                     onScoutTeam = { team ->
@@ -481,16 +509,44 @@ fun MatchStrategyScreen(
                         val store = eventScoutingStore ?: return@StrategyAlliancePicklistTab
                         val ws = workspace ?: return@StrategyAlliancePicklistTab
                         scope.launch {
-                            scoutingBundle = store.updateWeightPreset(ws, preset)
-                            scoutingRefreshNonce += 1
+                            runCatching { withContext(Dispatchers.IO) { store.updateWeightPreset(ws, preset) } }
+                                .onSuccess { updated ->
+                                    scoutingBundle = updated
+                                    scoutingRefreshNonce += 1
+                                }
+                                .onFailure { err -> statusBanner = "Failed to update preset: ${err.message}" }
                         }
                     },
                     onSaveOverride = { override ->
                         val store = eventScoutingStore ?: return@StrategyAlliancePicklistTab
                         val ws = workspace ?: return@StrategyAlliancePicklistTab
                         scope.launch {
-                            scoutingBundle = store.upsertPicklistOverride(ws, override)
-                            scoutingRefreshNonce += 1
+                            runCatching { withContext(Dispatchers.IO) { store.upsertPicklistOverride(ws, override) } }
+                                .onSuccess { updated ->
+                                    scoutingBundle = updated
+                                    scoutingRefreshNonce += 1
+                                }
+                                .onFailure { err -> statusBanner = "Failed to save picklist update: ${err.message}" }
+                        }
+                    },
+                    onSaveOverrides = { overrides ->
+                        val store = eventScoutingStore ?: return@StrategyAlliancePicklistTab
+                        val ws = workspace ?: return@StrategyAlliancePicklistTab
+                        scope.launch {
+                            runCatching {
+                                withContext(Dispatchers.IO) {
+                                    var updated = scoutingBundle
+                                    overrides.forEach { override ->
+                                        updated = store.upsertPicklistOverride(ws, override)
+                                    }
+                                    updated
+                                }
+                            }.onSuccess { updated ->
+                                scoutingBundle = updated
+                                scoutingRefreshNonce += 1
+                            }.onFailure { err ->
+                                statusBanner = "Failed to reorder picklist: ${err.message}"
+                            }
                         }
                     },
                     onStatusMessage = { statusBanner = it },

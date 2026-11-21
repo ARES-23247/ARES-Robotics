@@ -141,12 +141,19 @@ class SuperstructureRuntime(
         }
         lastTimestampMs = timestampMs
         hasTimestamp = true
-        if (!binding.isRobotEnabled()) {
+        val robotEnabled = binding.isRobotEnabled()
+        if (!robotEnabled) {
             if (lifecycleExecutor.size > 0) {
                 dispatchAll(store, lifecycleExecutor.cancelAll(store.state))
                 completedLifecycleSequence = next.lifecycleSequenceScheduled
             }
             next = handleDisabled(next, timestampMs)
+            if (document.disabledPolicy == SuperstructureDisabledPolicy.RETAIN_LOGICAL_STATE_WITH_NEUTRAL_OUTPUT) {
+                if (next != before) {
+                    store.dispatch(RobotAction.UpdateNamedSubsystemState(document.superstructureId, next, timestampMs))
+                }
+                return
+            }
         } else {
             if (next.isDisabled) next = next.copy(isDisabled = false)
             val unhealthy = firstUnhealthyFallback(store.state, timestampMs)
@@ -182,6 +189,14 @@ class SuperstructureRuntime(
         }
 
         next = applyFaultPresetIfNeeded(next, store, timestampMs)
+
+        if (!robotEnabled) {
+            if (!next.isDisabled) next = next.copy(isDisabled = true)
+            if (next != before) {
+                store.dispatch(RobotAction.UpdateNamedSubsystemState(document.superstructureId, next, timestampMs))
+            }
+            return
+        }
 
         next = scheduleLifecycleIfNeeded(next, timestampMs)
         next = applyFaultPresetIfNeeded(next, store, timestampMs)
@@ -686,22 +701,10 @@ class SuperstructureRuntime(
             for (index in preset.targets.indices) {
                 val target = preset.targets[index]
                 val task = when (targetTypes[index]) {
-                    SubsystemValueType.DOUBLE -> binding.createDoubleTargetTask(
-                        target.targetPort,
-                        doubleTargets[index],
-                    )
-                    SubsystemValueType.INT -> binding.createIntTargetTask(
-                        target.targetPort,
-                        intTargets[index],
-                    )
-                    SubsystemValueType.BOOLEAN -> binding.createBooleanTargetTask(
-                        target.targetPort,
-                        booleanTargets[index],
-                    )
-                    SubsystemValueType.STRING -> binding.createStringTargetTask(
-                        target.targetPort,
-                        requireNotNull(stringTargets[index]),
-                    )
+                    SubsystemValueType.DOUBLE -> binding.createDoubleTargetTask(target.targetPort, doubleTargets[index])
+                    SubsystemValueType.INT -> binding.createIntTargetTask(target.targetPort, intTargets[index])
+                    SubsystemValueType.BOOLEAN -> binding.createBooleanTargetTask(target.targetPort, booleanTargets[index])
+                    SubsystemValueType.STRING -> binding.createStringTargetTask(target.targetPort, requireNotNull(stringTargets[index]))
                     null -> null
                 } ?: return false
                 targetTasks[index] = task

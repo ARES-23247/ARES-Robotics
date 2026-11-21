@@ -90,6 +90,6 @@ Invoke-GradleBuild 'ARES-FRC' (@('test', '--no-parallel', '--console=plain') + $
 Invoke-GradleBuild 'ARES-FTC-Starter' (@(':TeamCode:testDebugUnitTest', ':simulator:test', ':TeamCode:assembleDebug', '--no-parallel', '--console=plain') + $versionArguments)
 Invoke-GradleBuild 'ARES-FRC-Starter' (@('test', '--no-parallel', '--console=plain') + $versionArguments)
 Invoke-XrpBuild
-Invoke-GradleBuild 'ARES-Analytics' (@(':shared:test', ':app:test', ':gateway:test', '--no-parallel', '--console=plain') + $versionArguments)
+Invoke-GradleBuild 'ARES-Analytics' (@(':shared:test', ':mcp:test', ':app:test', ':gateway:test', '--no-parallel', '--console=plain') + $versionArguments)
 
 Write-Host "`nARES source-monorepo $Task matrix passed." -ForegroundColor Green

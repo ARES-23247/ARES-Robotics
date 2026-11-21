@@ -405,7 +405,8 @@ internal fun XrpDriveInputPublisher(
                     val request = xrpLinkService.controlRequest.value
                     val teleOpArmed = request.mode == XrpRequestedMode.TELEOP &&
                         latestControlSurfaceActive && keyboard.enabled
-                    val autonomousArmed = request.mode == XrpRequestedMode.AUTONOMOUS
+                    val autonomousArmed = request.mode == XrpRequestedMode.AUTONOMOUS &&
+                        latestControlSurfaceActive
                     val armed = teleOpArmed || autonomousArmed
                     val intent = if (teleOpArmed) desktopDriveIntent(
                             keyboard = keyboard,

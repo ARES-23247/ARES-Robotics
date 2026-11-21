@@ -214,9 +214,9 @@ class AresRobot(
             throw failure
         }
         try {
+            // FtcBaseRobot.update() refreshes IO, computes power scale, executes registered
+            // subsystems (readAllSensors/writeAllOutputs), publishes telemetry, and paces the loop.
             base.update(gamepad1, gamepad2)
-            base.readAllSensors(RobotClock.currentTimeMillis())
-            base.writeAllOutputs(base.powerManager.powerScale)
         } catch (failure: Throwable) {
             fatalFrameFailure = failure
             runCatching { base.safeAll() }

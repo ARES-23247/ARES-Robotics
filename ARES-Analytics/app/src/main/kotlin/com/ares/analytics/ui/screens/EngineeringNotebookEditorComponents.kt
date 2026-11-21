@@ -66,8 +66,9 @@ internal fun GuidedRubricFormEditor(
     onTypeChange: (NotebookEntryType) -> Unit,
     onAuthorChange: (String) -> Unit,
     onUpdateSections: ((StructuredNotebookSections) -> StructuredNotebookSections) -> Unit,
+    entryKey: Any? = null,
 ) {
-    var tagsText by remember(sections.tags) { mutableStateOf(sections.tags.joinToString(", ")) }
+    var tagsText by remember(entryKey) { mutableStateOf(sections.tags.joinToString(", ")) }
 
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Surface(

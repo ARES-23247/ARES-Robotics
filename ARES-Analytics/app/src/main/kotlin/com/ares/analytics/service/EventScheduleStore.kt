@@ -44,12 +44,7 @@ class EventScheduleStore(
     }
 
     suspend fun loadCachedMatches(workspace: WorkspaceConfig): List<MatchInfo> = withContext(Dispatchers.IO) {
-        synchronized(ioLock) {
-            val file = scheduleFileFor(workspace)
-            if (!file.isFile) return@synchronized emptyList()
-            val text = runCatching { file.readText(StandardCharsets.UTF_8) }.getOrNull().orEmpty()
-            EventScheduleCodec.parseJson(text).map(ScheduledMatchItem::toMatchInfo)
-        }
+        synchronized(ioLock) { readCachedMatchesLocked(workspace) }
     }
 
     suspend fun saveMatches(
@@ -57,15 +52,28 @@ class EventScheduleStore(
         matches: List<MatchInfo>,
         source: String = "cache",
     ): List<MatchInfo> = withContext(Dispatchers.IO) {
-        synchronized(ioLock) {
-            val items = matches.filter { it.matchNumber > 0 }.map { it.toScheduledMatchItem(source) }
-            val encoded = EventScheduleCodec.encodeJson(items)
-            val file = scheduleFileFor(workspace)
-            writeFileAtomically(file) { tmp ->
-                tmp.writeText(encoded, StandardCharsets.UTF_8)
-            }
-            EventScheduleCodec.parseJson(encoded).map(ScheduledMatchItem::toMatchInfo)
+        synchronized(ioLock) { writeMatchesLocked(workspace, matches, source) }
+    }
+
+    private fun readCachedMatchesLocked(workspace: WorkspaceConfig): List<MatchInfo> {
+        val file = scheduleFileFor(workspace)
+        if (!file.isFile) return emptyList()
+        val text = runCatching { file.readText(StandardCharsets.UTF_8) }.getOrNull().orEmpty()
+        return EventScheduleCodec.parseJson(text).map(ScheduledMatchItem::toMatchInfo)
+    }
+
+    private fun writeMatchesLocked(
+        workspace: WorkspaceConfig,
+        matches: List<MatchInfo>,
+        source: String,
+    ): List<MatchInfo> {
+        val items = matches.filter { it.matchNumber > 0 }.map { it.toScheduledMatchItem(source) }
+        val encoded = EventScheduleCodec.encodeJson(items)
+        val file = scheduleFileFor(workspace)
+        writeFileAtomically(file) { tmp ->
+            tmp.writeText(encoded, StandardCharsets.UTF_8)
         }
+        return EventScheduleCodec.parseJson(encoded).map(ScheduledMatchItem::toMatchInfo)
     }
 
     suspend fun importScheduleFile(workspace: WorkspaceConfig, file: File): List<MatchInfo> = withContext(Dispatchers.IO) {
@@ -84,11 +92,13 @@ class EventScheduleStore(
         workspace: WorkspaceConfig,
         item: ScheduledMatchItem,
     ): List<MatchInfo> = withContext(Dispatchers.IO) {
-        val current = loadCachedMatches(workspace).map { it.toScheduledMatchItem("cache") }
-        val updated = current.filterNot {
-            it.compLevel.equals(item.compLevel, ignoreCase = true) && it.matchNumber == item.matchNumber
-        } + item.copy(source = "manual")
-        saveMatches(workspace, updated.map(ScheduledMatchItem::toMatchInfo), source = "manual")
+        synchronized(ioLock) {
+            val current = readCachedMatchesLocked(workspace).map { it.toScheduledMatchItem("cache") }
+            val updated = current.filterNot {
+                it.compLevel.equals(item.compLevel, ignoreCase = true) && it.matchNumber == item.matchNumber
+            } + item.copy(source = "manual")
+            writeMatchesLocked(workspace, updated.map(ScheduledMatchItem::toMatchInfo), source = "manual")
+        }
     }
 
     suspend fun removeMatch(
@@ -96,10 +106,12 @@ class EventScheduleStore(
         compLevel: String,
         matchNumber: Int,
     ): List<MatchInfo> = withContext(Dispatchers.IO) {
-        val remaining = loadCachedMatches(workspace).filterNot {
-            it.compLevel.equals(compLevel, ignoreCase = true) && it.matchNumber == matchNumber
+        synchronized(ioLock) {
+            val remaining = readCachedMatchesLocked(workspace).filterNot {
+                it.compLevel.equals(compLevel, ignoreCase = true) && it.matchNumber == matchNumber
+            }
+            writeMatchesLocked(workspace, remaining, source = "manual")
         }
-        saveMatches(workspace, remaining, source = "manual")
     }
 
     suspend fun clearSchedule(workspace: WorkspaceConfig): List<MatchInfo> = withContext(Dispatchers.IO) {

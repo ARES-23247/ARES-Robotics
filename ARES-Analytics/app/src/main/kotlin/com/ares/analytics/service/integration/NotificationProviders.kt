@@ -187,6 +187,8 @@ class ZulipNotificationProvider(
         }
         if (response.status.value in 200..299) ProviderConnectionResult.Connected(botEmail)
         else responseToConnectionFailure(response.status)
+    } catch (cancelled: kotlinx.coroutines.CancellationException) {
+        throw cancelled
     } catch (failure: Exception) {
         ProviderConnectionResult.Failed(
             DeliveryErrorKind.TRANSIENT,

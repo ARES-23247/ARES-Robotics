@@ -81,6 +81,9 @@ fun DashboardWidgetGrid(
         val gridHeight = rowHeight * maxRow + spacing * (maxRow - 1).coerceAtLeast(0) + 24.dp
         val density = LocalDensity.current.density
         val currentWidgets by rememberUpdatedState(displayWidgets)
+        val currentColWidth by rememberUpdatedState(colWidth)
+        val currentRowHeight by rememberUpdatedState(rowHeight)
+        val currentDensity by rememberUpdatedState(density)
 
         Box(Modifier.fillMaxSize().verticalScroll(scrollState, enabled = fullscreenId == null)) {
             // Keep the original scroll range and composition. Only the selected card is placed
@@ -139,8 +142,8 @@ fun DashboardWidgetGrid(
                                                 onDragCancel = { active = false; offsetX = 0f; offsetY = 0f },
                                                 onDragEnd = {
                                                     active = false
-                                                    val colDelta = ((offsetX / density) / colWidth.value).roundToInt()
-                                                    val rowDelta = ((offsetY / density) / rowHeight.value).roundToInt()
+                                                    val colDelta = ((offsetX / currentDensity) / currentColWidth.value).roundToInt()
+                                                    val rowDelta = ((offsetY / currentDensity) / currentRowHeight.value).roundToInt()
                                                     offsetX = 0f; offsetY = 0f
                                                     val moved = currentWidgets.map {
                                                         if (it.id == widget.id) it.copy(
@@ -194,8 +197,8 @@ fun DashboardWidgetGrid(
                                                 onDragCancel = { active = false; resizeX = 0f; resizeY = 0f },
                                                 onDragEnd = {
                                                     active = false
-                                                    val spanX = ((resizeX / density) / colWidth.value).roundToInt()
-                                                    val spanY = ((resizeY / density) / rowHeight.value).roundToInt()
+                                                    val spanX = ((resizeX / currentDensity) / currentColWidth.value).roundToInt()
+                                                    val spanY = ((resizeY / currentDensity) / currentRowHeight.value).roundToInt()
                                                     resizeX = 0f; resizeY = 0f
                                                     val resized = currentWidgets.map {
                                                         if (it.id == widget.id) it.copy(

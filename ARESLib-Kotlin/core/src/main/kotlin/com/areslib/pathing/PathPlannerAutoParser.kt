@@ -1,6 +1,8 @@
 package com.areslib.pathing
 
 import com.areslib.math.coordinate.AllianceMirroring
+import com.areslib.math.coordinate.CoordinateTransformers
+import com.areslib.math.coordinate.FieldOrigin
 import com.areslib.math.coordinate.FieldSymmetry
 import com.areslib.math.geometry.Pose2d
 import com.areslib.math.geometry.Rotation2d
@@ -55,14 +57,30 @@ object PathPlannerAutoParser {
     }
 
     /** Builds a fresh task tree; factories are called once per named-command occurrence. */
+    @kotlin.jvm.JvmOverloads
     fun parseAuto(
         jsonString: String,
         follower: HolonomicPathFollower,
         timestampMs: Long,
-        alliance: Alliance = Alliance.BLUE
+        alliance: Alliance = Alliance.BLUE,
+        fieldOrigin: FieldOrigin = FieldOrigin.CENTER,
+        fieldLength: Double = if (fieldOrigin == FieldOrigin.CORNER) CoordinateTransformers.FRC_FIELD_LENGTH else CoordinateTransformers.FTC_FIELD_SIZE,
+        fieldWidth: Double = if (fieldOrigin == FieldOrigin.CORNER) CoordinateTransformers.FRC_FIELD_WIDTH else CoordinateTransformers.FTC_FIELD_SIZE,
+        symmetry: FieldSymmetry = FieldSymmetry.MIRRORED
     ): Task {
         val command = objectValue(root(jsonString).get("command"), "command")
-        return parseCommandNode(command, follower, timestampMs, alliance, CommandBudget(), 0)
+        return parseCommandNode(
+            command,
+            follower,
+            timestampMs,
+            alliance,
+            fieldOrigin,
+            fieldLength,
+            fieldWidth,
+            symmetry,
+            CommandBudget(),
+            0
+        )
     }
 
     private fun parseCommandNode(
@@ -70,6 +88,10 @@ object PathPlannerAutoParser {
         follower: HolonomicPathFollower,
         timestampMs: Long,
         alliance: Alliance,
+        fieldOrigin: FieldOrigin,
+        fieldLength: Double,
+        fieldWidth: Double,
+        symmetry: FieldSymmetry,
         budget: CommandBudget,
         depth: Int
     ): Task {
@@ -81,7 +103,20 @@ object PathPlannerAutoParser {
             require(type != "deadline" || commands.size() > 0) { "Deadline command requires a deadline child" }
             val tasks = ArrayList<Task>(commands.size())
             for (child in commands) {
-                tasks.add(parseCommandNode(objectValue(child, "child command"), follower, timestampMs, alliance, budget, depth + 1))
+                tasks.add(
+                    parseCommandNode(
+                        objectValue(child, "child command"),
+                        follower,
+                        timestampMs,
+                        alliance,
+                        fieldOrigin,
+                        fieldLength,
+                        fieldWidth,
+                        symmetry,
+                        budget,
+                        depth + 1
+                    )
+                )
             }
             return when (type) {
                 "sequential" -> SequentialTaskGroup(tasks)
@@ -93,7 +128,7 @@ object PathPlannerAutoParser {
         return when (type) {
             "path" -> {
                 val path = DynamicPathLoader.loadPath(string(data, "pathName"))
-                val mirrored = AllianceMirroring.mirror(path, alliance, FieldSymmetry.MIRRORED)
+                val mirrored = AllianceMirroring.mirror(path, alliance, symmetry, fieldLength, fieldWidth, fieldOrigin)
                 FollowPathTask(follower, mirrored, mirrorForAlliance = false)
             }
             "wait" -> {

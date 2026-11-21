@@ -82,8 +82,10 @@ class PidPoseFollower:
 class AutonomousRoutine:
     """Deterministic DRIVE_TO, WAIT, and ACTION sequence used by generated XRP code."""
 
-    def __init__(self, name="Autonomous", waypoints=None, steps=None, action_handler=None):
+    def __init__(self, name="Autonomous", waypoints=None, steps=None, action_handler=None,
+                 starting_pose=None):
         self.name = name
+        self.starting_pose = starting_pose
         self.waypoints = waypoints or []
         self.steps = list(steps) if steps is not None else [
             {"kind": "DRIVE_TO", "waypoint": waypoint}

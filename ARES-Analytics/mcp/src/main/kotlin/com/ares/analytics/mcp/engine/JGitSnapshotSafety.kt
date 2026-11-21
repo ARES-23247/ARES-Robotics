@@ -56,6 +56,7 @@ data class SnapshotRestoreResult(
 object JGitSnapshotSafety {
     const val SNAPSHOT_REF_PREFIX = "refs/ares-mcp/snapshots/"
 
+    private val snapshotSequence = java.util.concurrent.atomic.AtomicLong(0L)
     private val excludedDirs = setOf(".git", "build", ".gradle", ".idea", "out")
 
     fun createSnapshot(
@@ -78,7 +79,8 @@ object JGitSnapshotSafety {
             .trim('-')
             .ifEmpty { "snapshot" }
         val nowMillis = Instant.now().toEpochMilli()
-        val refName = "$SNAPSHOT_REF_PREFIX$nowMillis-$safeSlug"
+        val seq = snapshotSequence.incrementAndGet()
+        val refName = "$SNAPSHOT_REF_PREFIX$nowMillis-$seq-$safeSlug"
         return openOrCreateRepository(projectRoot, create = false).use { repo ->
             val commitId = writeTreeAndCommit(repo, projectRoot, nowMillis, "ares-mcp snapshot: $safeSlug")
             val update = repo.updateRef(refName)
@@ -132,7 +134,7 @@ object JGitSnapshotSafety {
         }
         val backup = createSnapshot(projectRoot, slug = "pre-restore", initGitIfMissing = false)
         return openOrCreateRepository(projectRoot, create = false).use { repo ->
-            val targetId = repo.resolve(normalizedRef)
+            val targetId = repo.exactRef(normalizedRef)?.objectId
                 ?: throw IllegalArgumentException("Snapshot ref '$normalizedRef' was not found.")
             val preRestoreFiles = backup.refName?.let { readSnapshotPaths(repo, it) }.orEmpty()
             val targetFiles = RevWalk(repo).use { revWalk ->
@@ -235,6 +237,7 @@ object JGitSnapshotSafety {
         fun walk(dir: File, prefix: String) {
             val children = dir.listFiles()?.sortedBy { it.name }.orEmpty()
             for (child in children) {
+                if (java.nio.file.Files.isSymbolicLink(child.toPath())) continue
                 if (child.isDirectory) {
                     if (child.name in excludedDirs) continue
                     val nextPrefix = if (prefix.isEmpty()) child.name else "$prefix/${child.name}"
@@ -251,21 +254,48 @@ object JGitSnapshotSafety {
     }
 
     private fun openOrCreateRepository(projectRoot: File, create: Boolean): Repository {
-        val gitDir = File(projectRoot, ".git")
-        val repo = FileRepositoryBuilder()
-            .setGitDir(gitDir)
-            .setWorkTree(projectRoot)
-            .build()
-        if (create && !gitDir.exists()) {
+        val gitEntry = File(projectRoot, ".git")
+        val builder = FileRepositoryBuilder().setWorkTree(projectRoot)
+        if (gitEntry.isFile) {
+            // Support Git worktrees where .git is a gitdir pointer file.
+            builder.findGitDir(projectRoot)
+        } else {
+            builder.setGitDir(gitEntry)
+        }
+        val repo = builder.build()
+        if (create && !gitEntry.exists()) {
             repo.create(false)
         }
         return repo
     }
 
-    internal fun safeResolveChild(root: File, relativePath: String): File {
-        val rootPath = root.toPath().toAbsolutePath().normalize()
-        val resolved = rootPath.resolve(relativePath).normalize()
-        require(resolved.startsWith(rootPath)) { "Path escapes project root: '$relativePath'" }
+    internal fun safeResolveChild(root: File, relativePath: String, requiredSubdir: String? = null): File {
+        require(relativePath.isNotBlank()) { "Relative path must not be blank" }
+        val realRoot = root.toPath().toRealPath()
+        val allowedBase = if (requiredSubdir.isNullOrBlank()) {
+            realRoot
+        } else {
+            val sub = realRoot.resolve(requiredSubdir).normalize()
+            require(sub.startsWith(realRoot)) { "Required subdir escapes project root: '$requiredSubdir'" }
+            sub
+        }
+        val resolved = realRoot.resolve(relativePath).normalize()
+        require(resolved != realRoot && resolved.startsWith(allowedBase)) {
+            "Path escapes allowed directory: '$relativePath'"
+        }
+        // Walk up to nearest existing ancestor and verify real path containment to block symlink escapes.
+        var ancestor: java.nio.file.Path? = resolved
+        while (ancestor != null && !java.nio.file.Files.exists(ancestor)) {
+            ancestor = ancestor.parent
+        }
+        require(ancestor != null && ancestor.toRealPath().startsWith(realRoot)) {
+            "Path escapes project root via symlink: '$relativePath'"
+        }
+        if (java.nio.file.Files.exists(resolved) && java.nio.file.Files.isSymbolicLink(resolved)) {
+            require(resolved.toRealPath().startsWith(realRoot)) {
+                "Symlink target escapes project root: '$relativePath'"
+            }
+        }
         return resolved.toFile()
     }
 

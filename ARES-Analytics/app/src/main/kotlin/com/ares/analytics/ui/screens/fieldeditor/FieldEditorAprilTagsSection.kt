@@ -40,6 +40,11 @@ import com.ares.analytics.viewmodel.FieldEditorState
 import com.ares.analytics.viewmodel.FieldEditorViewModel
 import java.io.File
 import javax.swing.SwingUtilities
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+
+private const val MAX_APRILTAG_MAP_BYTES = 10L * 1024L * 1024L
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -54,6 +59,8 @@ internal fun FieldEditorAprilTagsAndWaypointsSection(
     viewModel: FieldEditorViewModel,
 ) {
     var seasonMapMenuExpanded by remember { mutableStateOf(false) }
+    var importErrorMessage by remember { mutableStateOf<String?>(null) }
+    val scope = rememberCoroutineScope()
 
     // AprilTags Section
     HorizontalDivider(color = AresBorder)
@@ -127,19 +134,35 @@ internal fun FieldEditorAprilTagsAndWaypointsSection(
                 }
                 Button(
                     onClick = {
-                        DesktopFileChoosers.chooseOpenFile(
-                            dialogTitle = "Import an AprilTag map for review",
-                            filterDescription = "AprilTag maps (.fmap, WPILib .json, ARES field .json)",
-                            extensions = listOf("fmap", "json"),
-                        )?.let { selectedFile ->
-                            viewModel.onIntent(
-                                FieldEditorIntent.PreviewAprilTagMap(
-                                    content = selectedFile.readText(),
-                                    fileName = selectedFile.name,
-                                    projectPath = projectPath,
-                                    league = league,
+                        importErrorMessage = null
+                        scope.launch {
+                            val selectedFile = withContext(Dispatchers.IO) {
+                                DesktopFileChoosers.chooseOpenFile(
+                                    dialogTitle = "Import an AprilTag map for review",
+                                    filterDescription = "AprilTag maps (.fmap, WPILib .json, ARES field .json)",
+                                    extensions = listOf("fmap", "json"),
                                 )
-                            )
+                            } ?: return@launch
+                            runCatching {
+                                withContext(Dispatchers.IO) {
+                                    val size = selectedFile.length()
+                                    require(size <= MAX_APRILTAG_MAP_BYTES) {
+                                        "AprilTag map '${selectedFile.name}' exceeds the 10 MiB safety limit."
+                                    }
+                                    selectedFile.readText()
+                                }
+                            }.onSuccess { content ->
+                                viewModel.onIntent(
+                                    FieldEditorIntent.PreviewAprilTagMap(
+                                        content = content,
+                                        fileName = selectedFile.name,
+                                        projectPath = projectPath,
+                                        league = league,
+                                    )
+                                )
+                            }.onFailure { err ->
+                                importErrorMessage = err.message ?: "Failed to read '${selectedFile.name}'."
+                            }
                         }
                     },
                     contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
@@ -168,6 +191,9 @@ internal fun FieldEditorAprilTagsAndWaypointsSection(
                     modifier = Modifier.height(30.dp),
                     contentPadding = PaddingValues(horizontal = 6.dp, vertical = 2.dp),
                 ) { Text("Limelight export", fontSize = 11.sp) }
+            }
+            importErrorMessage?.let { err ->
+                Text(err, color = AresError, fontSize = 10.sp)
             }
             if (league == League.FTC && state.aprilTags.isEmpty()) {
                 Text(

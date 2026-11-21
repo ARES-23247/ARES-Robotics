@@ -91,8 +91,15 @@ fun ProfileScreen(
     var touchOptimizedMode by remember(config.touchOptimizedMode) { mutableStateOf(config.touchOptimizedMode) }
     var largeTextMode by remember(config.largeTextMode) { mutableStateOf(config.largeTextMode) }
     var developerMode by remember(config.developerMode) { mutableStateOf(config.developerMode) }
-    val hasCanonicalProjectIdentity = remember(projectPath) {
-        java.io.File(projectPath, ".ares/project.json").isFile
+    val hasCanonicalProjectIdentity by produceState(initialValue = false, projectPath) {
+        value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            java.io.File(projectPath, ".ares/project.json").isFile
+        }
+    }
+    val projectPathError by produceState<String?>(initialValue = null, projectPath, league) {
+        value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            ProjectLayout.validationError(projectPath, league)
+        }
     }
 
     // Optional credential overrides
@@ -151,9 +158,6 @@ fun ProfileScreen(
                     fontSize = 11.sp,
                 )
 
-                val projectPathError = remember(projectPath, league) {
-                    ProjectLayout.validationError(projectPath, league)
-                }
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -347,7 +351,7 @@ fun ProfileScreen(
                 onConfigChanged(newConfig)
             },
             colors = ButtonDefaults.buttonColors(containerColor = AresCyan, contentColor = AresOnAccent),
-            enabled = ProjectLayout.validationError(projectPath, league) == null,
+            enabled = projectPathError == null,
             modifier = Modifier.fillMaxWidth().height(if (touchOptimizedMode) 56.dp else 48.dp)
         ) {
             Text("Save Profile & Settings", color = AresBackground, fontWeight = FontWeight.Bold, fontSize = if (touchOptimizedMode) 18.sp else 16.sp)

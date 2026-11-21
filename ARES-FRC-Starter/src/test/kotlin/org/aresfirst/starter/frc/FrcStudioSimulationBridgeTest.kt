@@ -84,6 +84,33 @@ class FrcStudioSimulationBridgeTest {
     }
 
     @Test
+    fun `driver-perspective Red command preserves stick mapping so season boundary applies single alliance inversion`() {
+        val frame = InputFrame()
+        FrcStudioDriveCommand(
+            vxMetersPerSecond = 2.0,
+            vyMetersPerSecond = -1.0,
+            omegaRadiansPerSecond = Math.PI / 2.0,
+            isTeleopMode = true,
+            isFieldCentric = true,
+            isRedAlliance = true,
+            buttonA = false,
+            buttonB = false,
+            buttonX = false,
+            receivedAtMs = 0L,
+        ).copyIntoControllerFrame(
+            frame = frame,
+            nowNanos = 50L,
+            maximumTranslationMps = 4.0,
+            maximumAngularRps = Math.PI,
+        )
+
+        assertTrue(frame.isConnected)
+        assertEquals(-0.5, frame.axis(1), 1e-12)
+        assertEquals(0.25, frame.axis(0), 1e-12)
+        assertEquals(-0.5, frame.axis(4), 1e-12)
+    }
+
+    @Test
     fun `field gate accepts exact retry but rejects stale and conflicting revisions`() {
         val gate = FrcStudioFieldGate()
         val revisionFive = RobotFieldConfig(

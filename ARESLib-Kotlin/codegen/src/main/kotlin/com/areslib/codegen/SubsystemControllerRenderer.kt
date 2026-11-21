@@ -96,6 +96,7 @@ internal object SubsystemControllerRenderer {
             if (document.safety.faultRecovery.enabled) {
                 append("    private var jamEvidenceSinceMs = Long.MIN_VALUE\n")
                 append("    private var automaticRecoveryStartedAtMs = Long.MIN_VALUE\n")
+                append("    private var recoveryHealthySinceMs = Long.MIN_VALUE\n")
                 append("    private var automaticRecoveryRetries = 0\n")
             }
         }.trimEnd()
@@ -407,10 +408,9 @@ $continuousInputHelper
                 }
                 """$targetPreparation
         if (!${loop.loopId}Target.isFinite() || !${loop.loopId}Measurement.isFinite()) {
-            ${loop.loopId}Integral = 0.0
-            ${loop.loopId}Derivative = 0.0
-            ${loop.loopId}HasPreviousError = false
-            $command(0.0)
+            reset()
+            io.safe()
+            return
         } else {
             val ${loop.loopId}Error = $errorExpression
             val ${loop.loopId}IntegralGain = ${document.controllerTuningExpression(loop, "ki", loop.kI)}
@@ -503,14 +503,26 @@ $feedforward
             io.safe()
             automaticRecoveryStartedAtMs = Long.MIN_VALUE
             jamEvidenceSinceMs = Long.MIN_VALUE
+            recoveryHealthySinceMs = Long.MIN_VALUE
             return true
         }
 
         val recoveryCurrentAmps = $evidence
         if (!recoveryCurrentAmps.isFinite() || recoveryCurrentAmps < ${recovery.currentThresholdAmps.kotlinDouble()}) {
-            resetAutomaticRecovery()
+            jamEvidenceSinceMs = Long.MIN_VALUE
+            if (automaticRecoveryRetries > 0) {
+                if (!recoveryCurrentAmps.isFinite() || now < recoveryHealthySinceMs) {
+                    recoveryHealthySinceMs = Long.MIN_VALUE
+                } else if (recoveryHealthySinceMs == Long.MIN_VALUE) {
+                    recoveryHealthySinceMs = now
+                } else if (now - recoveryHealthySinceMs >= ${recovery.currentDurationMs}L) {
+                    automaticRecoveryRetries = 0
+                    recoveryHealthySinceMs = Long.MIN_VALUE
+                }
+            }
             return false
         }
+        recoveryHealthySinceMs = Long.MIN_VALUE
         if (jamEvidenceSinceMs == Long.MIN_VALUE || now < jamEvidenceSinceMs) {
             jamEvidenceSinceMs = now
             return false
@@ -522,6 +534,7 @@ $action
     private fun resetAutomaticRecovery() {
         jamEvidenceSinceMs = Long.MIN_VALUE
         automaticRecoveryStartedAtMs = Long.MIN_VALUE
+        recoveryHealthySinceMs = Long.MIN_VALUE
         automaticRecoveryRetries = 0
     }
         """.trimEnd().prependIndent("            ")

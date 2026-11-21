@@ -115,20 +115,20 @@ dependencies {
     implementation("org.duckdb:duckdb_jdbc:1.5.5.1")
 
     // Networking — Ktor client
-    implementation("io.ktor:ktor-client-cio:3.5.2")
-    implementation("io.ktor:ktor-client-java:3.5.2")
-    implementation("io.ktor:ktor-client-okhttp:3.5.2")
-    implementation("io.ktor:ktor-client-websockets:3.5.2")
-    implementation("io.ktor:ktor-client-content-negotiation:3.5.2")
-    implementation("io.ktor:ktor-serialization-kotlinx-json:3.5.2")
+    implementation("io.ktor:ktor-client-cio:3.6.1")
+    implementation("io.ktor:ktor-client-java:3.6.1")
+    implementation("io.ktor:ktor-client-okhttp:3.6.1")
+    implementation("io.ktor:ktor-client-websockets:3.6.1")
+    implementation("io.ktor:ktor-client-content-negotiation:3.6.1")
+    implementation("io.ktor:ktor-serialization-kotlinx-json:3.6.1")
 
     // Embedded OAuth loopback server
-    implementation("io.ktor:ktor-server-core:3.5.2")
-    implementation("io.ktor:ktor-server-cio:3.5.2")
+    implementation("io.ktor:ktor-server-core:3.6.1")
+    implementation("io.ktor:ktor-server-cio:3.6.1")
 
     // Serialization
     implementation("com.google.code.gson:gson:2.14.0")
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.11.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.13.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.11.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-swing:1.11.0")
 
@@ -151,8 +151,8 @@ dependencies {
     testImplementation(compose.uiTest)
     testImplementation("org.jetbrains.kotlin:kotlin-compiler-embeddable:2.4.21")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.11.0")
-    testImplementation("io.ktor:ktor-client-mock-jvm:3.5.2")
-    testImplementation("io.ktor:ktor-server-websockets:3.5.2")
+    testImplementation("io.ktor:ktor-client-mock-jvm:3.6.1")
+    testImplementation("io.ktor:ktor-server-websockets:3.6.1")
     testImplementation("org.mockito:mockito-core:5.23.0")
     
     // Compression
@@ -249,6 +249,7 @@ tasks.register("generateBuildConfig") {
         val escapedGitHubClientId = githubClientId
             .replace("\\", "\\\\")
             .replace("\"", "\\\"")
+            .replace("$", "\\$")
         val escapedGitHubAppSlug = githubSlug
             .replace("\\", "\\\\")
             .replace("\"", "\\\"")

@@ -11,13 +11,16 @@ internal fun isLoopbackDriveControlHost(host: String): Boolean = when (
 private val SIMULATOR_ONLY_DRIVER_STATION_TOPICS = setOf(
     "ARES/DriverStation/SelectedOpMode",
     "ARES/DriverStation/Command",
+    "ARES/DriverStation/MatchTime",
     "ARES/DriverStation/MatchState",
     "ARES/Input/selectedAuto",
+    "ARES/Input/fieldConfig",
+    "ARES/Input/obstacles",
 )
 
-/** Prevents dashboard OpMode orchestration from reaching a physical robot target. */
+/** Prevents dashboard OpMode/simulator orchestration from reaching a physical robot target. */
 internal fun isDashboardDriverStationCommandAllowed(host: String, key: String): Boolean =
-    key.removePrefix("/") !in SIMULATOR_ONLY_DRIVER_STATION_TOPICS || isLoopbackDriveControlHost(host)
+    key.trimStart('/') !in SIMULATOR_ONLY_DRIVER_STATION_TOPICS || isLoopbackDriveControlHost(host)
 
 data class Nt4ConnectionMetrics(
     val attempts: Long,

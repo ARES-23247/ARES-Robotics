@@ -73,23 +73,36 @@ fun DrawScope.drawFieldGrid(
     league: League,
     showCostmap: Boolean = false
 ) {
-    val stepX = if (league == League.FTC) fieldWidthM / 6.0 else 1.0
-    val stepY = if (league == League.FTC) fieldHeightM / 6.0 else 1.0
+    val stepX = when (league) {
+        League.FTC -> fieldHeightM / 6.0
+        League.XRP -> 0.5
+        League.FRC -> 1.0
+    }
+    val stepY = when (league) {
+        League.FTC -> fieldWidthM / 6.0
+        League.XRP -> 0.5
+        League.FRC -> 1.0
+    }
+    val bounds = fieldCoordinateBounds(fieldWidthM, fieldHeightM, league)
+    val minX = bounds[0]
+    val maxX = bounds[1]
+    val minY = bounds[2]
+    val maxY = bounds[3]
     val gridPath = Path()
-    var curX = if (league == League.FTC) -fieldWidthM/2 else 0.0
-    while (curX <= fieldWidthM/2 + 0.001) {
-        val wp = Waypoint(curX, 0.0)
-        val offset = getCanvasOffsetBase(wp, w, h, fieldWidthM, fieldHeightM, league)
-        gridPath.moveTo(offset.x, 0f)
-        gridPath.lineTo(offset.x, h)
+    var curX = minX
+    while (curX <= maxX + 0.001) {
+        val start = getCanvasOffsetBase(Waypoint(curX, minY), w, h, fieldWidthM, fieldHeightM, league)
+        val end = getCanvasOffsetBase(Waypoint(curX, maxY), w, h, fieldWidthM, fieldHeightM, league)
+        gridPath.moveTo(start.x, start.y)
+        gridPath.lineTo(end.x, end.y)
         curX += stepX
     }
-    var curY = if (league == League.FTC) -fieldHeightM/2 else 0.0
-    while (curY <= fieldHeightM/2 + 0.001) {
-        val wp = Waypoint(0.0, curY)
-        val offset = getCanvasOffsetBase(wp, w, h, fieldWidthM, fieldHeightM, league)
-        gridPath.moveTo(0f, offset.y)
-        gridPath.lineTo(w, offset.y)
+    var curY = minY
+    while (curY <= maxY + 0.001) {
+        val start = getCanvasOffsetBase(Waypoint(minX, curY), w, h, fieldWidthM, fieldHeightM, league)
+        val end = getCanvasOffsetBase(Waypoint(maxX, curY), w, h, fieldWidthM, fieldHeightM, league)
+        gridPath.moveTo(start.x, start.y)
+        gridPath.lineTo(end.x, end.y)
         curY += stepY
     }
     drawPath(path = gridPath, color = AresBorder, style = Stroke(width = 1f))
@@ -144,8 +157,6 @@ fun DrawScope.drawFtcAllianceStations(
     }
 }
 
-private val reusablePolygonPath = Path()
-
 fun DrawScope.drawCustomObstacles(
     activeObstacles: List<Obstacle>,
     w: Float,
@@ -155,7 +166,8 @@ fun DrawScope.drawCustomObstacles(
     league: League,
     showCostmap: Boolean = false
 ) {
-    val robotRadius = if (league == League.FTC) 0.25 else 0.45
+    val reusablePolygonPath = Path()
+    val robotRadius = if (league == League.FTC) 0.25 else if (league == League.XRP) 0.12 else 0.45
     val robotRadiusPx = (robotRadius / fieldWidthM) * w
 
     activeObstacles.forEach { obs ->
@@ -301,7 +313,10 @@ fun DrawScope.drawGamePieces(
                 val rw = (pieceWidth / fieldWidthM * w).toFloat()
                 val rh = (pieceHeight / fieldHeightM * h).toFloat()
                 drawContext.canvas.save()
-                drawContext.transform.rotate(Math.toDegrees(gp.rotationRadians).toFloat(), gpOffset)
+                drawContext.transform.rotate(
+                    fieldHeadingToCanvasAngleDeg(Math.toDegrees(gp.rotationRadians), league).toFloat(),
+                    gpOffset,
+                )
                 drawRect(
                     color = pieceColor.copy(alpha = 0.6f),
                     topLeft = Offset(gpOffset.x - rw / 2f, gpOffset.y - rh / 2f),
@@ -392,7 +407,10 @@ fun DrawScope.drawAprilTags(
         val rh = (0.15 / fieldHeightM) * h
 
         drawContext.canvas.save()
-        drawContext.transform.rotate(degrees = -at.yawDegrees.toFloat(), pivot = atOffset)
+        drawContext.transform.rotate(
+            degrees = fieldHeadingToCanvasAngleDeg(at.yawDegrees, league).toFloat(),
+            pivot = atOffset,
+        )
         val rectOffset = Offset((atOffset.x - rw/2).toFloat(), (atOffset.y - rh/2).toFloat())
         drawRect(color = Color.White, topLeft = rectOffset, size = Size(rw.toFloat(), rh.toFloat()))
         val innerOffset = Offset((atOffset.x - rw/2 + 2).toFloat(), (atOffset.y - rh/2 + 2).toFloat())
@@ -526,7 +544,7 @@ fun DrawScope.drawFieldWaypoints(
         )
 
         // Draw heading line and arrow pointer
-        val angleRad = Math.toRadians(-wp.headingDegrees - 90.0)
+        val angleRad = Math.toRadians(fieldHeadingToCanvasAngleDeg(wp.headingDegrees, league))
         val cosA = kotlin.math.cos(angleRad).toFloat()
         val sinA = kotlin.math.sin(angleRad).toFloat()
         val pointerLen = 22.dp.toPx()

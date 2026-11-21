@@ -177,8 +177,15 @@ object EmpiricalStepSysIdAnalyzer {
                 ssRes += (yNorm[i] - pred) * (yNorm[i] - pred)
             }
             val r2 = if (ssTot > 1e-12) (1.0 - ssRes / ssTot).coerceIn(-1.0, 1.0) else 0.0
-            val tau = if (kV > 1e-4 && kA > 1e-5) (kA / kV).coerceIn(0.03, 1.5) else 0.15
-            val suggestedKp = (1.2 / tau).coerceIn(0.2, 24.0)
+            val effectiveKv = abs(kV)
+            val tau = if (effectiveKv > 1e-6 && kA > 1e-7) (kA / effectiveKv).coerceIn(0.03, 1.5) else 0.15
+            // Scale suggestedKp dimensionally by kV (V / velocity_unit) so velocity-unit changes
+            // (e.g., rad/s vs RPM) scale kV and kP consistently rather than producing unitless 1/tau.
+            val suggestedKp = if (effectiveKv > 1e-6) {
+                (effectiveKv * (0.25 / tau).coerceIn(0.25, 3.0)).coerceIn(1e-5, 24.0)
+            } else {
+                (1.2 / tau).coerceIn(0.2, 24.0)
+            }
             val suggestedKd = (0.18 * kA * suggestedKp).coerceIn(0.0, 6.0)
 
             EmpiricalFeedforwardFit(
@@ -351,21 +358,35 @@ object EmpiricalStepSysIdAnalyzer {
 
     private fun filterZeroCrossingTransients(samples: List<EmpiricalSysIdSample>): List<EmpiricalSysIdSample> {
         val signChanges = ArrayList<Long>()
-        for (i in 1 until samples.size) {
-            val prev = sign(samples[i - 1].velocity)
+        var lastNonZeroSign = 0.0
+        for (i in samples.indices) {
             val curr = sign(samples[i].velocity)
-            if (prev != 0.0 && curr != 0.0 && prev != curr) {
+            if (curr == 0.0) continue
+            if (lastNonZeroSign != 0.0 && curr != lastNonZeroSign) {
                 signChanges += samples[i].timestampMs
             }
+            lastNonZeroSign = curr
         }
-        return samples.filter { row ->
-            row.voltage.isFinite() &&
-                row.velocity.isFinite() &&
-                row.acceleration.isFinite() &&
-                row.position.isFinite() &&
-                abs(row.velocity) >= MIN_MOTION_VELOCITY &&
-                signChanges.none { changeTs -> abs(row.timestampMs - changeTs) <= 50L }
+        val filtered = ArrayList<EmpiricalSysIdSample>(samples.size)
+        var changeIdx = 0
+        for (row in samples) {
+            if (!row.voltage.isFinite() ||
+                !row.velocity.isFinite() ||
+                !row.acceleration.isFinite() ||
+                !row.position.isFinite() ||
+                abs(row.velocity) < MIN_MOTION_VELOCITY
+            ) {
+                continue
+            }
+            while (changeIdx < signChanges.size && signChanges[changeIdx] < row.timestampMs - 50L) {
+                changeIdx++
+            }
+            if (changeIdx < signChanges.size && abs(row.timestampMs - signChanges[changeIdx]) <= 50L) {
+                continue
+            }
+            filtered += row
         }
+        return filtered
     }
 
     private fun crossingTimestamp(

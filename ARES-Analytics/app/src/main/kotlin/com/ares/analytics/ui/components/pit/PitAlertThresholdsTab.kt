@@ -110,14 +110,14 @@ fun PitAlertThresholdsTab(
         var parseProblem: String? = null
         for ((idx, row) in rows.withIndex()) {
             val minVal = row.minText.trim().takeIf(String::isNotEmpty)?.let { raw ->
-                raw.toDoubleOrNull() ?: run {
+                raw.toDoubleOrNull()?.takeIf(Double::isFinite) ?: run {
                     parseProblem = "Row ${idx + 1}: Min bound '$raw' is not a finite number."
                     return@let null
                 }
             }
             if (parseProblem != null) break
             val maxVal = row.maxText.trim().takeIf(String::isNotEmpty)?.let { raw ->
-                raw.toDoubleOrNull() ?: run {
+                raw.toDoubleOrNull()?.takeIf(Double::isFinite) ?: run {
                     parseProblem = "Row ${idx + 1}: Max bound '$raw' is not a finite number."
                     return@let null
                 }

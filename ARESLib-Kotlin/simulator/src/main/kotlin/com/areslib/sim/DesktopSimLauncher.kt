@@ -287,6 +287,10 @@ object DesktopSimLauncher {
             synchronizeDriverStationState()
             syncRobotPoseToPhysics(initialMode)
             initialMode.start()
+            if (initialMode.modeKind == com.areslib.sim.opmode.SimOpModeKind.TELEOP) {
+                synchronizeDriverStationState()
+                syncRobotPoseToPhysics(initialMode)
+            }
         }
 
         println("Simulation Running at 50Hz. Press Ctrl+C to stop.")
@@ -364,6 +368,10 @@ object DesktopSimLauncher {
                             if (!mode.isStarted) mode.tick()
                             syncRobotPoseToPhysics(mode)
                             mode.start()
+                            if (mode.modeKind == com.areslib.sim.opmode.SimOpModeKind.TELEOP) {
+                                synchronizeDriverStationState()
+                                syncRobotPoseToPhysics(mode)
+                            }
                             println("[Simulator] OpMode STARTED.")
                         }
                     }
@@ -393,11 +401,11 @@ object DesktopSimLauncher {
             val currentPhysY = physicsWorld.robotBody.transform.translationY
             val currentPhysHeading = physicsWorld.robotBody.transform.rotationAngle
 
-            // Drive Dyn4j physics body from simulated motor powers
-            val flP = robotDouble.fl.power
-            val frP = robotDouble.fr.power
-            val rlP = robotDouble.rl.power
-            val rrP = robotDouble.rr.power
+            // Drive Dyn4j physics body from simulated motor powers without tripping fault-checked getters.
+            val flP = robotDouble.fl.rawPower
+            val frP = robotDouble.fr.rawPower
+            val rlP = robotDouble.rl.rawPower
+            val rrP = robotDouble.rr.rawPower
             val isNoInput = kotlin.math.abs(flP) < 1e-3 && kotlin.math.abs(frP) < 1e-3 && 
                             kotlin.math.abs(rlP) < 1e-3 && kotlin.math.abs(rrP) < 1e-3
 
@@ -534,14 +542,14 @@ object DesktopSimLauncher {
             // Always publish the canonical FTC motor names on every 50 Hz physics tick. `rl`/`rr`
             // are the hardware-map contract; duplicate `bl`/`br` aliases would add hot-path work
             // and cannot provide an atomic cross-topic snapshot to independent readers.
-            val flPower = robotDouble.fl.power
-            val frPower = robotDouble.fr.power
-            val rlPower = robotDouble.rl.power
-            val rrPower = robotDouble.rr.power
-            val flVelocity = robotDouble.fl.velocity
-            val frVelocity = robotDouble.fr.velocity
-            val rlVelocity = robotDouble.rl.velocity
-            val rrVelocity = robotDouble.rr.velocity
+            val flPower = robotDouble.fl.rawPower
+            val frPower = robotDouble.fr.rawPower
+            val rlPower = robotDouble.rl.rawPower
+            val rrPower = robotDouble.rr.rawPower
+            val flVelocity = if (robotDouble.fl.inputValid) robotDouble.fl.velocity else Double.NaN
+            val frVelocity = if (robotDouble.fr.inputValid) robotDouble.fr.velocity else Double.NaN
+            val rlVelocity = if (robotDouble.rl.inputValid) robotDouble.rl.velocity else Double.NaN
+            val rrVelocity = if (robotDouble.rr.inputValid) robotDouble.rr.velocity else Double.NaN
             NT4Server.publishTopic("Hardware/Motors/fl/Power", flPower)
             NT4Server.publishTopic("Hardware/Motors/fr/Power", frPower)
             NT4Server.publishTopic("Hardware/Motors/rl/Power", rlPower)

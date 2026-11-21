@@ -147,7 +147,14 @@ fun DrawScope.drawPlannedSpline(
     league: League
 ) {
     val cachedSplinePath = pathCache.splinePath
-    val splinePath = if (cachedSplinePath != null && pathCache.splinePoints === splinePoints && pathCache.w == w && pathCache.h == h) {
+    val splinePath = if (cachedSplinePath != null &&
+        pathCache.splinePoints === splinePoints &&
+        pathCache.w == w &&
+        pathCache.h == h &&
+        pathCache.splineFieldW == fieldWidthM &&
+        pathCache.splineFieldH == fieldHeightM &&
+        pathCache.splineLeague == league
+    ) {
         cachedSplinePath
     } else {
         val path = pathCache.splinePath?.apply { reset() } ?: Path()
@@ -162,6 +169,9 @@ fun DrawScope.drawPlannedSpline(
         pathCache.splinePoints = splinePoints
         pathCache.w = w
         pathCache.h = h
+        pathCache.splineFieldW = fieldWidthM
+        pathCache.splineFieldH = fieldHeightM
+        pathCache.splineLeague = league
         pathCache.splinePath = path
         path
     }
@@ -194,7 +204,11 @@ fun DrawScope.drawActualPathAndDeviations(
         )
     val actualPathObj = if (cachedActualPath != null &&
         cachedPointsRemainAnExactPrefix &&
-        pathCache.w == w && pathCache.h == h) {
+        pathCache.actualW == w &&
+        pathCache.actualH == h &&
+        pathCache.actualFieldW == fieldWidthM &&
+        pathCache.actualFieldH == fieldHeightM &&
+        pathCache.actualLeague == league) {
         val path = cachedActualPath
         if (pathCache.actualLastDrawnIndex < actualPath.size - 1 && pathCache.actualLastDrawnIndex >= 0) {
             for (i in (pathCache.actualLastDrawnIndex + 1) until actualPath.size) {
@@ -224,8 +238,11 @@ fun DrawScope.drawActualPathAndDeviations(
         }
         pathCache.actualPoints = actualPath
         pathCache.actualLastDrawnIndex = actualPath.size - 1
-        pathCache.w = w
-        pathCache.h = h
+        pathCache.actualW = w
+        pathCache.actualH = h
+        pathCache.actualFieldW = fieldWidthM
+        pathCache.actualFieldH = fieldHeightM
+        pathCache.actualLeague = league
         pathCache.actualPath = path
         path
     }

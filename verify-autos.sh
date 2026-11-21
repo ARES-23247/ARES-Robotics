@@ -76,9 +76,9 @@ else
     --console=plain
   run_gradle ARES-FRC verifyAresProject "${consumer_args[@]}" --console=plain
   run_gradle ARES-FRC test "${consumer_args[@]}" \
-    --tests com.areslib.frc.robot.FrcNativeAutoContractTest \
-    --tests com.areslib.frc.robot.FRCAutoAllianceMirroringContractTest \
-    --tests com.areslib.frc.generatedruntime.FrcGeneratedRoutineRuntimeTest \
+    --tests org.aresfirst.marvin.robot.FrcNativeAutoContractTest \
+    --tests org.aresfirst.marvin.robot.FRCAutoAllianceMirroringContractTest \
+    --tests org.aresfirst.marvin.generatedruntime.FrcGeneratedRoutineRuntimeTest \
     --console=plain
 fi
 

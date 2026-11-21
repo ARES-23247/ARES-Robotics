@@ -123,9 +123,11 @@ object BatteryFleetAnalyzer {
             val latestMinV = hardwareRuns.lastOrNull { it.minVoltage != null }?.minVoltage
             val lastUsedMs = hardwareRuns.maxOfOrNull { it.createdAtMs } ?: latestCheckin?.recordedAtMs
 
+            val effectiveMohm = listOfNotNull(medianTelemetryMohm, latestBeakMohm).maxOrNull()
+
             val grade = classifyGrade(
                 thresholds = thresholds,
-                effectiveMohm = medianTelemetryMohm ?: latestBeakMohm,
+                effectiveMohm = effectiveMohm,
                 worstMinVoltage = worstMinV,
                 resistanceSlope = resistanceSlope,
                 latestRestingVoltage = latestRestingV,
@@ -135,7 +137,7 @@ object BatteryFleetAnalyzer {
                 status = spec.status,
                 grade = grade,
                 thresholds = thresholds,
-                effectiveMohm = medianTelemetryMohm ?: latestBeakMohm,
+                effectiveMohm = effectiveMohm,
                 worstMinVoltage = worstMinV,
                 latestRestingVoltage = latestRestingV,
                 resistanceSlope = resistanceSlope,
@@ -168,15 +170,28 @@ object BatteryFleetAnalyzer {
     }
 
     /** Picks the strongest available Ready pack for an upcoming competition match. */
-    fun recommendNextMatchBattery(summaries: List<BatteryHealthSummary>): BatteryHealthSummary? {
+    fun recommendNextMatchBattery(
+        summaries: List<BatteryHealthSummary>,
+        league: League? = null,
+    ): BatteryHealthSummary? {
         val candidates = summaries.filter {
             it.status == BatteryPoolStatus.READY && it.grade != BatteryHealthGrade.RETIRE_OR_INSPECT
         }
         if (candidates.isEmpty()) return null
+        fun isUndercharged(summary: BatteryHealthSummary): Boolean {
+            val resting = summary.latestRestingVoltage ?: return false
+            val floor = when {
+                league != null -> thresholdsFor(league).chargedRestingFloorVoltage
+                summary.nominalVoltage <= 7.5 -> thresholdsFor(League.XRP).chargedRestingFloorVoltage
+                else -> thresholdsFor(League.FTC).chargedRestingFloorVoltage
+            }
+            return resting < floor
+        }
         return candidates.sortedWith(
             compareBy<BatteryHealthSummary>(
+                { isUndercharged(it) },
                 { gradePriority(it.grade) },
-                { it.medianTelemetryMilliohms ?: it.latestBeakMilliohms ?: Double.MAX_VALUE },
+                { listOfNotNull(it.medianTelemetryMilliohms, it.latestBeakMilliohms).maxOrNull() ?: Double.MAX_VALUE },
                 { -(it.latestRestingVoltage ?: -1.0) },
                 { it.lastUsedAtMs ?: 0L },
             )

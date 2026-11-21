@@ -2,11 +2,13 @@ package com.ares.analytics.service
 
 import io.ktor.client.*
 import io.ktor.client.call.*
+import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import com.ares.analytics.domain.strategy.EventMatchResult
@@ -54,13 +56,19 @@ class EventApiService(
         install(ContentNegotiation) {
             json(AppJson)
         }
+        install(HttpTimeout) {
+            connectTimeoutMillis = 10_000L
+            requestTimeoutMillis = 20_000L
+            socketTimeoutMillis = 15_000L
+        }
     }
 ) {
     // Queries TBA (The Blue Alliance) API for FRC match schedules
     suspend fun fetchFrcEventSchedule(eventKey: String, apiKey: String): List<MatchInfo> = withContext(Dispatchers.IO) {
+        val cleanKey = sanitizeEventKey(eventKey) ?: return@withContext emptyList()
         if (apiKey.isEmpty()) return@withContext emptyList()
         try {
-            httpClient.prepareGet("https://www.thebluealliance.com/api/v3/event/$eventKey/matches/simple") {
+            httpClient.prepareGet("https://www.thebluealliance.com/api/v3/event/$cleanKey/matches/simple") {
                 header("X-TBA-Auth-Key", apiKey)
             }.execute { response ->
                 if (response.status == HttpStatusCode.OK) {
@@ -68,7 +76,8 @@ class EventApiService(
                     matchesJson.mapNotNull { element ->
                         try {
                             val obj = element.jsonObject
-                            val compLevel = obj["comp_level"]?.jsonPrimitive?.content ?: "qm"
+                            val rawLevel = obj["comp_level"]?.jsonPrimitive?.content ?: "qm"
+                            val setNumber = obj["set_number"]?.jsonPrimitive?.intOrNull ?: 1
                             val matchNumber = obj["match_number"]?.jsonPrimitive?.int ?: 0
                             val alliances = obj["alliances"]?.jsonObject
                             val redAllianceObj = alliances?.get("red")?.jsonObject
@@ -79,7 +88,7 @@ class EventApiService(
 
                             MatchInfo(
                                 matchNumber = matchNumber,
-                                compLevel = if (compLevel == "qm") "quals" else "elims",
+                                compLevel = if (rawLevel == "qm") "quals" else "${rawLevel.lowercase()}$setNumber",
                                 redAlliance = redTeams,
                                 blueAlliance = blueTeams,
                                 scheduledTime = time
@@ -87,11 +96,13 @@ class EventApiService(
                         } catch (e: Exception) {
                             null
                         }
-                    }.sortedBy { it.matchNumber }
+                    }.sortedWith(compareBy<MatchInfo> { it.compLevel != "quals" }.thenBy { it.compLevel }.thenBy { it.matchNumber })
                 } else {
                     emptyList()
                 }
             }
+        } catch (cancelled: CancellationException) {
+            throw cancelled
         } catch (e: Exception) {
             e.printStackTrace()
             emptyList()
@@ -104,14 +115,14 @@ class EventApiService(
         apiKey: String,
         seasonYear: Int? = null,
     ): List<MatchInfo> = withContext(Dispatchers.IO) {
+        val cleanKey = sanitizeEventKey(eventKey) ?: return@withContext emptyList()
         if (apiKey.isEmpty()) return@withContext emptyList()
         if (apiKey.contains(":")) {
             val year = seasonYear ?: java.time.Year.now(java.time.ZoneOffset.UTC).value
-            val official = fetchFtcOfficialSchedule(year, eventKey, apiKey)
-            if (official.isNotEmpty()) return@withContext official
+            return@withContext fetchFtcOfficialSchedule(year, cleanKey, apiKey)
         }
         try {
-            httpClient.prepareGet("https://theorangealliance.org/api/event/$eventKey/matches") {
+            httpClient.prepareGet("https://theorangealliance.org/api/event/$cleanKey/matches") {
                 header("X-TOA-ApiKey", apiKey)
                 header("X-Application-Name", "ARES-Analytics")
             }.execute { response ->
@@ -162,6 +173,8 @@ class EventApiService(
                     emptyList()
                 }
             }
+        } catch (cancelled: CancellationException) {
+            throw cancelled
         } catch (e: Exception) {
             e.printStackTrace()
             emptyList()
@@ -177,9 +190,9 @@ class EventApiService(
         eventCode: String,
         rawAuth: String,
     ): List<MatchInfo> = withContext(Dispatchers.IO) {
-        val cleanCode = eventCode.trim()
+        val cleanCode = sanitizeEventKey(eventCode) ?: return@withContext emptyList()
         val cleanAuth = rawAuth.trim()
-        if (cleanCode.isEmpty() || cleanAuth.isEmpty()) return@withContext emptyList()
+        if (cleanAuth.isEmpty()) return@withContext emptyList()
         val basicToken = if (cleanAuth.contains(":")) {
             java.util.Base64.getEncoder().encodeToString(cleanAuth.toByteArray(Charsets.UTF_8))
         } else {
@@ -187,7 +200,7 @@ class EventApiService(
         }
         val combined = mutableListOf<MatchInfo>()
         for (level in listOf("qual" to "quals", "playoff" to "elims")) {
-            runCatching {
+            try {
                 httpClient.prepareGet("https://ftc-api.firstinspires.org/v2.0/$seasonYear/schedule/$cleanCode?tournamentLevel=${level.first}") {
                     header("Authorization", "Basic $basicToken")
                     header("Accept", "application/json")
@@ -206,6 +219,9 @@ class EventApiService(
                         )
                     }
                 }
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (_: Exception) {
             }
         }
         combined.distinctBy { "${it.compLevel}:${it.matchNumber}" }
@@ -217,15 +233,15 @@ class EventApiService(
      */
     suspend fun fetchFrcEventMatchResults(eventKey: String, apiKey: String): List<EventMatchResult> =
         withContext(Dispatchers.IO) {
-            val cleanKey = eventKey.trim()
+            val cleanKey = sanitizeEventKey(eventKey) ?: return@withContext emptyList()
             val cleanAuth = apiKey.trim()
-            if (cleanKey.isEmpty() || cleanAuth.isEmpty()) return@withContext emptyList()
+            if (cleanAuth.isEmpty()) return@withContext emptyList()
             val urls = listOf(
                 "https://www.thebluealliance.com/api/v3/event/$cleanKey/matches",
                 "https://www.thebluealliance.com/api/v3/event/$cleanKey/matches/simple",
             )
             for (url in urls) {
-                val parsed = runCatching {
+                val parsed = try {
                     httpClient.prepareGet(url) {
                         header("X-TBA-Auth-Key", cleanAuth)
                         header("Accept", "application/json")
@@ -233,7 +249,11 @@ class EventApiService(
                         if (response.status != HttpStatusCode.OK) emptyList()
                         else EventScoutingCodecAndExporters.parseExternalMatchResultsJson(response.bodyAsText(), League.FRC)
                     }
-                }.getOrDefault(emptyList())
+                } catch (cancelled: CancellationException) {
+                    throw cancelled
+                } catch (_: Exception) {
+                    emptyList()
+                }
                 if (parsed.isNotEmpty()) return@withContext parsed
             }
             emptyList()
@@ -248,15 +268,14 @@ class EventApiService(
         apiKey: String,
         seasonYear: Int? = null,
     ): List<EventMatchResult> = withContext(Dispatchers.IO) {
-        val cleanKey = eventKey.trim()
+        val cleanKey = sanitizeEventKey(eventKey) ?: return@withContext emptyList()
         val cleanAuth = apiKey.trim()
-        if (cleanKey.isEmpty() || cleanAuth.isEmpty()) return@withContext emptyList()
+        if (cleanAuth.isEmpty()) return@withContext emptyList()
         if (cleanAuth.contains(":")) {
             val year = seasonYear ?: java.time.Year.now(java.time.ZoneOffset.UTC).value
-            val official = fetchFtcOfficialMatchResults(year, cleanKey, cleanAuth)
-            if (official.isNotEmpty()) return@withContext official
+            return@withContext fetchFtcOfficialMatchResults(year, cleanKey, cleanAuth)
         }
-        runCatching {
+        try {
             httpClient.prepareGet("https://theorangealliance.org/api/event/$cleanKey/matches") {
                 header("X-TOA-ApiKey", cleanAuth)
                 header("X-Application-Name", "ARES-Analytics")
@@ -265,7 +284,11 @@ class EventApiService(
                 if (response.status != HttpStatusCode.OK) emptyList()
                 else EventScoutingCodecAndExporters.parseExternalMatchResultsJson(response.bodyAsText(), League.FTC)
             }
-        }.getOrDefault(emptyList())
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (_: Exception) {
+            emptyList()
+        }
     }
 
     /** Queries FIRST FTC Events API v2 `/v2.0/{seasonYear}/matches/{eventCode}` for qual and playoff results. */
@@ -274,9 +297,9 @@ class EventApiService(
         eventCode: String,
         rawAuth: String,
     ): List<EventMatchResult> = withContext(Dispatchers.IO) {
-        val cleanCode = eventCode.trim()
+        val cleanCode = sanitizeEventKey(eventCode) ?: return@withContext emptyList()
         val cleanAuth = rawAuth.trim()
-        if (cleanCode.isEmpty() || cleanAuth.isEmpty()) return@withContext emptyList()
+        if (cleanAuth.isEmpty()) return@withContext emptyList()
         val basicToken = if (cleanAuth.contains(":")) {
             java.util.Base64.getEncoder().encodeToString(cleanAuth.toByteArray(Charsets.UTF_8))
         } else {
@@ -284,18 +307,37 @@ class EventApiService(
         }
         val combined = mutableListOf<EventMatchResult>()
         for (level in listOf("qual" to "quals", "playoff" to "elims")) {
-            runCatching {
+            try {
                 httpClient.prepareGet("https://ftc-api.firstinspires.org/v2.0/$seasonYear/matches/$cleanCode?tournamentLevel=${level.first}") {
                     header("Authorization", "Basic $basicToken")
                     header("Accept", "application/json")
                 }.execute { response ->
                     if (response.status != HttpStatusCode.OK) return@execute
                     val parsed = EventScoutingCodecAndExporters.parseExternalMatchResultsJson(response.bodyAsText(), League.FTC)
-                    parsed.forEach { item -> combined += item.copy(compLevel = level.second) }
+                    parsed.forEach { item ->
+                        val resolvedLevel = if (level.first == "playoff" && item.compLevel.startsWith("elims-")) {
+                            item.compLevel
+                        } else {
+                            level.second
+                        }
+                        combined += item.copy(compLevel = resolvedLevel)
+                    }
                 }
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (_: Exception) {
             }
         }
         combined.distinctBy { it.normalizedKey() }
+    }
+
+    private fun sanitizeEventKey(raw: String): String? {
+        val trimmed = raw.trim()
+        return trimmed.takeIf { EVENT_KEY_REGEX.matches(it) }
+    }
+
+    companion object {
+        private val EVENT_KEY_REGEX = Regex("^[A-Za-z0-9_-]{1,64}$")
     }
 
     /** Convenience dispatcher syncing official match results for the active workspace configuration. */

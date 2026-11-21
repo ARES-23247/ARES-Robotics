@@ -245,8 +245,16 @@ object OdometryFusionController {
             kotlin.math.max(0.001, speed + kotlin.math.max(odometryYawRate, kotlin.math.abs(correctedGyroRate)))
         val translationProcessNoiseScale = tiltScale * slipScale * translationMovementScale * dtSeconds
         val headingProcessNoiseScale = tiltScale * slipScale * headingMovementScale * dtSeconds
+        if (!translationSpeed.isFinite() ||
+            !odometryYawRate.isFinite() ||
+            !translationProcessNoiseScale.isFinite() ||
+            !headingProcessNoiseScale.isFinite()
+        ) {
+            return state
+        }
         val crossProcessNoiseScale = kotlin.math.sqrt(translationProcessNoiseScale.coerceAtLeast(0.0)) *
             kotlin.math.sqrt(headingProcessNoiseScale.coerceAtLeast(0.0))
+        if (!crossProcessNoiseScale.isFinite()) return state
         scratchQ.m00 *= translationProcessNoiseScale
         scratchQ.m01 *= translationProcessNoiseScale
         scratchQ.m10 *= translationProcessNoiseScale
@@ -304,6 +312,16 @@ object OdometryFusionController {
             scratchQ,
             newCovariance
         )
+
+        if (!newX.isFinite() ||
+            !newY.isFinite() ||
+            !newHeadingRad.isFinite() ||
+            !newCovariance.m00.isFinite() || !newCovariance.m01.isFinite() || !newCovariance.m02.isFinite() ||
+            !newCovariance.m10.isFinite() || !newCovariance.m11.isFinite() || !newCovariance.m12.isFinite() ||
+            !newCovariance.m20.isFinite() || !newCovariance.m21.isFinite() || !newCovariance.m22.isFinite()
+        ) {
+            return state
+        }
         
         state.covarianceArray[0] = newCovariance.m00
         state.covarianceArray[1] = newCovariance.m01

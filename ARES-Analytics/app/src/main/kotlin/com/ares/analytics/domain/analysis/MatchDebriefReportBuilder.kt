@@ -46,12 +46,26 @@ object MatchDebriefReportBuilder {
             appendLine()
             appendLine("| Metric | Value |")
             appendLine("|---|---|")
-            appendLine("| Minimum Battery Voltage | ${String.format(Locale.US, "%.2f V", summary.minBatteryVoltage)} |")
-            appendLine("| Est. Battery Internal Resistance | ${String.format(Locale.US, "%.1f mΩ", summary.avgBatteryResistance * 1000.0)} |")
-            appendLine("| Control Loop Avg / p95 | ${String.format(Locale.US, "%.2f ms / %.2f ms", summary.avgLoopTimeMs, summary.p95LoopTimeMs)} |")
-            appendLine("| Vision Acceptance Rate | ${String.format(Locale.US, "%.1f%% (%.1f ms latency)", summary.visionAcceptanceRate * 100.0, summary.avgVisionLatencyMs)} |")
-            appendLine("| Avg Cross-Track Error | ${String.format(Locale.US, "%.1f cm", summary.avgCrossTrackError * 100.0)} |")
-            appendLine("| Max EKF Drift | ${String.format(Locale.US, "%.3f m", summary.maxEkfDrift)} |")
+            val minV = summary.observedMetric("battery", summary.minBatteryVoltage)?.let { String.format(Locale.US, "%.2f V", it) } ?: "Unavailable"
+            val rInt = summary.observedMetric("resistance", summary.avgBatteryResistance)?.let { String.format(Locale.US, "%.1f mΩ", it * 1000.0) } ?: "Unavailable"
+            val loopAvg = summary.observedMetric("loop", summary.avgLoopTimeMs)?.let { String.format(Locale.US, "%.2f ms", it) }
+            val loopP95 = summary.observedMetric("loop_p95", summary.p95LoopTimeMs)?.let { String.format(Locale.US, "%.2f ms", it) }
+            val loopDisplay = if (loopAvg != null || loopP95 != null) "${loopAvg ?: "—"} / ${loopP95 ?: "—"}" else "Unavailable"
+            val visAccept = summary.observedMetric("acceptance", summary.visionAcceptanceRate)?.let { String.format(Locale.US, "%.1f%%", it * 100.0) }
+            val visLat = summary.observedMetric("latency", summary.avgVisionLatencyMs)?.let { String.format(Locale.US, "%.1f ms latency", it) }
+            val visDisplay = when {
+                visAccept != null && visLat != null -> "$visAccept ($visLat)"
+                visAccept != null -> visAccept
+                else -> "Unavailable"
+            }
+            val cte = summary.observedMetric("cross_track", summary.avgCrossTrackError)?.let { String.format(Locale.US, "%.1f cm", it * 100.0) } ?: "Unavailable"
+            val drift = summary.observedMetric("drift", summary.maxEkfDrift)?.let { String.format(Locale.US, "%.3f m", it) } ?: "Unavailable"
+            appendLine("| Minimum Battery Voltage | $minV |")
+            appendLine("| Est. Battery Internal Resistance | $rInt |")
+            appendLine("| Control Loop Avg / p95 | $loopDisplay |")
+            appendLine("| Vision Acceptance Rate | $visDisplay |")
+            appendLine("| Avg Cross-Track Error | $cte |")
+            appendLine("| Max EKF Drift | $drift |")
             appendLine()
         }
 
@@ -163,11 +177,11 @@ object MatchDebriefReportBuilder {
 
             if (summary != null) {
                 appendLine("<div class=\"card\"><h2>Aggregate Match KPIs</h2><div class=\"kpis\">")
-                appendKpi("Min Battery", String.format(Locale.US, "%.2f V", summary.minBatteryVoltage))
-                appendKpi("Est. R_int", String.format(Locale.US, "%.1f mΩ", summary.avgBatteryResistance * 1000.0))
-                appendKpi("Loop p95", String.format(Locale.US, "%.2f ms", summary.p95LoopTimeMs))
-                appendKpi("Vision Accept", String.format(Locale.US, "%.1f%%", summary.visionAcceptanceRate * 100.0))
-                appendKpi("Cross-Track Err", String.format(Locale.US, "%.1f cm", summary.avgCrossTrackError * 100.0))
+                appendKpi("Min Battery", summary.observedMetric("battery", summary.minBatteryVoltage)?.let { String.format(Locale.US, "%.2f V", it) } ?: "—")
+                appendKpi("Est. R_int", summary.observedMetric("resistance", summary.avgBatteryResistance)?.let { String.format(Locale.US, "%.1f mΩ", it * 1000.0) } ?: "—")
+                appendKpi("Loop p95", summary.observedMetric("loop_p95", summary.p95LoopTimeMs)?.let { String.format(Locale.US, "%.2f ms", it) } ?: "—")
+                appendKpi("Vision Accept", summary.observedMetric("acceptance", summary.visionAcceptanceRate)?.let { String.format(Locale.US, "%.1f%%", it * 100.0) } ?: "—")
+                appendKpi("Cross-Track Err", summary.observedMetric("cross_track", summary.avgCrossTrackError)?.let { String.format(Locale.US, "%.1f cm", it * 100.0) } ?: "—")
                 if (heatmap != null && heatmap.poseSampleCount > 0) {
                     appendKpi("Distance / Peak v", String.format(Locale.US, "%.1f m / %.2f m/s", heatmap.totalDistanceMeters, heatmap.peakSpeedMps))
                 }

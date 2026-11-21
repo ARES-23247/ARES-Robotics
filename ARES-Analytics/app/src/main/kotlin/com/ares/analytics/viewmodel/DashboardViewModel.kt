@@ -325,6 +325,8 @@ class DashboardViewModel(
                             }
 
                             _state.update { it.copy(isImporting = false, importSuccess = true, syncWarning = warning) }
+                        } catch (cancelled: kotlinx.coroutines.CancellationException) {
+                            throw cancelled
                         } catch (e: Exception) {
                             _state.update { it.copy(isImporting = false, errorMessage = e.message ?: "Failed to import log file(s)") }
                         }

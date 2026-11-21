@@ -99,6 +99,7 @@ class CameraStreamViewModel(
         stopStreaming()
         httpClient.close()
         val images = synchronized(imageLock) {
+            _state.update { it.copy(isConnected = false, currentFrame = null) }
             buildList {
                 currentSkiaImage?.let(::add)
                 addAll(retiredSkiaImages)
@@ -117,17 +118,20 @@ class CameraStreamViewModel(
 
         streamJob = scope.launch(Dispatchers.IO) {
             var retryDelayMs = 1000L
-            while (isActive) {
+            while (isActive && generation == streamGeneration.get()) {
                 val currentUrl = _state.value.streamUrl
                 if (_state.value.isConfiguring || currentUrl.isBlank()) {
                     delay(1000)
                     continue
                 }
 
-                _state.update { it.copy(isConnected = false, errorMessage = null) }
+                if (generation == streamGeneration.get()) {
+                    _state.update { it.copy(isConnected = false, errorMessage = null) }
+                }
 
                 try {
                     httpClient.prepareGet(currentUrl).execute { response ->
+                        if (generation != streamGeneration.get()) return@execute
                         if (response.status.value in 200..299) {
                             _state.update { it.copy(isConnected = true) }
                             retryDelayMs = 1000L
@@ -135,7 +139,7 @@ class CameraStreamViewModel(
                             val assembler = MjpegFrameAssembler()
                             val readBuffer = ByteArray(8192)
 
-                            while (isActive && !channel.isClosedForRead && !_state.value.isConfiguring) {
+                            while (isActive && generation == streamGeneration.get() && !channel.isClosedForRead && !_state.value.isConfiguring) {
                                 val read = channel.readAvailable(readBuffer, 0, readBuffer.size)
                                 if (read > 0) {
                                     assembler.offer(readBuffer, read) { frameBytes ->
@@ -144,18 +148,24 @@ class CameraStreamViewModel(
                                 }
                             }
                         } else {
-                            _state.update { it.copy(errorMessage = "HTTP Error: ${response.status}") }
+                            if (generation == streamGeneration.get()) {
+                                _state.update { it.copy(errorMessage = "HTTP Error: ${response.status}") }
+                            }
                         }
                     }
                 } catch (cancelled: kotlinx.coroutines.CancellationException) {
                     throw cancelled
                 } catch (e: Exception) {
-                    _state.update { it.copy(isConnected = false, errorMessage = e.message ?: "Connection failed") }
+                    if (generation == streamGeneration.get()) {
+                        _state.update { it.copy(isConnected = false, errorMessage = e.message ?: "Connection failed") }
+                    }
                 } finally {
-                    _state.update { it.copy(isConnected = false) }
+                    if (generation == streamGeneration.get()) {
+                        _state.update { it.copy(isConnected = false) }
+                    }
                 }
 
-                if (isActive && !_state.value.isConfiguring) {
+                if (isActive && generation == streamGeneration.get() && !_state.value.isConfiguring) {
                     delay(retryDelayMs)
                     retryDelayMs = (retryDelayMs * 1.5).toLong().coerceAtMost(5000L)
                 }
@@ -187,6 +197,7 @@ class CameraStreamViewModel(
                 if (retiredSkiaImages.size > RETAINED_FRAME_COUNT) {
                     imageToClose = retiredSkiaImages.removeFirst()
                 }
+                _state.update { it.copy(currentFrame = imageBitmap) }
                 true
             }
         }
@@ -194,10 +205,6 @@ class CameraStreamViewModel(
             skiaImage.close()
             return
         }
-
-        // Commit the new Compose frame before retiring an older native image. Keeping a short
-        // queue avoids invalidating an image that the renderer still owns during recomposition.
-        _state.update { it.copy(currentFrame = imageBitmap) }
         imageToClose?.close()
     }
 

@@ -112,8 +112,11 @@ sealed interface CommandPaletteUnifiedEntry {
         override val badge: String = item.gradeLabel
     }
 
-    data class ScheduledMatch(val item: CommandPaletteMatchItem) : CommandPaletteUnifiedEntry {
-        override val key: String = "match-${item.compLevel}-${item.matchNumber}"
+    data class ScheduledMatch(
+        val item: CommandPaletteMatchItem,
+        val uniqueIndex: Int = 0,
+    ) : CommandPaletteUnifiedEntry {
+        override val key: String = "match-${item.compLevel}-${item.matchNumber}-$uniqueIndex"
         override val title: String = item.label
         override val subtitle: String = item.subtitle
         override val badge: String = "Schedule"
@@ -610,18 +613,20 @@ fun buildUnifiedCommandPaletteEntries(
 ): List<CommandPaletteUnifiedEntry> = buildList {
     val trimmed = query.trim()
     if (trimmed.isEmpty()) {
-        recentTargets.take(5).forEach { add(CommandPaletteUnifiedEntry.RecentDestination(it)) }
+        val displayedRecentTargets = recentTargets.take(5)
+        val displayedRecentSet = displayedRecentTargets.toSet()
+        displayedRecentTargets.forEach { add(CommandPaletteUnifiedEntry.RecentDestination(it)) }
         runItems.take(3).forEach { add(CommandPaletteUnifiedEntry.RunReplay(it, isRecent = true)) }
         notebookItems.take(3).forEach { add(CommandPaletteUnifiedEntry.NotebookNote(it, isRecent = true)) }
         batteryItems.take(2).forEach { add(CommandPaletteUnifiedEntry.BatteryPack(it)) }
-        matchItems.take(2).forEach { add(CommandPaletteUnifiedEntry.ScheduledMatch(it)) }
+        matchItems.take(2).forEachIndexed { idx, item -> add(CommandPaletteUnifiedEntry.ScheduledMatch(item, idx)) }
         strategyTeamItems.take(2).forEach { add(CommandPaletteUnifiedEntry.ScoutedTeam(it)) }
         pitTabItems.forEach { add(CommandPaletteUnifiedEntry.PitTab(it)) }
         strategyTabItems.forEach { add(CommandPaletteUnifiedEntry.StrategyTab(it)) }
         projectItems.filter { it.category == CommandPaletteProjectCategory.STAGE }
             .forEach { add(CommandPaletteUnifiedEntry.ProjectEntity(it)) }
         availablePaletteTargets(developerMode)
-            .filterNot { it in recentTargets }
+            .filterNot { it in displayedRecentSet }
             .forEach { add(CommandPaletteUnifiedEntry.ScreenDestination(it)) }
     } else {
         filterCommandPaletteStrategyTeams(trimmed, strategyTeamItems)
@@ -629,7 +634,7 @@ fun buildUnifiedCommandPaletteEntries(
         filterCommandPaletteBatteries(trimmed, batteryItems)
             .forEach { add(CommandPaletteUnifiedEntry.BatteryPack(it)) }
         filterCommandPaletteMatches(trimmed, matchItems)
-            .forEach { add(CommandPaletteUnifiedEntry.ScheduledMatch(it)) }
+            .forEachIndexed { idx, item -> add(CommandPaletteUnifiedEntry.ScheduledMatch(item, idx)) }
         filterCommandPaletteRuns(trimmed, runItems)
             .forEach { add(CommandPaletteUnifiedEntry.RunReplay(it)) }
         filterCommandPaletteNotebookEntries(trimmed, notebookItems)

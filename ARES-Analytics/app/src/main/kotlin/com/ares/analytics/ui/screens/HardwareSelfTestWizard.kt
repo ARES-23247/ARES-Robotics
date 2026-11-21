@@ -534,31 +534,41 @@ fun HardwareSelfTestWizard(
                 onSaveBatterySpec = { spec ->
                     val db = databaseService ?: return@PitBatteryFleetTab
                     scope.launch {
-                        db.upsertBatterySpec(spec)
-                        batteryRefreshNonce += 1
+                        runCatching { withContext(Dispatchers.IO) { db.upsertBatterySpec(spec) } }
+                            .onSuccess { batteryRefreshNonce += 1 }
+                            .onFailure { err -> receiptStatusMessage = "Failed to save battery pack: ${err.message}" }
                     }
                 },
                 onUpdatePoolStatus = { id, status ->
                     val ws = workspace ?: return@PitBatteryFleetTab
                     val db = databaseService ?: return@PitBatteryFleetTab
                     scope.launch {
-                        db.updateBatteryPoolStatus(ws.teamId, ws.seasonId, ws.robotId, id, status, System.currentTimeMillis())
-                        batteryRefreshNonce += 1
+                        runCatching {
+                            withContext(Dispatchers.IO) {
+                                db.updateBatteryPoolStatus(ws.teamId, ws.seasonId, ws.robotId, id, status, System.currentTimeMillis())
+                            }
+                        }.onSuccess { batteryRefreshNonce += 1 }
+                            .onFailure { err -> receiptStatusMessage = "Failed to update battery status: ${err.message}" }
                     }
                 },
                 onRecordCheckin = { checkin ->
                     val db = databaseService ?: return@PitBatteryFleetTab
                     scope.launch {
-                        db.recordBatteryCheckin(checkin)
-                        batteryRefreshNonce += 1
+                        runCatching { withContext(Dispatchers.IO) { db.recordBatteryCheckin(checkin) } }
+                            .onSuccess { batteryRefreshNonce += 1 }
+                            .onFailure { err -> receiptStatusMessage = "Failed to record check-in: ${err.message}" }
                     }
                 },
                 onDeleteBattery = { id ->
                     val ws = workspace ?: return@PitBatteryFleetTab
                     val db = databaseService ?: return@PitBatteryFleetTab
                     scope.launch {
-                        db.deleteBatterySpecFromWorkspace(ws.teamId, ws.seasonId, ws.robotId, id)
-                        batteryRefreshNonce += 1
+                        runCatching {
+                            withContext(Dispatchers.IO) {
+                                db.deleteBatterySpecFromWorkspace(ws.teamId, ws.seasonId, ws.robotId, id)
+                            }
+                        }.onSuccess { batteryRefreshNonce += 1 }
+                            .onFailure { err -> receiptStatusMessage = "Failed to delete battery: ${err.message}" }
                     }
                 },
                 onAssignToReadiness = { id ->
@@ -614,7 +624,7 @@ fun HardwareSelfTestWizard(
                                     extensions = listOf("csv", "json"),
                                 )
                             } ?: return@launch
-                            runCatching { store.importScheduleFile(ws, file) }
+                            runCatching { withContext(Dispatchers.IO) { store.importScheduleFile(ws, file) } }
                                 .onSuccess { imported ->
                                     onMatchesUpdated(imported)
                                     scheduleStatusMessage = "Imported ${imported.size} matches from ${file.name} (cached offline)."
@@ -629,18 +639,24 @@ fun HardwareSelfTestWizard(
                     val ws = workspace ?: return@PitMatchQueueTab
                     val store = eventScheduleStore ?: return@PitMatchQueueTab
                     scope.launch {
-                        val updated = store.upsertManualMatch(ws, item)
-                        onMatchesUpdated(updated)
-                        scheduleStatusMessage = "Saved ${item.compLevel} #${item.matchNumber} to offline cache."
+                        runCatching { withContext(Dispatchers.IO) { store.upsertManualMatch(ws, item) } }
+                            .onSuccess { updated ->
+                                onMatchesUpdated(updated)
+                                scheduleStatusMessage = "Saved ${item.compLevel} #${item.matchNumber} to offline cache."
+                            }
+                            .onFailure { err -> scheduleStatusMessage = "Failed to save match: ${err.message}" }
                     }
                 },
                 onRemoveMatch = { compLevel, matchNum ->
                     val ws = workspace ?: return@PitMatchQueueTab
                     val store = eventScheduleStore ?: return@PitMatchQueueTab
                     scope.launch {
-                        val updated = store.removeMatch(ws, compLevel, matchNum)
-                        onMatchesUpdated(updated)
-                        scheduleStatusMessage = "Removed $compLevel #$matchNum from schedule."
+                        runCatching { withContext(Dispatchers.IO) { store.removeMatch(ws, compLevel, matchNum) } }
+                            .onSuccess { updated ->
+                                onMatchesUpdated(updated)
+                                scheduleStatusMessage = "Removed $compLevel #$matchNum from schedule."
+                            }
+                            .onFailure { err -> scheduleStatusMessage = "Failed to remove match: ${err.message}" }
                     }
                 },
                 onStageInReadiness = { row ->

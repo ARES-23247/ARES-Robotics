@@ -274,18 +274,10 @@ class AresRobot(
             throw priorFailure
         }
         try {
-            // Refresh all registered IO, update drivetrain/EKF, and compute this frame's power
-            // scale exactly once. A thrown shared update skips every season write and its safety
-            // stop remains final.
+            // Refresh all registered IO, update drivetrain/EKF, compute this frame's power scale,
+            // execute registered season subsystems (readAllSensors/writeAllOutputs), publish
+            // telemetry, and pace the frame inside FtcBaseRobot.update().
             base.update(gamepad1, gamepad2)
-
-            // Consume the season IO values cached by the shared refresh above.
-            val timestamp = com.areslib.util.RobotClock.currentTimeMillis()
-            base.readAllSensors(timestamp)
-
-            // Apply the freshly computed brownout/current scale to every season mechanism in the
-            // same frame. Mechanism voltage normalization reads the same cached power sample.
-            base.writeAllOutputs(base.powerManager.powerScale)
 
             // Continuously update core Driver Station telemetry.
             telemetryHelper.updateTelemetry()

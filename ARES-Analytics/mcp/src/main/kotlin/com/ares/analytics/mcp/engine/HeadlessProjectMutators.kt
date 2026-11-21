@@ -129,7 +129,8 @@ class HeadlessProjectMutators(
             }
             else -> throw IllegalArgumentException("Either documentJson or an existing .aresdrivetrain must exist.")
         }
-        val fileName = "${updated.drivebaseId}.aresdrivetrain"
+        val safeId = validateDocumentSlug(updated.drivebaseId, "drivebaseId")
+        val fileName = "$safeId.aresdrivetrain"
         val existingFile = File(canonical, ".ares/drivetrains")
             .listFiles { f -> f.isFile && f.extension == "aresdrivetrain" }
             ?.firstOrNull()
@@ -138,10 +139,11 @@ class HeadlessProjectMutators(
         return applyTransactionalUpsert(
             projectRoot = canonical,
             documentKind = "DRIVETRAIN",
-            documentId = updated.drivebaseId,
+            documentId = safeId,
             relativePath = relPath,
             encodedText = DrivetrainDocumentCodec.encode(updated),
             expectedRevision = expectedRevision,
+            requiredSubdir = ".ares/drivetrains",
         )
     }
 
@@ -194,19 +196,9 @@ class HeadlessProjectMutators(
         }
         val json = requireNotNull(documentJson) { "documentJson is required for ROUTINE UPSERT" }
         val decoded = AresRoutineCodec.decode(json)
-        val result = mutateVersionedDoc(
-            projectRoot = canonical,
-            documentKind = "ROUTINE",
-            operationRaw = op,
-            relativeDir = ".ares/routines",
-            extension = "aresroutine",
-            expectedRevision = expectedRevision,
-            confirmationToken = confirmationToken,
-            resolveDeleteId = { decoded.documentId },
-            encodeUpsert = { decoded.documentId to AresRoutineCodec.encode(decoded) },
-        )
-        if (!registerAutonomousDisplayName.isNullOrBlank()) {
-            val autoFile = File(canonical, ".ares/autonomous-catalog.json")
+        val safeRoutineId = validateDocumentSlug(decoded.documentId, "ROUTINE")
+        val additionalWrites = if (!registerAutonomousDisplayName.isNullOrBlank()) {
+            val autoFile = JGitSnapshotSafety.safeResolveChild(canonical, ".ares/autonomous-catalog.json", requiredSubdir = ".ares")
             val bundle = engine.loadBundle(canonical)
             val projectId = bundle.metadata?.projectId ?: "ares-robot"
             val currentAuto = if (autoFile.isFile) {
@@ -214,24 +206,30 @@ class HeadlessProjectMutators(
             } else {
                 AutonomousCatalogDocument(projectId = projectId, entries = emptyList())
             }
-            val updatedEntries = currentAuto.entries.filterNot { it.routineId == decoded.documentId } +
+            val updatedEntries = currentAuto.entries.filterNot { it.routineId == safeRoutineId } +
                 AutonomousCatalogEntry(
-                    entryId = decoded.documentId,
+                    entryId = safeRoutineId,
                     displayName = registerAutonomousDisplayName,
                     description = decoded.description,
-                    routineId = decoded.documentId,
+                    routineId = safeRoutineId,
                     startingPose = RoutinePose(0.0, 0.0, 0.0),
                     authoredAlliance = RoutineAlliance.RED,
                 )
             val updatedCatalog = currentAuto.copy(revision = currentAuto.revision + 1, entries = updatedEntries)
-            JGitSnapshotSafety.writeBytesAtomically(
-                autoFile,
-                AutonomousCatalogCodec.encode(updatedCatalog).toByteArray(),
-            )
-            val validation = engine.validateProject(canonical)
-            return result.copy(validation = validation, newRevision = validation.revision)
+            listOf(Triple(".ares/autonomous-catalog.json", ".ares", AutonomousCatalogCodec.encode(updatedCatalog)))
+        } else {
+            emptyList()
         }
-        return result
+        return applyTransactionalUpsert(
+            projectRoot = canonical,
+            documentKind = "ROUTINE",
+            documentId = safeRoutineId,
+            relativePath = ".ares/routines/$safeRoutineId.aresroutine",
+            encodedText = AresRoutineCodec.encode(decoded),
+            expectedRevision = expectedRevision,
+            requiredSubdir = ".ares/routines",
+            additionalWrites = additionalWrites,
+        )
     }
 
     suspend fun mutateControls(
@@ -300,13 +298,13 @@ class HeadlessProjectMutators(
             "CANONICAL" -> TuningProfileAuthority.CANONICAL_CHECKED_IN
             else -> throw IllegalArgumentException("Unsupported tuning target '$targetRaw'; expected LOCAL_OVERLAY or CANONICAL.")
         }
-        val targetFile = when (target) {
-            "LOCAL_OVERLAY" -> File(canonical, ".ares/local/tuning/$profileId.arestuning")
-            else -> File(canonical, ".ares/tuning/$profileId.arestuning")
-        }
+        val safeProfileId = validateDocumentSlug(profileId, "profileId")
+        val targetDir = if (target == "LOCAL_OVERLAY") ".ares/local/tuning" else ".ares/tuning"
+        val targetRelPath = "$targetDir/$safeProfileId.arestuning"
+        val targetFile = JGitSnapshotSafety.safeResolveChild(canonical, targetRelPath, requiredSubdir = targetDir)
         val declarations = bundle.tuningDeclarations
         val declByKeyOrUid = declarations.associateBy { it.key } + declarations.associateBy { it.uid }
-        val baseProfile = bundle.snapshot.tuningProfiles.firstOrNull { it.profileId == profileId }
+        val baseProfile = bundle.snapshot.tuningProfiles.firstOrNull { it.profileId == safeProfileId }
             ?: targetFile.takeIf(File::isFile)?.let { TuningProfileDocumentCodec.decode(it.readText(), declarations) }
         val existingMap = baseProfile?.values?.associateBy { it.parameterUid }.orEmpty().toMutableMap()
         for (input in assignments) {
@@ -324,9 +322,9 @@ class HeadlessProjectMutators(
             existingMap[decl.uid] = TuningAssignment(parameterUid = decl.uid, value = value)
         }
         val draftProfile = TuningProfileDocument(
-            uid = baseProfile?.uid ?: "$projectId.profile.$profileId",
-            profileId = profileId,
-            displayName = baseProfile?.displayName ?: "Profile $profileId",
+            uid = baseProfile?.uid ?: "$projectId.profile.$safeProfileId",
+            profileId = safeProfileId,
+            displayName = baseProfile?.displayName ?: "Profile $safeProfileId",
             description = baseProfile?.description ?: "MCP tuning profile update ($target)",
             projectId = projectId,
             drivebaseUid = baseProfile?.drivebaseUid ?: bundle.snapshot.drivetrains.firstOrNull()?.uid,
@@ -342,7 +340,7 @@ class HeadlessProjectMutators(
         val relPath = targetFile.relativeTo(canonical).invariantSeparatorsPath
 
         if (target == "CANONICAL") {
-            val opKey = "TUNING_CANONICAL::$profileId"
+            val opKey = "TUNING_CANONICAL::$safeProfileId"
             val digest = ConfirmationTokenManager.digestFileOrMissing(targetFile) + "::" +
                 ConfirmationTokenManager.sha256Hex(encoded)
             if (confirmationToken.isNullOrBlank()) {
@@ -351,7 +349,7 @@ class HeadlessProjectMutators(
                     projectRoot = canonical.path,
                     documentKind = "TUNING",
                     operation = "PREVIEW_CANONICAL",
-                    documentId = profileId,
+                    documentId = safeProfileId,
                     filePath = relPath,
                     pendingConfirmation = true,
                     confirmationToken = issued,
@@ -368,10 +366,11 @@ class HeadlessProjectMutators(
         return applyTransactionalUpsert(
             projectRoot = canonical,
             documentKind = "TUNING",
-            documentId = profileId,
+            documentId = safeProfileId,
             relativePath = relPath,
             encodedText = encoded,
             expectedRevision = expectedRevision,
+            requiredSubdir = targetDir,
         )
     }
 
@@ -401,7 +400,11 @@ class HeadlessProjectMutators(
             AresLeague.FRC -> "org.aresfirst.starter.frc.extensions"
             AresLeague.XRP -> error("Unsupported")
         }
-        val pkg = packageName?.takeIf { it.isNotBlank() } ?: defaultPkg
+        val pkg = (packageName?.trim()?.takeIf { it.isNotBlank() } ?: defaultPkg).also {
+            require(KOTLIN_PACKAGE_REGEX.matches(it)) {
+                "Invalid Kotlin packageName '$it'; expected dot-separated Kotlin package identifiers."
+            }
+        }
         require(kind != "UNIT_TEST" || className != "Test") {
             "Name the test after its hardware adapter, for example LiftHardwareIoTest for LiftHardwareIo."
         }
@@ -445,8 +448,15 @@ class HeadlessProjectMutators(
             )
         }
 
-        val relPath = relativePathOverride?.takeIf { it.isNotBlank() } ?: defaultScaffoldPath(league, kind, pkg, className)
-        val targetFile = JGitSnapshotSafety.safeResolveChild(canonical, relPath)
+        val relPath = relativePathOverride?.trim()?.takeIf { it.isNotBlank() }?.let { raw ->
+            validateScaffoldRelativePath(raw, league)
+        } ?: defaultScaffoldPath(league, kind, pkg, className)
+        val allowedSourceRoot = when (league) {
+            AresLeague.FTC -> if (relPath.startsWith("simulator/src/")) "simulator/src" else "TeamCode/src"
+            AresLeague.FRC -> "src"
+            AresLeague.XRP -> error("Unsupported")
+        }
+        val targetFile = JGitSnapshotSafety.safeResolveChild(canonical, relPath, requiredSubdir = allowedSourceRoot)
         require(!ConfirmationTokenManager.isGeneratedDoNotEditFile(targetFile)) {
             "Refusing to overwrite GENERATED DO NOT EDIT plumbing file: $relPath"
         }
@@ -519,7 +529,8 @@ class HeadlessProjectMutators(
         val op = operationRaw.trim().uppercase()
         return when (op) {
             "UPSERT" -> {
-                val (id, encoded) = encodeUpsert()
+                val (rawId, encoded) = encodeUpsert()
+                val id = validateDocumentSlug(rawId, documentKind)
                 applyTransactionalUpsert(
                     projectRoot = canonical,
                     documentKind = documentKind,
@@ -527,12 +538,18 @@ class HeadlessProjectMutators(
                     relativePath = "$relativeDir/$id.$extension",
                     encodedText = encoded,
                     expectedRevision = expectedRevision,
+                    requiredSubdir = relativeDir,
                 )
             }
             "DELETE" -> {
-                val id = resolveDeleteId()?.takeIf { it.isNotBlank() }
+                val rawId = resolveDeleteId()?.takeIf { it.isNotBlank() }
                     ?: throw IllegalArgumentException("documentId is required for $documentKind DELETE")
-                val targetFile = JGitSnapshotSafety.safeResolveChild(canonical, "$relativeDir/$id.$extension")
+                val id = validateDocumentSlug(rawId, documentKind)
+                val targetFile = JGitSnapshotSafety.safeResolveChild(
+                    canonical,
+                    "$relativeDir/$id.$extension",
+                    requiredSubdir = relativeDir,
+                )
                 require(targetFile.isFile) { "Cannot delete $documentKind '$id': file not found." }
                 val opKey = "DELETE::$documentKind::$id"
                 val digest = ConfirmationTokenManager.digestFileOrMissing(targetFile)
@@ -595,8 +612,13 @@ class HeadlessProjectMutators(
         relativePath: String,
         encodedText: String,
         expectedRevision: String?,
+        requiredSubdir: String? = null,
+        additionalWrites: List<Triple<String, String?, String>> = emptyList(),
     ): DescriptorMutationResult {
-        val targetFile = JGitSnapshotSafety.safeResolveChild(projectRoot, relativePath)
+        val primaryFile = JGitSnapshotSafety.safeResolveChild(projectRoot, relativePath, requiredSubdir = requiredSubdir)
+        val extraTargets = additionalWrites.map { (extraRel, extraSubdir, extraText) ->
+            JGitSnapshotSafety.safeResolveChild(projectRoot, extraRel, requiredSubdir = extraSubdir) to extraText
+        }
         val previousRevision = engine.computeProjectRevision(projectRoot)
         if (expectedRevision != null && expectedRevision != previousRevision) {
             throw IllegalStateException(
@@ -605,38 +627,85 @@ class HeadlessProjectMutators(
         }
         val beforeValidation = engine.validateProject(projectRoot)
         val snapshot = JGitSnapshotSafety.createSnapshot(projectRoot, slug = "before-upsert-$documentKind-$documentId")
-        val hadPreviousFile = targetFile.isFile
-        val previousBytes = if (hadPreviousFile) targetFile.readBytes() else null
+        val allWrites = listOf(primaryFile to encodedText) + extraTargets
+        val backups = allWrites.map { (file, _) -> file to (if (file.isFile) file.readBytes() else null) }
 
-        JGitSnapshotSafety.writeBytesAtomically(targetFile, encodedText.toByteArray(Charsets.UTF_8))
-        val afterValidation = engine.validateProject(projectRoot)
-        if (!afterValidation.valid && afterValidation.errorCount > beforeValidation.errorCount) {
-            if (hadPreviousFile && previousBytes != null) {
-                JGitSnapshotSafety.writeBytesAtomically(targetFile, previousBytes)
-            } else {
-                targetFile.delete()
+        try {
+            allWrites.forEach { (file, text) ->
+                JGitSnapshotSafety.writeBytesAtomically(file, text.toByteArray(Charsets.UTF_8))
             }
-            throw IllegalStateException(
-                "Upsert rejected & rolled back because it introduced validation error(s): " +
-                    afterValidation.issues.filter { it.severity == "ERROR" }.joinToString("; ") { "${it.path}: ${it.message}" },
+            val afterValidation = engine.validateProject(projectRoot)
+            if (!afterValidation.valid && afterValidation.errorCount > beforeValidation.errorCount) {
+                backups.forEach { (file, bytes) ->
+                    if (bytes != null) JGitSnapshotSafety.writeBytesAtomically(file, bytes) else file.delete()
+                }
+                throw IllegalStateException(
+                    "Upsert rejected & rolled back because it introduced validation error(s): " +
+                        afterValidation.issues.filter { it.severity == "ERROR" }.joinToString("; ") { "${it.path}: ${it.message}" },
+                )
+            }
+            val reload = engine.bridgeClient.notifyReload(
+                projectRoot = projectRoot.path,
+                reason = "upsert $documentKind:$documentId",
             )
+            return DescriptorMutationResult(
+                projectRoot = projectRoot.path,
+                documentKind = documentKind,
+                operation = "UPSERT",
+                documentId = documentId,
+                filePath = relativePath,
+                previousRevision = previousRevision,
+                newRevision = afterValidation.revision,
+                snapshotRef = snapshot.refName,
+                validation = afterValidation,
+                bridgeReload = reload,
+                message = "Upserted $documentKind '$documentId' at $relativePath.",
+            )
+        } catch (failure: Exception) {
+            if (failure !is IllegalStateException || !failure.message.orEmpty().startsWith("Upsert rejected & rolled back")) {
+                backups.forEach { (file, bytes) ->
+                    runCatching {
+                        if (bytes != null) JGitSnapshotSafety.writeBytesAtomically(file, bytes) else file.delete()
+                    }
+                }
+            }
+            throw failure
         }
-        val reload = engine.bridgeClient.notifyReload(
-            projectRoot = projectRoot.path,
-            reason = "upsert $documentKind:$documentId",
-        )
-        return DescriptorMutationResult(
-            projectRoot = projectRoot.path,
-            documentKind = documentKind,
-            operation = "UPSERT",
-            documentId = documentId,
-            filePath = relativePath,
-            previousRevision = previousRevision,
-            newRevision = afterValidation.revision,
-            snapshotRef = snapshot.refName,
-            validation = afterValidation,
-            bridgeReload = reload,
-            message = "Upserted $documentKind '$documentId' at $relativePath.",
-        )
+    }
+
+    private fun validateDocumentSlug(raw: String, label: String): String {
+        val trimmed = raw.trim()
+        require(DOC_SLUG_REGEX.matches(trimmed)) {
+            "Invalid $label identifier '$raw'; must match ${DOC_SLUG_REGEX.pattern} without path separators."
+        }
+        return trimmed
+    }
+
+    private fun validateScaffoldRelativePath(raw: String, league: AresLeague): String {
+        val normalized = raw.replace('\\', '/').trim()
+        require(!normalized.startsWith("/") && !normalized.contains("..") && !normalized.contains(":")) {
+            "Invalid relativePathOverride '$raw': must be a clean relative path."
+        }
+        val lower = normalized.lowercase()
+        require(lower.endsWith(".kt") || lower.endsWith(".java")) {
+            "Invalid relativePathOverride '$raw': only .kt or .java source files are allowed."
+        }
+        require(!lower.startsWith(".git/") && !lower.contains("/.git/") && !lower.contains("build.gradle")) {
+            "Invalid relativePathOverride '$raw': cannot target repository metadata or Gradle scripts."
+        }
+        val allowedPrefixes = when (league) {
+            AresLeague.FTC -> listOf("TeamCode/src/", "simulator/src/")
+            AresLeague.FRC -> listOf("src/")
+            AresLeague.XRP -> emptyList()
+        }
+        require(allowedPrefixes.any { normalized.startsWith(it) }) {
+            "Invalid relativePathOverride '$raw': must reside under ${allowedPrefixes.joinToString(" or ")}."
+        }
+        return normalized
+    }
+
+    companion object {
+        private val DOC_SLUG_REGEX = Regex("^[a-z0-9][a-z0-9._-]{0,63}$")
+        private val KOTLIN_PACKAGE_REGEX = Regex("^[A-Za-z_][A-Za-z0-9_]*(\\.[A-Za-z_][A-Za-z0-9_]*)+$")
     }
 }

@@ -293,6 +293,29 @@ def _content_sha() -> str:
     raise DeviceError("Generated project does not contain CONTENT_SHA256")
 
 
+def _require_station_secrets() -> pathlib.Path | None:
+    project_path = ROOT / ".ares" / "project.json"
+    wifi_mode = None
+    if project_path.is_file():
+        project = json.loads(project_path.read_text(encoding="utf-8"))
+        wifi_mode = project.get("runtimeOptions", {}).get("xrp", {}).get("wifiMode")
+    secrets = ROOT / "xrp_secrets.py"
+    if wifi_mode == "STATION":
+        if not secrets.is_file():
+            raise DeviceError(
+                "STATION Wi-Fi mode requires user-owned xrp_secrets.py with non-empty WIFI_PASSWORD before deploying"
+            )
+        namespace: dict = {}
+        try:
+            exec(compile(secrets.read_text(encoding="utf-8"), str(secrets), "exec"), {"__builtins__": {}}, namespace)
+        except Exception as error:
+            raise DeviceError(f"xrp_secrets.py could not be evaluated: {error}") from error
+        password = namespace.get("WIFI_PASSWORD")
+        if not isinstance(password, str) or not password.strip():
+            raise DeviceError("STATION Wi-Fi mode requires non-empty string WIFI_PASSWORD in xrp_secrets.py")
+    return secrets if secrets.is_file() else None
+
+
 def _stage_directory(slot: pathlib.Path, content_sha256: str, detected_board: str | None = None) -> None:
     runtime = ROOT / "lib" / "ares_micro"
     if not runtime.is_dir():
@@ -310,8 +333,8 @@ def _stage_directory(slot: pathlib.Path, content_sha256: str, detected_board: st
     extensions = ROOT / "extensions"
     if extensions.is_dir():
         shutil.copytree(extensions, slot / "extensions", ignore=ignored_cache)
-    secrets = ROOT / "xrp_secrets.py"
-    if secrets.is_file():
+    secrets = _require_station_secrets()
+    if secrets is not None:
         shutil.copy2(secrets, slot / "xrp_secrets.py")
     identity = load_manifest()
     (slot / "ares-deployment.json").write_text(

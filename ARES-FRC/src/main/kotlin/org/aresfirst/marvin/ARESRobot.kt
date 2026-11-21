@@ -377,10 +377,10 @@ class ARESRobot : TimedRobot() {
             telemetry.putBoolean("Safety/MechanismFaultLatched", marvin.mechanismSafetyFaultLatched)
             telemetry.putString("Safety/MechanismFaultReason", marvin.mechanismSafetyFaultReason)
             val loopCounter = (state.timestampMs / 20) // 50Hz
-            if (edu.wpi.first.wpilibj.RobotBase.isReal() && loopCounter % 25L == 0L) { // 2Hz
+            if (edu.wpi.first.wpilibj.RobotBase.isReal() && loopCounter % 25L == 0L && cachedCan2Utilization.isFinite()) { // 2Hz
                 telemetry.putNumber(
                     "${org.aresfirst.marvin.generated.drivebase.GeneratedAresDrivebaseConfig.CTRE_CAN_BUS}/BusUtilization",
-                    can2Bus.status.BusUtilization.toDouble(),
+                    cachedCan2Utilization,
                 )
             }
         }
@@ -465,15 +465,24 @@ class ARESRobot : TimedRobot() {
     }
 
     private var allianceCheckCounter = 0
+    @Volatile private var cachedCan2Utilization = Double.NaN
 
     /** Refreshes cached controller snapshots and polls alliance changes while disabled. */
     override fun robotPeriodic() {
-        if (DriverStation.isDisabled() && allianceCheckCounter++ % 50 == 0) {
+        if (edu.wpi.first.wpilibj.RobotBase.isReal() && allianceCheckCounter % 25 == 0) {
+            cachedCan2Utilization = try {
+                can2Bus.status.BusUtilization.toDouble()
+            } catch (_: Throwable) {
+                Double.NaN
+            }
+        }
+        if (DriverStation.isDisabled() && allianceCheckCounter % 50 == 0) {
             val alliance = DriverStation.getAlliance().orElse(null)
             if (alliance != null && alliance != cachedAlliance) {
                 applyAlliance(alliance)
             }
         }
+        allianceCheckCounter++
         controller.updateState(controllerState)
         coPilotController.updateState(coPilotControllerState)
         val dashboardCommand = dashboardDriveInput?.poll()

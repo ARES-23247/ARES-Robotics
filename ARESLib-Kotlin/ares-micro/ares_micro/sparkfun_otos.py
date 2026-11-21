@@ -125,16 +125,37 @@ class SparkFunOTOS:
         self._write_byte(register, int(round((value - 1.0) * 1000.0)) & 0xFF)
 
     def _write_pose(self, register, x, y, heading):
+        wrapped_heading = self._wrap_heading(heading)
         values = (
             self._scaled_int16(x, self.METERS_TO_INT16),
             self._scaled_int16(y, self.METERS_TO_INT16),
-            self._scaled_int16(heading, self.RADIANS_TO_INT16),
+            self._scaled_heading_int16(wrapped_heading),
         )
         self._write_mem(register, struct.pack("<hhh", *values))
 
     @staticmethod
+    def _wrap_heading(heading):
+        value = float(heading)
+        if not math.isfinite(value):
+            raise ValueError("OTOS heading must be finite")
+        wrapped = (value + math.pi) % (2.0 * math.pi) - math.pi
+        return wrapped
+
+    @classmethod
+    def _scaled_heading_int16(cls, heading):
+        raw = int(round(float(heading) * cls.RADIANS_TO_INT16))
+        if raw == 32768:
+            return -32768
+        if raw < -32768 or raw > 32767:
+            raise ValueError("OTOS heading value is outside the signed 16-bit register range")
+        return raw
+
+    @staticmethod
     def _scaled_int16(value, scale):
-        raw = int(round(float(value) * scale))
+        numeric = float(value)
+        if not math.isfinite(numeric):
+            raise ValueError("OTOS pose value must be finite")
+        raw = int(round(numeric * scale))
         if raw < -32768 or raw > 32767:
             raise ValueError("OTOS pose value is outside the signed 16-bit register range")
         return raw

@@ -172,7 +172,7 @@ foreach ($relativePath in $reviewGateWorkflows) {
     }
 }
 
-foreach ($component in @('ARESLib-Kotlin', 'ARES-FTC', 'ARES-FRC', 'ARES-FTC-Starter', 'ARES-FRC-Starter', 'ARES-Analytics')) {
+foreach ($component in @('ARESLib-Kotlin', 'ARES-FTC', 'ARES-FRC', 'ARES-FTC-Starter', 'ARES-FRC-Starter', 'ARES-XRP-Starter', 'ARES-Analytics')) {
     if (Test-Path -LiteralPath (Join-Path $root "$component/.git")) {
         throw "$component is still a nested Git repository; source must be owned by the monorepo."
     }

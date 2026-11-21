@@ -8,6 +8,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
@@ -265,17 +267,24 @@ class ServiceRegistry {
      * a cold native-library load, WAL recovery, or a large database cannot block the AWT event
      * thread before Compose creates a visible window.
      */
-    internal fun prepareForMainScreen() {
+    private val disposalStarted = AtomicBoolean(false)
+
+    internal suspend fun prepareForMainScreen() {
         if (disposed.get()) throw CancellationException("Studio is shutting down")
         databaseService
+        currentCoroutineContext().ensureActive()
         if (disposed.get()) throw CancellationException("Studio is shutting down")
-        runBlocking { notificationIntegrationService.start() }
+        notificationIntegrationService.start()
+        currentCoroutineContext().ensureActive()
         if (disposed.get()) throw CancellationException("Studio is shutting down")
-        runCatching { runBlocking { mcpBridgeServer.start() } }
-            .onFailure {
-                org.slf4j.LoggerFactory.getLogger(ServiceRegistry::class.java)
-                    .warn("Failed to start local MCP bridge server", it)
-            }
+        try {
+            mcpBridgeServer.start()
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (error: Throwable) {
+            org.slf4j.LoggerFactory.getLogger(ServiceRegistry::class.java)
+                .warn("Failed to start local MCP bridge server", error)
+        }
     }
 
     /** Reject new workspace work and neutralize input before waiting for Compose cancellation. */
@@ -327,20 +336,22 @@ class ServiceRegistry {
     /** Tears down services that hold coroutine scopes or background jobs, in dependency order. */
     internal suspend fun disposeAndJoin() {
         beginShutdown()
+        if (!disposalStarted.compareAndSet(false, true)) return
         var telemetryPersisted = true
         var alertsPersisted = true
-        if (lazyFieldInitialized(::updateCheckerService)) {
-            updateCheckerService.dispose()
+        var firstCleanupFailure: Throwable? = null
+        suspend fun runIsolated(block: suspend () -> Unit) {
+            try {
+                block()
+            } catch (error: Throwable) {
+                if (firstCleanupFailure == null) firstCleanupFailure = error
+                else firstCleanupFailure.addSuppressed(error)
+            }
         }
-        if (lazyFieldInitialized(::windowsUpdateService)) {
-            windowsUpdateService.close()
-        }
-        if (lazyFieldInitialized(::integrationCenterService)) {
-            integrationCenterService.close()
-        }
-        if (lazyFieldInitialized(::targetScannerService)) {
-            targetScannerService.disposeAndJoin()
-        }
+        if (lazyFieldInitialized(::updateCheckerService)) runIsolated { updateCheckerService.dispose() }
+        if (lazyFieldInitialized(::windowsUpdateService)) runIsolated { windowsUpdateService.close() }
+        if (lazyFieldInitialized(::integrationCenterService)) runIsolated { integrationCenterService.close() }
+        if (lazyFieldInitialized(::targetScannerService)) runIsolated { targetScannerService.disposeAndJoin() }
         // Native summary queries can delay import cancellation beyond the desktop watchdog.
         // Stop owned processes first so that delay cannot orphan a running simulator. Imports
         // retain their ADB and storage dependencies until cancellation cleanup has joined.
@@ -356,62 +367,43 @@ class ServiceRegistry {
             closeDependencies = {
                 // Terminal disposal cancels and joins the WebSocket client job, then rejects
                 // Compose-driven restarts while later process shutdown updates UI state.
+                if (lazyFieldInitialized(::xrpLinkService)) runIsolated { xrpLinkService.disposeAndJoin() }
                 if (lazyFieldInitialized(::nt4ClientService)) {
-                    if (lazyFieldInitialized(::xrpLinkService)) xrpLinkService.disposeAndJoin()
-                    telemetryPersisted = nt4ClientService.disposeAndJoin()
+                    runIsolated { telemetryPersisted = nt4ClientService.disposeAndJoin() }
                 }
-                if (lazyFieldInitialized(::adbService)) {
-                    adbService.shutdownAndJoin()
-                }
+                if (lazyFieldInitialized(::adbService)) runIsolated { adbService.shutdownAndJoin() }
                 if (lazyFieldInitialized(::projectBackupAutoSyncService)) {
-                    projectBackupAutoSyncService.closeAndJoin()
+                    runIsolated { projectBackupAutoSyncService.closeAndJoin() }
                 }
-                if (lazyFieldInitialized(::replayEngineService)) {
-                    replayEngineService.disposeAndJoin()
-                }
+                if (lazyFieldInitialized(::replayEngineService)) runIsolated { replayEngineService.disposeAndJoin() }
                 if (lazyFieldInitialized(::alertEngineService)) {
-                    alertsPersisted = alertEngineService.disposeAndJoin()
+                    runIsolated { alertsPersisted = alertEngineService.disposeAndJoin() }
                 }
-                if (lazyFieldInitialized(::phoenixDiagnosticsService)) {
-                    phoenixDiagnosticsService.dispose()
-                }
-                if (lazyFieldInitialized(::dashboardHealthService)) {
-                    dashboardHealthService.dispose()
-                }
-                if (lazyFieldInitialized(::oauthService)) {
-                    oauthService.dispose()
-                }
-                if (lazyFieldInitialized(::generativeAiService)) {
-                    generativeAiService.close()
-                }
+                if (lazyFieldInitialized(::phoenixDiagnosticsService)) runIsolated { phoenixDiagnosticsService.dispose() }
+                if (lazyFieldInitialized(::dashboardHealthService)) runIsolated { dashboardHealthService.dispose() }
+                if (lazyFieldInitialized(::oauthService)) runIsolated { oauthService.dispose() }
+                if (lazyFieldInitialized(::generativeAiService)) runIsolated { generativeAiService.close() }
                 if (lazyFieldInitialized(::notificationIntegrationService)) {
-                    notificationIntegrationService.closeAndJoin()
+                    runIsolated { notificationIntegrationService.closeAndJoin() }
                 }
-                if (lazyFieldInitialized(::mcpBridgeServer)) {
-                    runCatching { mcpBridgeServer.close() }
-                }
-                if (lazyFieldInitialized(::robotLogIngestionService)) {
-                    robotLogIngestionService.close()
-                }
-                if (lazyFieldInitialized(::googleDriveService)) {
-                    googleDriveService.dispose()
-                }
-                if (lazyFieldInitialized(::eventApiService)) {
-                    eventApiService.close()
-                }
+                if (lazyFieldInitialized(::mcpBridgeServer)) runIsolated { mcpBridgeServer.close() }
+                if (lazyFieldInitialized(::robotLogIngestionService)) runIsolated { robotLogIngestionService.close() }
+                if (lazyFieldInitialized(::googleDriveService)) runIsolated { googleDriveService.dispose() }
+                if (lazyFieldInitialized(::eventApiService)) runIsolated { eventApiService.close() }
                 if (telemetryPersisted && alertsPersisted && lazyFieldInitialized(::databaseService)) {
-                    databaseService.closeAndJoin()
+                    runIsolated { databaseService.closeAndJoin() }
                 }
-                if (lazyFieldInitialized(::gamepadService)) {
-                    gamepadService.dispose()
-                }
+                if (lazyFieldInitialized(::gamepadService)) runIsolated { gamepadService.dispose() }
             }
         )
         if (!telemetryPersisted || !alertsPersisted) {
-            throw java.io.IOException(
+            val persistenceFailure = java.io.IOException(
                 "Shutdown aborted before closing DuckDB because pending telemetry or alerts could not be persisted"
             )
+            firstCleanupFailure?.let(persistenceFailure::addSuppressed)
+            throw persistenceFailure
         }
+        firstCleanupFailure?.let { throw it }
     }
 
     // ── Global Keyboard Drive State ──────────────────────────────────────────

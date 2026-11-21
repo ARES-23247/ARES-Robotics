@@ -34,7 +34,9 @@ rootProject.ext.aresGitHubMavenRepository = requiredReleaseProperty('githubMaven
     aresStudioVersion: 'studioVersion',
     aresFtcStarterVersion: 'ftcStarterVersion',
     aresFrcStarterVersion: 'frcStarterVersion',
+    aresXrpStarterVersion: 'xrpStarterVersion',
     aresLightbotExampleVersion: 'lightbotExampleVersion',
+    aresBiobuzzExampleVersion: 'biobuzzExampleVersion',
 ].each { extensionName, propertyName ->
     def value = releaseProperties.getProperty(propertyName)?.trim()
     if (value != null && !value.isEmpty()) {

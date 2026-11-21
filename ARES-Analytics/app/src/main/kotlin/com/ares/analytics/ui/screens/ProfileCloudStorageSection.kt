@@ -30,6 +30,9 @@ import com.ares.analytics.ui.util.DesktopFileChoosers
 import com.ares.analytics.viewmodel.ProfileIntent
 import com.ares.analytics.viewmodel.ProfileState
 import com.ares.analytics.viewmodel.ProfileViewModel
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.encodeToString
 
 @Composable
@@ -57,6 +60,24 @@ internal fun ProfileCloudStorageSection(
     }
     var destinationTypeMenuExpanded by remember { mutableStateOf(false) }
     var destinationNotice by remember { mutableStateOf<String?>(null) }
+    val scope = rememberCoroutineScope()
+    val customClientValid = isValidGoogleDesktopClientId(googleClientId) &&
+        isValidGoogleOAuthBrokerUrl(googleOAuthBrokerUrl)
+    val signInAvailable = if (useCustomGoogleClient) customClientValid else state.managedGoogleSignInAvailable
+    val triggerGoogleSignIn: () -> Unit = {
+        if (signInAvailable) {
+            val updatedConfig = config.copy(
+                googleOAuthUseCustomClient = useCustomGoogleClient,
+                googleClientId = googleClientId.takeIf { useCustomGoogleClient && it.isNotBlank() },
+                googleOAuthBrokerUrl = googleOAuthBrokerUrl.takeIf {
+                    useCustomGoogleClient && it.isNotBlank()
+                },
+                googleClientSecret = null,
+            )
+            onConfigChanged(updatedConfig)
+            viewModel.onIntent(ProfileIntent.GoogleSignIn(updatedConfig))
+        }
+    }
 
     AresCard(
         modifier = Modifier.fillMaxWidth(),
@@ -74,9 +95,6 @@ internal fun ProfileCloudStorageSection(
                         color = AresTextSecondary,
                         fontSize = 11.sp,
                     )
-                    val customClientValid = isValidGoogleDesktopClientId(googleClientId) &&
-                        isValidGoogleOAuthBrokerUrl(googleOAuthBrokerUrl)
-                    val signInAvailable = if (useCustomGoogleClient) customClientValid else state.managedGoogleSignInAvailable
                     if (!signInAvailable) {
                         Text(
                             if (useCustomGoogleClient) {
@@ -89,18 +107,7 @@ internal fun ProfileCloudStorageSection(
                         )
                     }
                     Button(
-                        onClick = {
-                            val updatedConfig = config.copy(
-                                googleOAuthUseCustomClient = useCustomGoogleClient,
-                                googleClientId = googleClientId.takeIf { useCustomGoogleClient && it.isNotBlank() },
-                                googleOAuthBrokerUrl = googleOAuthBrokerUrl.takeIf {
-                                    useCustomGoogleClient && it.isNotBlank()
-                                },
-                                googleClientSecret = null,
-                            )
-                            onConfigChanged(updatedConfig)
-                            viewModel.onIntent(ProfileIntent.GoogleSignIn(updatedConfig))
-                        },
+                        onClick = triggerGoogleSignIn,
                         enabled = signInAvailable,
                         colors = ButtonDefaults.buttonColors(containerColor = AresCyan, contentColor = AresOnAccent)
                     ) {
@@ -152,17 +159,8 @@ internal fun ProfileCloudStorageSection(
                 is AuthState.Error -> {
                     Text("Authorization Error: ${auth.message}", color = AresError, fontSize = 12.sp)
                     Button(
-                        onClick = {
-                            val updatedConfig = config.copy(
-                                googleOAuthUseCustomClient = useCustomGoogleClient,
-                                googleClientId = googleClientId.takeIf { useCustomGoogleClient && it.isNotBlank() },
-                                googleOAuthBrokerUrl = googleOAuthBrokerUrl.takeIf {
-                                    useCustomGoogleClient && it.isNotBlank()
-                                },
-                                googleClientSecret = null,
-                            )
-                            viewModel.onIntent(ProfileIntent.GoogleSignIn(updatedConfig))
-                        },
+                        onClick = triggerGoogleSignIn,
+                        enabled = signInAvailable,
                         colors = ButtonDefaults.buttonColors(containerColor = AresCyan, contentColor = AresOnAccent),
                     ) {
                         Text("Try Google sign-in again", color = AresOnAccent)
@@ -216,7 +214,12 @@ internal fun ProfileCloudStorageSection(
                         }
                         OutlinedButton(
                             onClick = {
-                                destinationNotice = exportDriveDestinationRecord(destination)
+                                scope.launch {
+                                    destinationNotice = withContext(Dispatchers.IO) {
+                                        runCatching { exportDriveDestinationRecord(destination) }
+                                            .getOrElse { "Export failed: ${it.message}" }
+                                    }
+                                }
                             },
                         ) {
                             Text("Export destination record")
