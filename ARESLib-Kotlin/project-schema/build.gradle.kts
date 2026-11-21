@@ -14,7 +14,7 @@ description = "Stable ARES project document identity, codecs, targets, and migra
 
 dependencies {
     implementation(kotlin("stdlib"))
-    implementation("com.google.code.gson:gson:2.14.0")
+    implementation("com.google.code.gson:gson:2.15.0")
     testImplementation(kotlin("test"))
     testImplementation("org.junit.jupiter:junit-jupiter:5.14.4")
 }
