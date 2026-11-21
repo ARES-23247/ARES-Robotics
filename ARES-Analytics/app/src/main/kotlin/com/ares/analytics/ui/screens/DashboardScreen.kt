@@ -48,6 +48,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ares.analytics.service.*
 import com.ares.analytics.service.ImportArchiveEntry
+import com.ares.analytics.service.hardware.HardwareSetupService
 import com.ares.analytics.service.project.persistence.ProjectMetadataRepository
 import com.ares.analytics.service.tuning.TuningProfileRepository
 import com.ares.analytics.shared.*
@@ -129,10 +130,13 @@ internal fun DashboardScreen(
     onOpenRunHistory: () -> Unit = {},
     onOpenHelp: () -> Unit = {},
     onMissionSnapshotChanged: (DashboardMissionSnapshot) -> Unit = {},
+    liveRobotIp: String = "127.0.0.1",
+    hardwareSetupService: HardwareSetupService? = null,
 ) {
     val state by viewModel.state.collectAsState()
     val scope = rememberCoroutineScope()
     val liveServices = services.widgets.live
+    val gamepad1State by liveServices.gamepadService.gamepad1State.collectAsState()
     val replayServices = services.widgets.replay
     var newLayoutName by remember { mutableStateOf("") }
     var offlineGuideDismissed by remember { mutableStateOf(false) }
@@ -234,7 +238,7 @@ internal fun DashboardScreen(
         liveSessionId = liveSessionId,
         frameRateHz = frameRateHz,
         lastUpdateAgeMs = controllerHealth.lastUpdateAgeMs,
-        hostIp = if (isLocalSimulator) "127.0.0.1" else currentConfig.nt4Host?.ifBlank { "127.0.0.1" } ?: "127.0.0.1"
+        hostIp = if (isLocalSimulator) "127.0.0.1" else liveRobotIp
     )
 
     LaunchedEffect(missionSnapshot) {
@@ -246,8 +250,8 @@ internal fun DashboardScreen(
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
 
-        if (isLocalSimulator) {
-            if (currentConfig.league == League.XRP) XrpSimulatorControlBar(
+        if (currentConfig.league == League.XRP) {
+            XrpSimulatorControlBar(
                 xrpLink = liveServices.xrpLinkService,
                 keyboardDriveState = liveServices.keyboardDriveState,
                 projectPath = currentConfig.projectPath,
@@ -257,8 +261,15 @@ internal fun DashboardScreen(
                 canLaunchSimulator = canLaunchSimulator,
                 simulatorLaunchDisabledReason = simulatorLaunchDisabledReason,
                 onLaunchSimulator = onLaunchSimulator,
+                isLocalSimulator = isLocalSimulator,
+                liveHostIp = liveRobotIp,
+                gamepadConnected = gamepad1State.connected,
+                hardwareSetupService = hardwareSetupService,
+                onOpenHardwareSetup = { onNavigate(NavigationTarget.HARDWARE_SETUP) },
                 modifier = Modifier.fillMaxWidth(),
-            ) else LocalSimulatorControlBar(
+            )
+        } else if (isLocalSimulator) {
+            LocalSimulatorControlBar(
                 nt4Client = liveServices.nt4ClientService,
                 keyboardDriveState = liveServices.keyboardDriveState,
                 league = currentConfig.league,

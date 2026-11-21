@@ -2,7 +2,7 @@
   "schemaVersion": 2,
   "scope": "Tracked production Kotlin file sizes; no review or test coverage claim.",
   "summary": {
-    "totalProductionKotlinFiles": 1270,
+    "totalProductionKotlinFiles": 1271,
     "grandfatheredFiles": 24,
     "violationsOverLimit": 0,
     "microfilesRemaining": 21,
@@ -132,7 +132,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/di/ServiceRegistry.kt",
       "product": "ARES-Analytics",
-      "lines": 485,
+      "lines": 489,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -1002,7 +1002,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/Nt4ClientService.kt",
       "product": "ARES-Analytics",
-      "lines": 735,
+      "lines": 748,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -1462,7 +1462,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/TargetScannerService.kt",
       "product": "ARES-Analytics",
-      "lines": 74,
+      "lines": 83,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -1522,7 +1522,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/XrpLinkService.kt",
       "product": "ARES-Analytics",
-      "lines": 471,
+      "lines": 633,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -3862,7 +3862,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/dashboard/XrpSimulatorControlBar.kt",
       "product": "ARES-Analytics",
-      "lines": 141,
+      "lines": 458,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -4892,7 +4892,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/input/DesktopDriveInputPublisher.kt",
       "product": "ARES-Analytics",
-      "lines": 464,
+      "lines": 480,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -4902,7 +4902,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/input/DesktopDriveKeyDispatcher.kt",
       "product": "ARES-Analytics",
-      "lines": 112,
+      "lines": 113,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -5022,7 +5022,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/screens/DashboardScreen.kt",
       "product": "ARES-Analytics",
-      "lines": 401,
+      "lines": 412,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -5202,7 +5202,17 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/screens/MainScreen.kt",
       "product": "ARES-Analytics",
-      "lines": 738,
+      "lines": 725,
+      "lineLimit": 750,
+      "effectiveLimit": 750,
+      "grandfathered": false,
+      "compliant": true,
+      "isMicrofile": false
+    },
+    {
+      "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/screens/MainScreenDriveControlSupport.kt",
+      "product": "ARES-Analytics",
+      "lines": 146,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -5222,7 +5232,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/screens/MainScreenNavigationSupport.kt",
       "product": "ARES-Analytics",
-      "lines": 276,
+      "lines": 277,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -5402,7 +5412,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/screens/RobotConnectionCoordinator.kt",
       "product": "ARES-Analytics",
-      "lines": 77,
+      "lines": 82,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -5522,7 +5532,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/screens/WorkspaceRouteHost.kt",
       "product": "ARES-Analytics",
-      "lines": 390,
+      "lines": 393,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,

@@ -291,6 +291,7 @@ class ServiceRegistry {
     internal fun beginShutdown() {
         disposed.set(true)
         if (lazyFieldInitialized(::keyboardDriveState)) keyboardDriveState.disarm()
+        if (lazyFieldInitialized(::xrpLinkService)) xrpLinkService.disarmLiveControl()
     }
 
     /** May run while UI cancellation is waiting on a native query; owns no database teardown. */
@@ -324,7 +325,10 @@ class ServiceRegistry {
     /** Releases every project-scoped runtime owner before another workspace becomes observable. */
     internal suspend fun releaseWorkspaceOwnership() = withContext(NonCancellable) {
         if (lazyFieldInitialized(::keyboardDriveState)) keyboardDriveState.disarm()
-        if (lazyFieldInitialized(::xrpLinkService)) xrpLinkService.stop()
+        if (lazyFieldInitialized(::xrpLinkService)) {
+            runCatching { xrpLinkService.revokeLiveControl() }
+            xrpLinkService.stop()
+        }
         if (lazyFieldInitialized(::nt4ClientService)) nt4ClientService.stop()
         if (lazyFieldInitialized(::replayEngineService)) replayEngineService.clearSession()
         if (lazyFieldInitialized(::phoenixDiagnosticsService)) phoenixDiagnosticsService.stop()
@@ -477,9 +481,9 @@ class KeyboardDriveState {
         isSpacePressed = false
     }
 
-    fun disarm() {
+    fun disarm(preserveInputSource: Boolean = false) {
         enabled = false
-        useGamepad = false
+        if (!preserveInputSource) useGamepad = false
         releaseAll()
     }
 }

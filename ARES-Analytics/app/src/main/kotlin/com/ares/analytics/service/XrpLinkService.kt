@@ -74,10 +74,24 @@ class XrpLinkService internal constructor(
     private val generation = AtomicLong()
     private val controlRevision = AtomicLong()
     private val writerMutex = Mutex()
+    private data class AuthorizedLivePeer(
+        val host: String,
+        val projectId: String,
+        val canonicalContentSha256: String,
+    )
+
+    private data class LiveStopDispatch(
+        val socket: Socket,
+        val writer: BufferedWriter,
+        val revision: Long,
+    )
+
     private val _isConnected = MutableStateFlow(false)
     val isConnected: StateFlow<Boolean> = _isConnected.asStateFlow()
     private val _peerIdentity = MutableStateFlow<XrpPeerIdentity?>(null)
     val peerIdentity: StateFlow<XrpPeerIdentity?> = _peerIdentity.asStateFlow()
+    private val _liveControlAuthorized = MutableStateFlow(false)
+    val liveControlAuthorized: StateFlow<Boolean> = _liveControlAuthorized.asStateFlow()
     private val _connectionError = MutableStateFlow<String?>(null)
     val connectionError: StateFlow<String?> = _connectionError.asStateFlow()
     private val _controlRequest = MutableStateFlow(XrpControlRequest())
@@ -89,12 +103,15 @@ class XrpLinkService internal constructor(
     private val lifecycleLock = Any()
     @Volatile var serverHost: String = "127.0.0.1"
         private set
+    @Volatile private var authorizedLivePeer: AuthorizedLivePeer? = null
     @Volatile private var socket: Socket? = null
     @Volatile private var writer: BufferedWriter? = null
     private var job: Job? = null
     private var lastTelemetrySequence = -1L
 
     fun start(host: String, port: Int = DEFAULT_PORT, expectedProjectId: String, expectedCanonicalContentSha256: String) = synchronized(lifecycleLock) {
+        val cleanHost = host.trim()
+        require(cleanHost.isNotEmpty()) { "XRP link requires a non-blank host" }
         require(expectedProjectId.isNotBlank()) { "XRP link requires the canonical project ID" }
         require(expectedCanonicalContentSha256.matches(SHA256)) { "XRP link requires the canonical project fingerprint" }
         val requestedGeneration = generation.incrementAndGet()
@@ -102,7 +119,7 @@ class XrpLinkService internal constructor(
         previous?.cancel()
         runCatching { socket?.close() }
         clearConnectionState()
-        serverHost = host
+        serverHost = cleanHost
         job = scope.launch {
             // A replaced owner must finish all telemetry delivery and cleanup before
             // its successor can publish a connection, even if connect was blocking.
@@ -115,7 +132,7 @@ class XrpLinkService internal constructor(
             }
             while (currentCoroutineContext().isActive && generation.get() == requestedGeneration) {
                 try {
-                    connectAndRead(host, port, expectedProjectId, expectedCanonicalContentSha256, requestedGeneration)
+                    connectAndRead(cleanHost, port, expectedProjectId, expectedCanonicalContentSha256, requestedGeneration)
                 } catch (cancelled: CancellationException) {
                     throw cancelled
                 } catch (error: Exception) {
@@ -148,6 +165,75 @@ class XrpLinkService internal constructor(
         scope.coroutineContext[Job]?.cancelAndJoin()
     }
 
+    /**
+     * Grants temporary driver-station control authorization bound to the currently verified XRP
+     * peer (`serverHost`, `projectId`, and `canonicalContentSha256`).
+     *
+     * Non-loopback XRP links remain telemetry-only by default and automatically revoke control on
+     * disconnect, reconnect, target switch, or explicit disarm.
+     */
+    fun authorizeLiveControl(): Boolean = synchronized(lifecycleLock) {
+        if (!_isConnected.value) return@synchronized false
+        val peer = _peerIdentity.value ?: return@synchronized false
+        val canonicalSha = peer.canonicalContentSha256 ?: return@synchronized false
+        authorizedLivePeer = AuthorizedLivePeer(
+            host = serverHost,
+            projectId = peer.projectId,
+            canonicalContentSha256 = canonicalSha,
+        )
+        _controlRequest.value = stoppedRequest()
+        _liveControlAuthorized.value = true
+        true
+    }
+
+    /**
+     * Immediately clears non-loopback control authorization, latches [XrpRequestedMode.STOPPED],
+     * and transmits a neutral `"STOP"` frame over the active link.
+     */
+    suspend fun revokeLiveControl(sessionId: String? = null) {
+        val disarmDispatch = disarmLivePeerAndPrepareStopLocked() ?: return
+        val effectiveSessionId = sessionId?.takeIf(String::isNotBlank) ?: "studio-disarm-${disarmDispatch.revision}"
+        sendControlJson(
+            targetSocket = disarmDispatch.socket,
+            targetWriter = disarmDispatch.writer,
+            expectedRevision = disarmDispatch.revision,
+            message = buildControlJson(
+                sessionId = effectiveSessionId,
+                sequence = 0L,
+                requestRevision = disarmDispatch.revision,
+                armed = false,
+                vx = 0.0,
+                vy = 0.0,
+                omega = 0.0,
+                command = "STOP",
+                selectedOpMode = null,
+            ),
+        )
+    }
+
+    /** Non-suspending synchronous disarm for UI and lifecycle callbacks. */
+    fun disarmLiveControl() {
+        val disarmDispatch = disarmLivePeerAndPrepareStopLocked() ?: return
+        scope.launch {
+            sendControlJson(
+                targetSocket = disarmDispatch.socket,
+                targetWriter = disarmDispatch.writer,
+                expectedRevision = disarmDispatch.revision,
+                message = buildControlJson(
+                    sessionId = "studio-disarm-${disarmDispatch.revision}",
+                    sequence = 0L,
+                    requestRevision = disarmDispatch.revision,
+                    armed = false,
+                    vx = 0.0,
+                    vy = 0.0,
+                    omega = 0.0,
+                    command = "STOP",
+                    selectedOpMode = null,
+                ),
+            )
+        }
+    }
+
     suspend fun publishControl(
         sessionId: String,
         sequence: Long,
@@ -168,32 +254,22 @@ class XrpLinkService internal constructor(
             "XRP autonomous start requires a selected routine"
         }
         val active = synchronized(lifecycleLock) {
-            if (!_isConnected.value || !isLoopbackDriveControlHost(serverHost)) null
+            if (!isControlPermittedLocked()) null
             else socket?.let { connection -> writer?.let { connection to it } }
         } ?: return@withLock false
         val (activeSocket, activeWriter) = active
-        val message = JsonObject().apply {
-            addProperty("protocol", PROTOCOL)
-            addProperty("type", "control")
-            addProperty("sessionId", sessionId)
-            addProperty("sequence", sequence)
-            addProperty("requestRevision", requestRevision)
-            addProperty("armed", armed)
-            addProperty("command", command)
-            selectedOpMode?.let { addProperty("selectedOpMode", it) }
-            add("driveFrame", com.google.gson.JsonArray().apply {
-                add(if (armed) vx else 0.0)
-                add(if (armed) vy else 0.0)
-                add(if (armed) omega else 0.0)
-            })
-        }
-        val sent = runCatching {
-            activeWriter.write(message.toString())
-            activeWriter.newLine()
-            activeWriter.flush()
-        }.isSuccess
-        if (!sent) disconnectSocket(activeSocket)
-        sent
+        val message = buildControlJson(
+            sessionId = sessionId,
+            sequence = sequence,
+            requestRevision = requestRevision,
+            armed = armed,
+            vx = vx,
+            vy = vy,
+            omega = omega,
+            command = command,
+            selectedOpMode = selectedOpMode,
+        )
+        writeAndFlushOrDisconnect(activeSocket, activeWriter, message)
     }
 
     suspend fun publishFieldConfig(payload: String): Boolean = writerMutex.withLock {
@@ -215,13 +291,7 @@ class XrpLinkService internal constructor(
             addProperty("sha256", Sha256.hex(payload))
             addProperty("payload", payload)
         }
-        val sent = runCatching {
-            activeWriter.write(message.toString())
-            activeWriter.newLine()
-            activeWriter.flush()
-        }.isSuccess
-        if (!sent) disconnectSocket(activeSocket)
-        sent
+        writeAndFlushOrDisconnect(activeSocket, activeWriter, message)
     }
 
     suspend fun awaitFieldApply(
@@ -280,8 +350,12 @@ class XrpLinkService internal constructor(
                 socket = connected // stop() can now interrupt connect and handshake reads.
             }
             connected.tcpNoDelay = true
-            connected.connect(InetSocketAddress(host, port), CONNECT_TIMEOUT_MS)
-            connected.soTimeout = HANDSHAKE_TIMEOUT_MS
+            val isLoopback = isLoopbackDriveControlHost(host)
+            connected.connect(
+                InetSocketAddress(host, port),
+                if (isLoopback) CONNECT_TIMEOUT_MS else LIVE_CONNECT_TIMEOUT_MS,
+            )
+            connected.soTimeout = if (isLoopback) HANDSHAKE_TIMEOUT_MS else LIVE_HANDSHAKE_TIMEOUT_MS
             connected.getInputStream().bufferedReader(StandardCharsets.UTF_8).use { reader ->
                 val hello = reader.readLine()?.takeIf { it.length <= MAX_LINE_LENGTH }
                     ?: error("XRP link closed before protocol handshake")
@@ -295,7 +369,9 @@ class XrpLinkService internal constructor(
                 currentCoroutineContext().ensureActive()
                 synchronized(lifecycleLock) {
                     if (generation.get() != requestedGeneration || socket !== connected) return
-                    connected.soTimeout = 0
+                    // Non-loopback Wi-Fi links require a finite read timeout so a browned-out or
+                    // out-of-range XRP disconnects and revokes liveControlAuthorized promptly.
+                    connected.soTimeout = if (isLoopback) 0 else LIVE_READ_TIMEOUT_MS
                     lastTelemetrySequence = -1L
                     serverHost = host
                     writer = connected.getOutputStream().bufferedWriter(StandardCharsets.UTF_8)
@@ -388,8 +464,12 @@ class XrpLinkService internal constructor(
         val heading = root.finiteDouble("heading") ?: return
         val values = listOf(x, y, heading)
         lastTelemetrySequence = sequence
+        val isSimulator = isLoopbackDriveControlHost(serverHost)
         values.forEachIndexed { index, value ->
-            telemetrySink.acceptExternalLiveTelemetry("ARES/TruePose/$index", value)
+            // TruePose is simulator-only; physical XRP hardware publishes EstimatedPose only.
+            if (isSimulator) {
+                telemetrySink.acceptExternalLiveTelemetry("ARES/TruePose/$index", value)
+            }
             telemetrySink.acceptExternalLiveTelemetry("ARES/EstimatedPose/$index", value)
         }
         root.finiteDouble("battery")?.let { telemetrySink.acceptExternalLiveTelemetry("Robot/BatteryVoltage", it) }
@@ -428,12 +508,91 @@ class XrpLinkService internal constructor(
     private fun clearConnectionState() {
         writer = null
         socket = null
+        authorizedLivePeer = null
+        _liveControlAuthorized.value = false
         _isConnected.value = false
         _peerIdentity.value = null
         _fieldApplyReceipt.value = null
         _fieldApplyFailure.value = null
         _controlRequest.value = stoppedRequest()
         lastTelemetrySequence = -1L
+    }
+
+    /** Called only while holding lifecycleLock. */
+    private fun isControlPermittedLocked(): Boolean {
+        if (!_isConnected.value) return false
+        if (isLoopbackDriveControlHost(serverHost)) return true
+        val authorized = authorizedLivePeer ?: return false
+        val peer = _peerIdentity.value ?: return false
+        return authorized.host == serverHost &&
+            authorized.projectId == peer.projectId &&
+            authorized.canonicalContentSha256 == peer.canonicalContentSha256
+    }
+
+    private fun disarmLivePeerAndPrepareStopLocked(): LiveStopDispatch? = synchronized(lifecycleLock) {
+        val shouldSendStop = _isConnected.value && !isLoopbackDriveControlHost(serverHost) && isControlPermittedLocked()
+        val stopRequest = stoppedRequest()
+        authorizedLivePeer = null
+        _liveControlAuthorized.value = false
+        _controlRequest.value = stopRequest
+        if (!shouldSendStop) null
+        else socket?.let { connection ->
+            writer?.let { activeWriter -> LiveStopDispatch(connection, activeWriter, stopRequest.revision) }
+        }
+    }
+
+    private fun buildControlJson(
+        sessionId: String,
+        sequence: Long,
+        requestRevision: Long,
+        armed: Boolean,
+        vx: Double,
+        vy: Double,
+        omega: Double,
+        command: String,
+        selectedOpMode: String?,
+    ): JsonObject = JsonObject().apply {
+        addProperty("protocol", PROTOCOL)
+        addProperty("type", "control")
+        addProperty("sessionId", sessionId)
+        addProperty("sequence", sequence)
+        addProperty("requestRevision", requestRevision)
+        addProperty("armed", armed)
+        addProperty("command", command)
+        selectedOpMode?.let { addProperty("selectedOpMode", it) }
+        add("driveFrame", com.google.gson.JsonArray().apply {
+            add(if (armed) vx else 0.0)
+            add(if (armed) vy else 0.0)
+            add(if (armed) omega else 0.0)
+        })
+    }
+
+    private suspend fun sendControlJson(
+        targetSocket: Socket,
+        targetWriter: BufferedWriter,
+        expectedRevision: Long? = null,
+        message: JsonObject,
+    ): Boolean = writerMutex.withLock {
+        val stillValid = synchronized(lifecycleLock) {
+            socket === targetSocket &&
+                (expectedRevision == null || controlRevision.get() == expectedRevision)
+        }
+        if (!stillValid) return@withLock false
+        writeAndFlushOrDisconnect(targetSocket, targetWriter, message)
+    }
+
+    private fun writeAndFlushOrDisconnect(
+        targetSocket: Socket,
+        targetWriter: BufferedWriter,
+        message: JsonObject,
+    ): Boolean {
+        val sent = runCatching {
+            targetWriter.write(message.toString())
+            targetWriter.newLine()
+            targetWriter.flush()
+        }.isSuccess
+        if (!sent) disconnectSocket(targetSocket)
+        return sent
     }
 
     private fun JsonObject.finiteDouble(name: String): Double? = runCatching {
@@ -464,6 +623,9 @@ class XrpLinkService internal constructor(
         private val SHA256 = Regex("[0-9a-f]{64}")
         private const val CONNECT_TIMEOUT_MS = 500
         private const val HANDSHAKE_TIMEOUT_MS = 1_000
+        private const val LIVE_CONNECT_TIMEOUT_MS = 1_500
+        private const val LIVE_HANDSHAKE_TIMEOUT_MS = 2_500
+        private const val LIVE_READ_TIMEOUT_MS = 1_500
         private const val RECONNECT_DELAY_MS = 500L
         private const val FIELD_APPLY_TIMEOUT_MS = 2_000L
         private const val MAX_LINE_LENGTH = 16_384
