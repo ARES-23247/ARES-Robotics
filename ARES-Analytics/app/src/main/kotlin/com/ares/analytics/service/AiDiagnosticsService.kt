@@ -115,6 +115,8 @@ class AiDiagnosticsService(
         }
         val result = try {
             databaseService.executeAiQuery(sql, workspace, rowLimit = 100)
+        } catch (cancelled: kotlinx.coroutines.CancellationException) {
+            throw cancelled
         } catch (blocked: IllegalArgumentException) {
             return@withContext "Security Error: ${blocked.message ?: "The generated query was blocked."}"
         } catch (failure: Exception) {

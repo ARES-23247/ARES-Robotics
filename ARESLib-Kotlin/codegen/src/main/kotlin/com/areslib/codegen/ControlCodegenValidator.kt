@@ -18,6 +18,8 @@ import com.areslib.controls.learnedControlIds
 import com.areslib.controls.validateControlScheme
 import com.areslib.controls.validateControllerProfile
 import com.areslib.routine.CapabilityArgumentReader
+import com.areslib.subsystem.SubsystemTargetCapability
+import com.areslib.subsystem.SubsystemValueType
 
 /** Validates the controller-specific portion of a project before any Kotlin is rendered. */
 internal fun validateGeneratedControls(
@@ -47,6 +49,7 @@ internal fun validateGeneratedControls(
         if (platform == null) emptySet() else profile.learnedControlIds(platform)
     }
     val context = ControlValidationContext.fromCatalog(request.catalog, routineIds, profileControls)
+    val subsystemActionsByKey = request.subsystemActions.associateBy { it.descriptor.key }
     val schemeIds = mutableSetOf<String>()
     request.controlSchemes.forEach { scheme ->
         require(schemeIds.add(scheme.documentId)) { "Control scheme '${scheme.documentId}' is duplicated" }
@@ -110,7 +113,7 @@ internal fun validateGeneratedControls(
             require(!binding.suppressConstituentBindings || binding.source.kind == ControlSourceKind.CHORD) {
                 "Binding '${binding.bindingId}' can suppress constituents only when its source is a chord"
             }
-            validateGeneratedControlTarget(binding, actions)
+            validateGeneratedControlTarget(binding, actions, subsystemActionsByKey)
             listOf(
                 binding.timing.pressDebounceSeconds,
                 binding.timing.releaseDebounceSeconds,
@@ -128,6 +131,7 @@ internal fun validateGeneratedControls(
 private fun validateGeneratedControlTarget(
     binding: ControlBindingDocument,
     actions: Map<String, ActionDescriptor>,
+    subsystemActionsByKey: Map<String, SubsystemTargetCapability>,
 ) {
     val target = binding.target
     if (target.kind == ControlTargetKind.DRIVE) {
@@ -173,6 +177,22 @@ private fun validateGeneratedControlTarget(
         }
         require(dynamicKey !in target.arguments) {
             "Binding '${binding.bindingId}' declares both a live and static value for '$dynamicKey'"
+        }
+        val subsystemTarget = subsystemActionsByKey[target.key]
+        require(subsystemTarget == null || subsystemTarget.valueType != SubsystemValueType.INT) {
+            "Binding '${binding.bindingId}' cannot bind continuous analog input to integer subsystem target '${target.key}'"
+        }
+        val effectiveMin = binding.source.transform?.outputMinimum ?: -1.0
+        val effectiveMax = binding.source.transform?.outputMaximum ?: 1.0
+        parameter.minimum?.let { minAllowed ->
+            require(effectiveMin >= minAllowed) {
+                "Binding '${binding.bindingId}' analog minimum $effectiveMin is below parameter '$dynamicKey' minimum $minAllowed"
+            }
+        }
+        parameter.maximum?.let { maxAllowed ->
+            require(effectiveMax <= maxAllowed) {
+                "Binding '${binding.bindingId}' analog maximum $effectiveMax exceeds parameter '$dynamicKey' maximum $maxAllowed"
+            }
         }
     }
     val validationArguments = if (dynamicKey == null) {

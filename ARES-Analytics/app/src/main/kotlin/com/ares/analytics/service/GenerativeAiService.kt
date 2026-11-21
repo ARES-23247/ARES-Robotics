@@ -26,6 +26,7 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 import java.io.File
+import java.net.URI
 import java.security.KeyFactory
 import java.security.PrivateKey
 import java.security.Signature
@@ -56,7 +57,7 @@ class GenerativeAiService(
     private suspend fun request(prompt: String, structuredJson: Boolean): String = withContext(Dispatchers.IO) {
         val config = environmentService.loadConfig()
             ?: throw IllegalStateException("No active workspace configuration loaded")
-        val model = configuredModel(config.geminiModel)
+        val model = validateModelId(configuredModel(config.geminiModel))
         val body = buildJsonObject {
             put("contents", buildJsonArray {
                 add(buildJsonObject {
@@ -79,9 +80,12 @@ class GenerativeAiService(
         } else {
             val serviceAccountPath = config.vertexServiceAccountPath
                 ?: throw IllegalStateException("GCP Service Account path is not configured in Profile → AI Diagnostics")
-            val projectId = config.vertexProjectId
-                ?: throw IllegalStateException("GCP Project ID is not configured in Profile → AI Diagnostics")
-            val location = config.vertexLocation ?: "us-central1"
+            val projectId = validateVertexIdentifier(
+                config.vertexProjectId
+                    ?: throw IllegalStateException("GCP Project ID is not configured in Profile → AI Diagnostics"),
+                "vertexProjectId",
+            )
+            val location = validateVertexIdentifier(config.vertexLocation ?: "us-central1", "vertexLocation")
             val accessToken = vertexAccessToken(serviceAccountPath)
             httpClient.post(
                 "https://$location-aiplatform.googleapis.com/v1/projects/$projectId/locations/$location/publishers/google/models/$model:generateContent"
@@ -108,7 +112,9 @@ class GenerativeAiService(
             ?: throw IllegalArgumentException("Missing client_email")
         val privateKeyPem = json["private_key"]?.jsonPrimitive?.content
             ?: throw IllegalArgumentException("Missing private_key")
-        val tokenUri = json["token_uri"]?.jsonPrimitive?.content ?: "https://oauth2.googleapis.com/token"
+        val tokenUri = validateGoogleTokenUri(
+            json["token_uri"]?.jsonPrimitive?.content ?: "https://oauth2.googleapis.com/token"
+        )
         val response = httpClient.post(tokenUri) {
             contentType(ContentType.Application.FormUrlEncoded)
             setBody(
@@ -128,14 +134,23 @@ class GenerativeAiService(
     private fun createJwt(clientEmail: String, privateKeyPem: String, tokenUri: String): String {
         val encoder = Base64.getUrlEncoder().withoutPadding()
         val nowSeconds = System.currentTimeMillis() / 1_000L
-        val header = encoder.encodeToString("{\"alg\":\"RS256\",\"typ\":\"JWT\"}".toByteArray())
-        val claims = encoder.encodeToString(
-            "{\"iss\":\"$clientEmail\",\"scope\":\"https://www.googleapis.com/auth/cloud-platform\",\"aud\":\"$tokenUri\",\"exp\":${nowSeconds + 3_600},\"iat\":$nowSeconds}".toByteArray()
-        )
+        val headerJson = buildJsonObject {
+            put("alg", "RS256")
+            put("typ", "JWT")
+        }.toString()
+        val claimsJson = buildJsonObject {
+            put("iss", clientEmail)
+            put("scope", "https://www.googleapis.com/auth/cloud-platform")
+            put("aud", tokenUri)
+            put("exp", nowSeconds + 3_600L)
+            put("iat", nowSeconds)
+        }.toString()
+        val header = encoder.encodeToString(headerJson.toByteArray(Charsets.UTF_8))
+        val claims = encoder.encodeToString(claimsJson.toByteArray(Charsets.UTF_8))
         val unsigned = "$header.$claims"
         val signer = Signature.getInstance("SHA256withRSA").apply {
             initSign(privateKey(privateKeyPem))
-            update(unsigned.toByteArray())
+            update(unsigned.toByteArray(Charsets.UTF_8))
         }
         return "$unsigned.${encoder.encodeToString(signer.sign())}"
     }
@@ -156,4 +171,43 @@ class GenerativeAiService(
         ?.takeIf(String::isNotEmpty)
         ?.takeUnless { it == "gemini-1.5-flash" }
         ?: DEFAULT_GEMINI_MODEL
+
+    companion object {
+        private val VERTEX_ID_REGEX = Regex("^[a-z0-9][a-z0-9-]{0,62}$")
+        private val MODEL_ID_REGEX = Regex("^[A-Za-z0-9._-]{1,128}$")
+
+        internal fun validateVertexIdentifier(raw: String, field: String): String {
+            val trimmed = raw.trim()
+            require(VERTEX_ID_REGEX.matches(trimmed)) {
+                "Invalid $field '$raw': expected lowercase letters, digits, and hyphens only."
+            }
+            return trimmed
+        }
+
+        internal fun validateModelId(raw: String): String {
+            val trimmed = raw.trim()
+            require(MODEL_ID_REGEX.matches(trimmed)) {
+                "Invalid Gemini model identifier '$raw'."
+            }
+            return trimmed
+        }
+
+        internal fun validateGoogleTokenUri(raw: String): String {
+            val trimmed = raw.trim()
+            val uri = runCatching { URI(trimmed) }.getOrNull()
+                ?: throw IllegalArgumentException("Invalid Vertex token_uri '$raw'")
+            val host = uri.host?.lowercase().orEmpty()
+            require(
+                uri.scheme.equals("https", ignoreCase = true) &&
+                    (host == "oauth2.googleapis.com" || host.endsWith(".googleapis.com")) &&
+                    uri.userInfo == null &&
+                    uri.port == -1 &&
+                    uri.rawQuery == null &&
+                    uri.rawFragment == null
+            ) {
+                "Untrusted Vertex token_uri '$raw': must be an HTTPS Google APIs token endpoint."
+            }
+            return trimmed
+        }
+    }
 }

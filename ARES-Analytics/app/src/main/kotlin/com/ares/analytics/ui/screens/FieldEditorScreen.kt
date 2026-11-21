@@ -108,8 +108,9 @@ fun FieldEditorScreen(
             onDismiss = { showGamePieceCatalog = false },
         )
     }
-    val fieldWidthM = if (state.fieldImageConfig.widthMeters > 0.0) state.fieldImageConfig.widthMeters else (if (league == League.FTC) 3.65 else 16.5)
-    val fieldHeightM = if (state.fieldImageConfig.heightMeters > 0.0) state.fieldImageConfig.heightMeters else (if (league == League.FTC) 3.65 else 8.2)
+    val (defaultW, defaultH) = com.ares.analytics.ui.components.pathplanner.defaultFieldDimensionsMeters(league)
+    val fieldWidthM = if (state.fieldImageConfig.widthMeters > 0.0) state.fieldImageConfig.widthMeters else defaultW
+    val fieldHeightM = if (state.fieldImageConfig.heightMeters > 0.0) state.fieldImageConfig.heightMeters else defaultH
 
     Row(
         modifier = Modifier

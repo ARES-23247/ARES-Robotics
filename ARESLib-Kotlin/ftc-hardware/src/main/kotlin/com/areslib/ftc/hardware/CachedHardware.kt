@@ -4,6 +4,7 @@ import com.qualcomm.robotcore.hardware.DcMotorEx
 import com.qualcomm.robotcore.hardware.DcMotor
 import com.qualcomm.robotcore.hardware.DcMotorSimple
 import com.qualcomm.robotcore.hardware.Servo
+import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit
 import kotlin.math.abs
 
 /**
@@ -62,8 +63,45 @@ class CachedDcMotorEx(
         delegate.direction = value
     }
 
+    override fun setVelocity(angularRate: Double) {
+        hasPowerCommand = false
+        powerWriteUncertain = true
+        delegate.velocity = angularRate
+        powerWriteUncertain = false
+    }
+
+    override fun setVelocity(angularRate: Double, unit: AngleUnit) {
+        hasPowerCommand = false
+        powerWriteUncertain = true
+        delegate.setVelocity(angularRate, unit)
+        powerWriteUncertain = false
+    }
+
+    @Suppress("DEPRECATION")
+    override fun setPowerFloat() {
+        hasPowerCommand = false
+        powerWriteUncertain = true
+        delegate.setPowerFloat()
+        powerWriteUncertain = false
+    }
+
+    override fun setMotorDisable() {
+        hasPowerCommand = false
+        powerWriteUncertain = true
+        delegate.setMotorDisable()
+        powerWriteUncertain = false
+    }
+
+    override fun setMotorEnable() {
+        hasPowerCommand = false
+        powerWriteUncertain = true
+        delegate.setMotorEnable()
+        powerWriteUncertain = false
+    }
+
     override fun resetDeviceConfigurationForOpMode() {
         hasPowerCommand = false
+        powerWriteUncertain = false
         delegate.resetDeviceConfigurationForOpMode()
     }
 }

@@ -139,11 +139,18 @@ object DriveReducer {
         val nextOdomX = state.odometryX + arcX * cosHeading - arcY * sinHeading
         val nextOdomY = state.odometryY + arcX * sinHeading + arcY * cosHeading
         val nextOdomHeading = com.areslib.math.wrapAngle(state.odometryHeading + theta)
+        val headingForVel = updatedEstimator?.estimatedPoseHeading ?: nextOdomHeading
+        val cosVel = kotlin.math.cos(headingForVel)
+        val sinVel = kotlin.math.sin(headingForVel)
+        val fieldVelX = action.xVelocity * cosVel - action.yVelocity * sinVel
+        val fieldVelY = action.xVelocity * sinVel + action.yVelocity * cosVel
         return if (updatedEstimator == null) {
             state.copy(
-                xVelocityMetersPerSecond = action.xVelocity,
-                yVelocityMetersPerSecond = action.yVelocity,
-                angularVelocityRadiansPerSecond = action.angularVelocity,
+                measuredFieldXVelocityMetersPerSecond = fieldVelX,
+                measuredFieldYVelocityMetersPerSecond = fieldVelY,
+                measuredAngularVelocityRadiansPerSecond = action.angularVelocity,
+                measuredMotionValid = true,
+                imuMeasurementsValid = true,
                 odometryX = nextOdomX,
                 odometryY = nextOdomY,
                 odometryHeading = nextOdomHeading,
@@ -155,9 +162,11 @@ object DriveReducer {
             )
         } else {
             state.copy(
-                xVelocityMetersPerSecond = action.xVelocity,
-                yVelocityMetersPerSecond = action.yVelocity,
-                angularVelocityRadiansPerSecond = action.angularVelocity,
+                measuredFieldXVelocityMetersPerSecond = fieldVelX,
+                measuredFieldYVelocityMetersPerSecond = fieldVelY,
+                measuredAngularVelocityRadiansPerSecond = action.angularVelocity,
+                measuredMotionValid = true,
+                imuMeasurementsValid = true,
                 odometryX = nextOdomX,
                 odometryY = nextOdomY,
                 odometryHeading = nextOdomHeading,

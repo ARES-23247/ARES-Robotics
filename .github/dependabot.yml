@@ -30,6 +30,14 @@ updates:
     open-pull-requests-limit: 8
     labels: [dependencies]
     groups:
+      ktor-cohort:
+        patterns:
+          - "io.ktor:*"
+          - "io.ktor.plugin"
+      kover-cohort:
+        patterns:
+          - "org.jetbrains.kotlinx.kover"
+          - "org.jetbrains.kotlinx:kover-gradle-plugin"
       same-dependency-across-products:
         group-by: dependency-name
     ignore:

@@ -179,6 +179,8 @@ class FtcAbsoluteAnalogEncoder @kotlin.jvm.JvmOverloads constructor(
     /** Updates absolute position and velocity inputs from analog telemetry. */
     fun updateInputs() = delegate.updateInputs()
 
+    override fun refresh() = delegate.refresh()
+
     /** Resets position offset reference. */
     override fun resetEncoder() = delegate.resetEncoder()
 

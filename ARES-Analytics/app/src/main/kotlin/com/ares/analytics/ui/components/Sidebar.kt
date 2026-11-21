@@ -121,7 +121,7 @@ internal fun Sidebar(
             UtilityButton("Help & Learn", Icons.AutoMirrored.Filled.HelpOutline, activeTarget == NavigationTarget.ACADEMY) { onNavigate(NavigationTarget.ACADEMY) }
             UtilityButton("Terminal Console", Icons.Default.Terminal, false, onToggleTerminal)
             Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                ConnectionIndicator(isConnected, "NT4")
+                ConnectionIndicator(isConnected, if (league == League.XRP) "XRP" else "NT4")
                 if (league == League.FTC) ConnectionIndicator(adbConnected, "ADB", AresCyan)
             }
             SidebarSectionIcon(NavigationSection.SETTINGS, activeSection == NavigationSection.SETTINGS) {

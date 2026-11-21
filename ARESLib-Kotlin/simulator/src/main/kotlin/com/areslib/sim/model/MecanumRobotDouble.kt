@@ -83,6 +83,22 @@ class SimDcMotorEx(
             if (!inputFrozen() && !inputDisconnected() && value.isFinite()) lastHealthyVelocity = value
         }
 
+    internal val rawPower: Double
+        get() = if (direction == DcMotorSimple.Direction.REVERSE) -_power else _power
+
+    internal fun updatePhysicsKinematics(velocityTicksPerSec: Double, dtSeconds: Double) {
+        rawVelocity = velocityTicksPerSec
+        val healthy = !inputFrozen() && !inputDisconnected()
+        if (healthy && velocityTicksPerSec.isFinite()) {
+            lastHealthyVelocity = velocityTicksPerSec
+        }
+        val nextPosition = rawCurrentPosition + (velocityTicksPerSec * dtSeconds).toInt()
+        rawCurrentPosition = nextPosition
+        if (healthy) {
+            lastHealthyPosition = nextPosition
+        }
+    }
+
     val inputValid: Boolean
         get() = !inputDisconnected() && !isActive(faultTargetId, SimulationFaultKind.INVALID_INPUT)
 
@@ -292,6 +308,8 @@ class MecanumRobotDouble(
 
     // Encoder properties
     private val encoderTicksPerMeter = 2000.0 // Ticks per meter of wheel travel
+    private val otosPositionScratch = SparkFunOTOS.Pose2D()
+    private val otosVelocityScratch = SparkFunOTOS.Pose2D()
 
     /** Replaces the immutable AprilTag snapshot used by the 50 Hz camera simulation. */
     fun configureField(config: RobotFieldConfig) {
@@ -312,31 +330,35 @@ class MecanumRobotDouble(
         val rlV = actualVx + actualVy - actualOmega * 0.45
         val rrV = actualVx - actualVy + actualOmega * 0.45
 
-        fl.velocity = flV * encoderTicksPerMeter
-        fr.velocity = frV * encoderTicksPerMeter
-        rl.velocity = rlV * encoderTicksPerMeter
-        rr.velocity = rrV * encoderTicksPerMeter
+        fl.updatePhysicsKinematics(flV * encoderTicksPerMeter, dt)
+        fr.updatePhysicsKinematics(frV * encoderTicksPerMeter, dt)
+        rl.updatePhysicsKinematics(rlV * encoderTicksPerMeter, dt)
+        rr.updatePhysicsKinematics(rrV * encoderTicksPerMeter, dt)
 
-        fl.currentPosition += (fl.velocity * dt).toInt()
-        fr.currentPosition += (fr.velocity * dt).toInt()
-        rl.currentPosition += (rl.velocity * dt).toInt()
-        rr.currentPosition += (rr.velocity * dt).toInt()
-
-        // Feed simulated EKF/Pinpoint sensor coordinates
+        // Feed simulated EKF/Pinpoint sensor coordinates in field frame; GoBildaPinpointDriver
+        // rotates positions and velocities into its reset-relative frame on read.
         val xOff = pinpoint.xOffsetMeters
         val yOff = pinpoint.yOffsetMeters
         val cosH = kotlin.math.cos(trueHeadingRad)
         val sinH = kotlin.math.sin(trueHeadingRad)
+        val fieldVx = actualVx * cosH - actualVy * sinH
+        val fieldVy = actualVx * sinH + actualVy * cosH
         pinpoint.posX = trueX + (xOff * cosH - yOff * sinH)
         pinpoint.posY = trueY + (xOff * sinH + yOff * cosH)
         pinpoint.trueHeading = trueHeadingRad
         pinpoint.heading = if (isPinpointCcwPositive) trueHeadingRad else -trueHeadingRad
         pinpoint.headingVelocity = if (isPinpointCcwPositive) actualOmega else -actualOmega
-        pinpoint.velX = actualVx
-        pinpoint.velY = actualVy
+        pinpoint.velX = fieldVx
+        pinpoint.velY = fieldVy
 
-        otos.setPosition(SparkFunOTOS.Pose2D(trueX, trueY, trueHeadingRad))
-        otos.setVelocity(SparkFunOTOS.Pose2D(actualVx, actualVy, actualOmega))
+        otosPositionScratch.x = trueX
+        otosPositionScratch.y = trueY
+        otosPositionScratch.h = trueHeadingRad
+        otosVelocityScratch.x = fieldVx
+        otosVelocityScratch.y = fieldVy
+        otosVelocityScratch.h = actualOmega
+        otos.setPosition(otosPositionScratch)
+        otos.setVelocity(otosVelocityScratch)
 
         var visibleTagId: Int? = null
         var tagIndex = 0

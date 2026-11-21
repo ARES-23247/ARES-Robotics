@@ -177,54 +177,27 @@ object OprAndSynergyAnalyzer {
         val endPlayed = played.filter { it.redEndgamePoints != null && it.blueEndgamePoints != null }
 
         val minPhaseCount = (played.size + 1) / 2
-        val autoVec = if (autoPlayed.size >= minPhaseCount) {
-            solveMeanCenteredRidge(
-                allTeams,
-                autoPlayed.flatMap {
-                    listOf(
-                        AllianceEquationRow(it.redTeams, it.redAutoPoints!!.toDouble()),
-                        AllianceEquationRow(it.blueTeams, it.blueAutoPoints!!.toDouble()),
-                    )
-                },
-                lambda = if (isWellConditionedFullRank(allTeams, autoPlayed.flatMap {
-                        listOf(
-                            AllianceEquationRow(it.redTeams, it.redAutoPoints!!.toDouble()),
-                            AllianceEquationRow(it.blueTeams, it.blueAutoPoints!!.toDouble()),
-                        )
-                    }, matchCounts)) 1e-4 else 0.35,
-            )
-        } else null
+        fun solvePhase(
+            matches: List<EventMatchResult>,
+            redValue: (EventMatchResult) -> Int?,
+            blueValue: (EventMatchResult) -> Int?,
+        ): Pair<DoubleArray, Map<String, Int>>? {
+            if (matches.size < minPhaseCount) return null
+            val rows = matches.flatMap {
+                listOf(
+                    AllianceEquationRow(it.redTeams, redValue(it)!!.toDouble()),
+                    AllianceEquationRow(it.blueTeams, blueValue(it)!!.toDouble()),
+                )
+            }
+            val phaseCounts = mutableMapOf<String, Int>()
+            rows.forEach { row -> row.teams.forEach { t -> phaseCounts[t] = (phaseCounts[t] ?: 0) + 1 } }
+            val phaseLambda = if (isWellConditionedFullRank(allTeams, rows, phaseCounts)) 1e-4 else 0.35
+            return solveMeanCenteredRidge(allTeams, rows, phaseLambda) to phaseCounts
+        }
 
-        val teleVec = if (telePlayed.size >= minPhaseCount) {
-            solveMeanCenteredRidge(
-                allTeams,
-                telePlayed.flatMap {
-                    listOf(
-                        AllianceEquationRow(it.redTeams, it.redTeleopPoints!!.toDouble()),
-                        AllianceEquationRow(it.blueTeams, it.blueTeleopPoints!!.toDouble()),
-                    )
-                },
-                lambda = 0.35,
-            )
-        } else null
-
-        val endVec = if (endPlayed.size >= minPhaseCount) {
-            solveMeanCenteredRidge(
-                allTeams,
-                endPlayed.flatMap {
-                    listOf(
-                        AllianceEquationRow(it.redTeams, it.redEndgamePoints!!.toDouble()),
-                        AllianceEquationRow(it.blueTeams, it.blueEndgamePoints!!.toDouble()),
-                    )
-                },
-                lambda = if (isWellConditionedFullRank(allTeams, endPlayed.flatMap {
-                        listOf(
-                            AllianceEquationRow(it.redTeams, it.redEndgamePoints!!.toDouble()),
-                            AllianceEquationRow(it.blueTeams, it.blueEndgamePoints!!.toDouble()),
-                        )
-                    }, matchCounts)) 1e-4 else 0.35,
-            )
-        } else null
+        val autoSolved = solvePhase(autoPlayed, { it.redAutoPoints }, { it.blueAutoPoints })
+        val teleSolved = solvePhase(telePlayed, { it.redTeleopPoints }, { it.blueTeleopPoints })
+        val endSolved = solvePhase(endPlayed, { it.redEndgamePoints }, { it.blueEndgamePoints })
 
         val metrics = allTeams.indices.associate { idx ->
             val team = allTeams[idx]
@@ -239,9 +212,9 @@ object OprAndSynergyAnalyzer {
                 npOpr = np,
                 dpr = dpr,
                 ccwm = np - dpr,
-                autoOpr = autoVec?.get(idx),
-                teleopOpr = teleVec?.get(idx),
-                endgameOpr = endVec?.get(idx),
+                autoOpr = autoSolved?.let { (v, c) -> if ((c[team] ?: 0) > 0) v[idx] else null },
+                teleopOpr = teleSolved?.let { (v, c) -> if ((c[team] ?: 0) > 0) v[idx] else null },
+                endgameOpr = endSolved?.let { (v, c) -> if ((c[team] ?: 0) > 0) v[idx] else null },
                 avgAllianceScore = avgScore,
             )
         }
@@ -467,7 +440,8 @@ object OprAndSynergyAnalyzer {
         val blueEndProj = blueBriefs.mapNotNull { it.opr?.endgameOpr }.takeIf { it.isNotEmpty() }?.sum()
 
         val ourBriefs = if (ourAlliance == "RED") redBriefs else if (ourAlliance == "BLUE") blueBriefs else emptyList()
-        val oppBriefs = if (ourAlliance == "RED") blueBriefs else if (ourAlliance == "BLUE") redBriefs else blueBriefs
+        val oppBriefs = if (ourAlliance == "RED") blueBriefs else if (ourAlliance == "BLUE") redBriefs else (redBriefs + blueBriefs)
+        val allBriefs = redBriefs + blueBriefs
         val ourProfile = cleanOur?.let { pitProfiles[it] }
         val ourZone = ourProfile?.preferredAutoZone ?: AutoStartZone.UNKNOWN
 
@@ -506,7 +480,7 @@ object OprAndSynergyAnalyzer {
                 add("Defense Alert: Team ${defender.teamNumber} frequently plays heavy defense; protect cycle lanes cleanly to avoid fouls.")
             }
 
-            val unstable = (ourBriefs + oppBriefs).filter { (it.standSummary?.disconnectCount ?: 0) > 0 }
+            val unstable = allBriefs.filter { (it.standSummary?.disconnectCount ?: 0) > 0 }
             if (unstable.isNotEmpty()) {
                 val summary = unstable.joinToString(", ") { "${it.teamNumber} (${it.standSummary?.disconnectCount} drops)" }
                 add("Reliability Watch: Prior comms/disconnect issues observed on $summary.")

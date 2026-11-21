@@ -517,6 +517,7 @@ private fun NotebookEditorPane(
                     onTypeChange = viewModel::updateDraftType,
                     onAuthorChange = viewModel::updateAuthorId,
                     onUpdateSections = viewModel::updateStructured,
+                    entryKey = Triple(state.selectedEntryId, state.selectedRevisionNumber, state.isNewDraft),
                 )
                 NotebookEditorMode.RAW_MARKDOWN -> RawMarkdownEditorPanel(
                     markdown = state.rawMarkdownDraft,

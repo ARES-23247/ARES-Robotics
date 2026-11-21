@@ -198,11 +198,11 @@ object EventScoutingCodecAndExporters {
     }
 
     private fun parseTbaMatchObject(obj: JsonObject, nowMs: Long): EventMatchResult? {
-        val rawLevel = obj["comp_level"]?.jsonPrimitive?.contentOrNull ?: "qm"
-        val compLevel = if (rawLevel == "qm") "quals" else "elims"
+        val rawLevel = obj["comp_level"]?.jsonPrimitive?.contentOrNull?.trim()?.lowercase().orEmpty().ifBlank { "qm" }
         val matchNumRaw = obj["match_number"]?.jsonPrimitive?.intOrNull ?: return null
         val setNum = obj["set_number"]?.jsonPrimitive?.intOrNull ?: 1
-        val matchNum = if (rawLevel == "qm" || setNum <= 1) matchNumRaw else setNum * 100 + matchNumRaw
+        val compLevel = if (rawLevel == "qm") "quals" else "$rawLevel$setNum"
+        val matchNum = matchNumRaw
         val alliances = obj["alliances"]?.jsonObject ?: return null
         val redObj = alliances["red"]?.jsonObject
         val blueObj = alliances["blue"]?.jsonObject
@@ -243,7 +243,12 @@ object EventScoutingCodecAndExporters {
     private fun parseFtcEventsMatchObject(obj: JsonObject, nowMs: Long): EventMatchResult? {
         val matchNum = obj["matchNumber"]?.jsonPrimitive?.intOrNull ?: return null
         val levelRaw = obj["tournamentLevel"]?.jsonPrimitive?.contentOrNull.orEmpty()
-        val compLevel = if (levelRaw.contains("QUAL", ignoreCase = true) || levelRaw.isBlank()) "quals" else "elims"
+        val seriesNum = obj["series"]?.jsonPrimitive?.intOrNull?.takeIf { it > 0 }
+        val compLevel = when {
+            levelRaw.contains("QUAL", ignoreCase = true) || levelRaw.isBlank() -> "quals"
+            seriesNum != null -> "elims-s$seriesNum"
+            else -> "elims"
+        }
         val redTeams = mutableListOf<String>()
         val blueTeams = mutableListOf<String>()
         obj["teams"]?.jsonArray?.forEach { t ->

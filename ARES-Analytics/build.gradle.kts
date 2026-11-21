@@ -3,9 +3,9 @@ import kotlinx.kover.gradle.plugin.dsl.KoverProjectExtension
 plugins {
     kotlin("jvm") version "2.4.21" apply false
     kotlin("plugin.serialization") version "2.4.21" apply false
-    id("org.jetbrains.compose") version "1.12.0" apply false
+    id("org.jetbrains.compose") version "1.12.2" apply false
     id("org.jetbrains.kotlin.plugin.compose") version "2.4.21" apply false
-    id("org.jetbrains.kotlinx.kover") version "0.9.9"
+    id("org.jetbrains.kotlinx.kover") version "0.9.11"
 }
 
 val aresVersionPolicy = listOf(
@@ -85,6 +85,8 @@ val verifyReleaseVersionAlignment = tasks.register("verifyReleaseVersionAlignmen
         val xrpHash = requiredArtifact("xrpStarterSha256").lowercase()
         val lightbotVersion = requiredProperty("lightbotExampleVersion")
         val lightbotHash = requiredArtifact("lightbotExampleSha256").lowercase()
+        val biobuzzVersion = requiredProperty("biobuzzExampleVersion")
+        val biobuzzHash = requiredArtifact("biobuzzExampleSha256").lowercase()
 
         if (resolvedAresVersion != aresVersion) {
             val validationRepository = providers.gradleProperty("aresRepository").orNull?.trim().orEmpty()
@@ -131,12 +133,19 @@ val verifyReleaseVersionAlignment = tasks.register("verifyReleaseVersionAlignmen
             "workflow Lightbot example URL",
         )
         requireContains(workflowFile, "LIGHTBOT_EXAMPLE_SHA256: $lightbotHash", "workflow Lightbot example hash")
+        requireContains(
+            workflowFile,
+            "ARES-Robotics/releases/download/v$appVersion/ARES-BIOBUZZ-Example-$biobuzzVersion.zip",
+            "workflow BioBuzz example URL",
+        )
+        requireContains(workflowFile, "BIOBUZZ_EXAMPLE_SHA256: $biobuzzHash", "workflow BioBuzz example hash")
 
         listOf(
             Triple("ARES-FTC-Starter-$ftcVersion.zip", ftcHash, "FTC starter"),
             Triple("ARES-FRC-Starter-$frcVersion.zip", frcHash, "FRC starter"),
             Triple("ARES-XRP-Starter-$xrpVersion.zip", xrpHash, "XRP starter"),
             Triple("ARES-Lightbot-Example-$lightbotVersion.zip", lightbotHash, "Lightbot example"),
+            Triple("ARES-BIOBUZZ-Example-$biobuzzVersion.zip", biobuzzHash, "BioBuzz example"),
         ).forEach { (fileName, expectedHash, label) ->
             val archive = File(templateDirectory, fileName)
             if (!archive.isFile) {
@@ -154,7 +163,7 @@ val verifyReleaseVersionAlignment = tasks.register("verifyReleaseVersionAlignmen
             "Release preflight passed: Studio $appVersion, ARES dependency $resolvedAresVersion " +
                 "(release pin $aresVersion), " +
                 "FTC starter $ftcVersion, FRC starter $frcVersion, XRP starter $xrpVersion, " +
-                    "Lightbot example $lightbotVersion.",
+                "Lightbot example $lightbotVersion, BioBuzz example $biobuzzVersion.",
         )
     }
 }

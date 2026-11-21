@@ -58,6 +58,9 @@ internal interface DesktopWindowPort {
     /** Reads the Compose-owned always-on-top state; never writes it. */
     fun isAlwaysOnTop(): Boolean
 
+    /** Imperative AWT fallback used only during startup topmost-settlement recovery. */
+    fun clearAlwaysOnTop() {}
+
     /** Verified native handle for diagnostics, or null when the window cannot be verified. */
     fun nativeWindowHandle(): Long?
 
@@ -122,6 +125,16 @@ internal class AwtDesktopWindowPort(private val window: Window) : DesktopWindowP
     }.getOrDefault(false)
 
     override fun isAlwaysOnTop(): Boolean = window.isAlwaysOnTop
+
+    override fun clearAlwaysOnTop() {
+        runCatching {
+            if (EventQueue.isDispatchThread()) {
+                window.isAlwaysOnTop = false
+            } else {
+                EventQueue.invokeLater { window.isAlwaysOnTop = false }
+            }
+        }
+    }
 
     override fun nativeWindowHandle(): Long? =
         NativeWindowProbe.ownedTopLevelWindow(window)?.pointer?.let { com.sun.jna.Pointer.nativeValue(it) }
@@ -192,7 +205,8 @@ internal class AwtDesktopWindowPort(private val window: Window) : DesktopWindowP
             return
         }
 
-        val server = DesktopTestControlServer(port, ::executeTestCommand)
+        val authToken = System.getenv("ARES_ANALYTICS_TEST_CONTROL_TOKEN")?.trim()?.takeIf(String::isNotEmpty)
+        val server = DesktopTestControlServer(port, authToken = authToken, execute = ::executeTestCommand)
         runCatching { server.start() }
             .onSuccess {
                 testControlServer = server

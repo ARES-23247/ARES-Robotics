@@ -12,6 +12,7 @@ import androidx.compose.ui.graphics.Color
 import com.ares.analytics.di.KeyboardDriveState
 import com.ares.analytics.service.Nt4ClientService
 import com.ares.analytics.service.RobotTopicContract
+import com.ares.analytics.service.isLoopbackDriveControlHost
 import com.ares.analytics.service.project.persistence.AutonomousCatalogProjectRepository
 import com.ares.analytics.shared.models.League
 import com.ares.analytics.shared.models.SIMULATION_SESSION_TAG
@@ -265,6 +266,14 @@ internal class LocalSimulatorSessionController(
         ) {
             onLaunchSimulator()
         } else if (primaryAction == LocalSimulatorPrimaryAction.START_DRIVING) {
+            if (!isLoopbackDriveControlHost(nt4Client.serverIp)) {
+                startFailure = "Refused to send simulator commands to non-loopback host '${nt4Client.serverIp}'."
+                keyboardDriveState.disarm()
+                return
+            }
+            val connectedLoopback: () -> Boolean = {
+                isConnected() && isLoopbackDriveControlHost(nt4Client.serverIp)
+            }
             val opMode = selectedOpMode
             if (!isFtc || opMode != null) {
                 startJob?.cancel()
@@ -274,10 +283,14 @@ internal class LocalSimulatorSessionController(
                     keyboardDriveState.disarm()
                     try {
                         if (!isFtc) {
+                            if (!isLoopbackDriveControlHost(nt4Client.serverIp)) {
+                                startFailure = "Refused to send simulator commands to non-loopback host '${nt4Client.serverIp}'."
+                                return@launch
+                            }
                             nt4Client.publishString(FRC_DRIVER_STATION_COMMAND_TOPIC, FRC_ENABLE_TELEOP_COMMAND)
                             val running = withTimeoutOrNull(OPMODE_ACK_TIMEOUT_MS) {
-                                while (isConnected() && !frcSimulatorTeleOpEnabled(frcDriverStationState)) delay(20)
-                                isConnected()
+                                while (connectedLoopback() && !frcSimulatorTeleOpEnabled(frcDriverStationState)) delay(20)
+                                connectedLoopback()
                             } == true
                             if (!running) {
                                 startFailure = when (frcDriverStationState) {
@@ -298,9 +311,17 @@ internal class LocalSimulatorSessionController(
                         val autonomousSelection = if (modeKind == FtcSimulatorOpModeKind.AUTONOMOUS) {
                             requireNotNull(requestedAuto) { "Choose an autonomous routine" }
                         } else null
+                        if (!isLoopbackDriveControlHost(nt4Client.serverIp)) {
+                            startFailure = "Refused to send simulator commands to non-loopback host '${nt4Client.serverIp}'."
+                            return@launch
+                        }
                         autonomousSelection?.let { selection ->
                             nt4Client.publishString(RobotTopicContract.FTC_AUTONOMOUS_REQUEST, selection)
                             delay(150)
+                        }
+                        if (!isLoopbackDriveControlHost(nt4Client.serverIp)) {
+                            startFailure = "Refused to send simulator commands to non-loopback host '${nt4Client.serverIp}'."
+                            return@launch
                         }
                         nt4Client.publishString(SELECTED_OPMODE_TOPIC, opMode)
                         nt4Client.publishString(DRIVER_STATION_COMMAND_TOPIC, "INIT")
@@ -308,7 +329,7 @@ internal class LocalSimulatorSessionController(
                         val initialized = awaitSimulatorOpModeAcknowledgement(
                             selectedOpMode = opMode,
                             expectedState = modeKind.initState(),
-                            isConnected = isConnected,
+                            isConnected = connectedLoopback,
                             snapshot = {
                                 SimulatorOpModeSnapshot(
                                     activeOpMode = nt4Client.latestValues[ACTIVE_OPMODE_CLASS_TOPIC]
@@ -324,13 +345,16 @@ internal class LocalSimulatorSessionController(
                             startFailure = "The simulator did not initialize ${opMode.substringAfterLast('.')}"
                             return@launch
                         }
-
+                        if (!isLoopbackDriveControlHost(nt4Client.serverIp)) {
+                            startFailure = "Refused to send simulator commands to non-loopback host '${nt4Client.serverIp}'."
+                            return@launch
+                        }
                         nt4Client.publishString(DRIVER_STATION_COMMAND_TOPIC, "START")
                         command = "START"
                         val running = awaitSimulatorOpModeAcknowledgement(
                             selectedOpMode = opMode,
                             expectedState = modeKind.runningState(),
-                            isConnected = isConnected,
+                            isConnected = connectedLoopback,
                             snapshot = {
                                 SimulatorOpModeSnapshot(
                                     activeOpMode = nt4Client.latestValues[ACTIVE_OPMODE_CLASS_TOPIC]
@@ -380,6 +404,14 @@ internal class LocalSimulatorSessionController(
         keyboardDriveState: KeyboardDriveState,
         connectedNow: () -> Boolean,
     ) {
+        if (!isLoopbackDriveControlHost(nt4Client.serverIp)) {
+            startFailure = "Refused to send simulator commands to non-loopback host '${nt4Client.serverIp}'."
+            keyboardDriveState.disarm()
+            return
+        }
+        val connectedLoopback: () -> Boolean = {
+            connectedNow() && isLoopbackDriveControlHost(nt4Client.serverIp)
+        }
         if (!starting && !isAutonomousRunning(isConnected)) {
             val selection = requestedAuto
             if (selection != null) {
@@ -389,25 +421,33 @@ internal class LocalSimulatorSessionController(
                     startFailure = null
                     keyboardDriveState.disarm()
                     try {
+                        if (!isLoopbackDriveControlHost(nt4Client.serverIp)) {
+                            startFailure = "Refused to send simulator commands to non-loopback host '${nt4Client.serverIp}'."
+                            return@launch
+                        }
                         nt4Client.publishString(RobotTopicContract.FRC_AUTONOMOUS_REQUEST, selection)
                         nt4Client.publishString(
                             RobotTopicContract.FRC_SMART_DASHBOARD_AUTONOMOUS_REQUEST,
                             selection,
                         )
                         delay(150)
+                        if (!isLoopbackDriveControlHost(nt4Client.serverIp)) {
+                            startFailure = "Refused to send simulator commands to non-loopback host '${nt4Client.serverIp}'."
+                            return@launch
+                        }
                         nt4Client.publishString(
                             FRC_DRIVER_STATION_COMMAND_TOPIC,
                             FRC_ENABLE_AUTONOMOUS_COMMAND,
                         )
                         val running = withTimeoutOrNull(OPMODE_ACK_TIMEOUT_MS) {
                             while (
-                                connectedNow() &&
+                                connectedLoopback() &&
                                 (!frcSimulatorAutonomousEnabled(frcDriverStationState) ||
                                     robotSelectedAuto != selection)
                             ) {
                                 delay(20)
                             }
-                            connectedNow()
+                            connectedLoopback()
                         } == true
                         if (!running) {
                             startFailure = if (frcSimulatorAutonomousEnabled(frcDriverStationState)) {
@@ -474,10 +514,12 @@ internal class LocalSimulatorSessionController(
         keyboardDriveState.disarm()
         scope.launch {
             stopAndSaveRecording(nt4Client, recordingSession, onRecordingSaved)
-            nt4Client.publishString(
-                if (isFtc) DRIVER_STATION_COMMAND_TOPIC else FRC_DRIVER_STATION_COMMAND_TOPIC,
-                if (isFtc) "STOP" else FRC_DISABLE_COMMAND,
-            )
+            if (isLoopbackDriveControlHost(nt4Client.serverIp)) {
+                nt4Client.publishString(
+                    if (isFtc) DRIVER_STATION_COMMAND_TOPIC else FRC_DRIVER_STATION_COMMAND_TOPIC,
+                    if (isFtc) "STOP" else FRC_DISABLE_COMMAND,
+                )
+            }
         }
     }
 }
@@ -490,7 +532,7 @@ internal fun rememberLocalSimulatorSessionController(
     projectPath: String,
     isConnected: Boolean,
 ): LocalSimulatorSessionController {
-    val controller = remember(nt4Client, league) {
+    val controller = remember(nt4Client, league, projectPath) {
         val initialTeleOps = decodeSimulatorOpModes(nt4Client.latestValues[TELEOP_LIST_TOPIC]?.stringValue)
         val initialAutos = parseAvailableAutoDocuments(
             nt4Client.latestValues[RobotTopicContract.AVAILABLE_AUTONOMOUS_ROUTINES]?.stringValue,

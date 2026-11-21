@@ -100,6 +100,7 @@ abstract class FrcBaseRobot(
         set(value) { powerManager.brownedOutSupplier = value }
 
     private var lastUpdateTime = 0L
+    private var hasUpdateTimestamp = false
     private var previousEnabled: Boolean? = null
     private var topologyPublished = false
     @Volatile private var closed = false
@@ -132,6 +133,7 @@ abstract class FrcBaseRobot(
         }
         try {
             hardwareRegistry.refreshAll()
+            telemetryManager.refreshDiagnostics()
             val isEnabled = isEnabledProvider()
             val mode = robotModeProvider()
 
@@ -139,8 +141,13 @@ abstract class FrcBaseRobot(
             RobotStatusTracker.activeOpMode = mode
 
             val timestamp = com.areslib.util.RobotClock.currentTimeMillis()
-            val dtSeconds = if (lastUpdateTime == 0L) 0.02 else (timestamp - lastUpdateTime) / 1000.0
+            val elapsed = if (hasUpdateTimestamp) timestamp - lastUpdateTime else 0L
+            check(!hasUpdateTimestamp || (timestamp >= lastUpdateTime && elapsed >= 0L)) {
+                "Robot clock rewound or elapsed control time overflowed"
+            }
+            val dtSeconds = if (elapsed == 0L) 0.02 else elapsed / 1000.0
             lastUpdateTime = timestamp
+            hasUpdateTimestamp = true
 
             // 1. Platform-specific hardware reads
             updateHardwareInputs(timestamp)
@@ -181,9 +188,16 @@ abstract class FrcBaseRobot(
 
         } catch (e: Throwable) {
             fatalUpdateFailure = e
-            System.err.println("FrcBaseRobot: Exception in update loop: ${e.message}")
-            e.printStackTrace()
+            // Neutral must precede potentially blocking or failing diagnostic sinks.
             attemptSafetyAfterFailure(e)
+            try {
+                System.err.println("FrcBaseRobot: Exception in update loop: ${e.message}")
+                e.printStackTrace()
+            } catch (diagnosticFailure: Throwable) {
+                if (e !== diagnosticFailure && e.suppressed.none { it === diagnosticFailure }) {
+                    e.addSuppressed(diagnosticFailure)
+                }
+            }
             throw e
         }
     }
@@ -259,11 +273,7 @@ abstract class FrcBaseRobot(
      * and invoking [com.areslib.hardware.HardwareRegistry.safeAll].
      */
     open fun safeHardware() {
-        try {
-            safeAll()
-        } catch (ex: Throwable) {
-            System.err.println("FrcBaseRobot: Safety stop failed: ${ex.message}")
-        }
+        safeAll()
     }
 
     /**

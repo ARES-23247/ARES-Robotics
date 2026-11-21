@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ares-micro"
-version = "15.0.4"
+version = "20.0.7"
 description = "ARES Robotics MicroPython Runtime for Raspberry Pi Pico W & XRP Robots"
 readme = "README.md"
 requires-python = ">=3.8"

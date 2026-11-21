@@ -1,5 +1,6 @@
 package com.ares.analytics.gateway.routes
 
+import com.ares.analytics.shared.AppJson
 import com.ares.analytics.shared.models.ForensicsRequest
 import com.ares.analytics.shared.models.ForensicsResponse
 import com.google.genai.Client
@@ -13,9 +14,11 @@ import io.ktor.server.routing.*
 import io.ktor.server.plugins.ratelimit.*
 import kotlinx.serialization.json.Json
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
 import org.slf4j.LoggerFactory
 import java.util.concurrent.CompletableFuture
@@ -44,6 +47,21 @@ internal suspend fun <T> awaitCompletableFuture(future: CompletableFuture<T>): T
     future.whenComplete { result, error ->
         if (!continuation.isActive) return@whenComplete
         if (error == null) continuation.resume(result) else continuation.resumeWithException(error)
+    }
+}
+
+internal fun parseForensicsResponse(raw: String): ForensicsResponse {
+    val sanitizedJson = raw.replace(Regex("```(?:json)?\\n?(.*?)\\n?```", RegexOption.DOT_MATCHES_ALL), "$1").trim()
+    return try {
+        AppJson.decodeFromString<ForensicsResponse>(sanitizedJson)
+    } catch (_: Exception) {
+        ForensicsResponse(
+            probableRootCause = "AI produced unparseable diagnostics.",
+            confidenceScore = 0.0,
+            cascadingNodesAffected = emptyList(),
+            hardwareFaultLocus = null,
+            recommendedActions = listOf("Retry diagnostics", "Check logs manually")
+        )
     }
 }
 
@@ -81,8 +99,9 @@ fun Route.diagnosticsRoutes() {
                     """.trimIndent()
                     val response = withTimeout(60.seconds) {
                         diagnosticsConcurrency.withPermit {
+                            val client = withContext(Dispatchers.IO) { genAiClient }
                             awaitCompletableFuture(
-                                genAiClient.async.models.generateContent(
+                                client.async.models.generateContent(
                                     com.ares.analytics.shared.DEFAULT_GEMINI_MODEL,
                                     prompt,
                                     null
@@ -90,21 +109,7 @@ fun Route.diagnosticsRoutes() {
                             )
                         }
                     }
-                    val jsonResponse = response.text() ?: "{}"
-                    val sanitizedJson = jsonResponse.replace(Regex("```(?:json)?\\n?(.*?)\\n?```", RegexOption.DOT_MATCHES_ALL), "$1").trim()
-
-                    // Parse to verify compliance and return to client
-                    val parsed = try {
-                        Json.decodeFromString<ForensicsResponse>(sanitizedJson)
-                    } catch (e: Exception) {
-                        ForensicsResponse(
-                            probableRootCause = "AI produced unparseable diagnostics.",
-                            confidenceScore = 0.0,
-                            cascadingNodesAffected = emptyList(),
-                            hardwareFaultLocus = null,
-                            recommendedActions = listOf("Retry diagnostics", "Check logs manually")
-                        )
-                    }
+                    val parsed = parseForensicsResponse(response.text() ?: "{}")
                     call.respond(parsed)
                 } catch (e: CancellationException) {
                     throw e

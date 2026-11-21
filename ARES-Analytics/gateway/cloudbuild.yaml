@@ -1,10 +1,10 @@
 steps:
-  # 1. Build the Docker container image
+  # 1. Build the Docker container image (context is monorepo root so build-logic/ and release/ are present)
   - name: 'gcr.io/cloud-builders/docker'
     args: [
       'build',
       '-t', 'gcr.io/$PROJECT_ID/ares-analytics-gateway:$COMMIT_SHA',
-      '-f', 'gateway/Dockerfile',
+      '-f', 'ARES-Analytics/gateway/Dockerfile',
       '.'
     ]
 
@@ -24,7 +24,7 @@ steps:
       '--no-invoker-iam-check',
       '--max-instances', '5',
       '--set-env-vars', 'GOOGLE_CLOUD_PROJECT=$PROJECT_ID,GOOGLE_CLOUD_LOCATION=us-central1',
-      '--set-secrets', 'ARES_GOOGLE_OAUTH_CLIENT_ID=ares-google-oauth-client-id:latest,ARES_GOOGLE_OAUTH_CLIENT_SECRET=ares-google-oauth-client-secret:latest'
+      '--set-secrets', 'ARES_GOOGLE_OAUTH_CLIENT_ID=ares-google-oauth-client-id:latest,ARES_GOOGLE_OAUTH_CLIENT_SECRET=ares-google-oauth-client-secret:latest,GOOGLE_OIDC_CLIENT_ID=ares-google-oauth-client-id:latest'
     ]
 
 images:

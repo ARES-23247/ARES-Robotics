@@ -18,6 +18,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.withLock
 import java.util.concurrent.atomic.AtomicLong
 
 data class MainState(
@@ -84,6 +85,7 @@ class MainViewModel(
     private val _state = MutableStateFlow(MainState())
     val state: StateFlow<MainState> = _state.asStateFlow()
     private val scheduleGeneration = AtomicLong(0L)
+    private val workspaceMutationMutex = kotlinx.coroutines.sync.Mutex()
 
     init {
         onIntent(MainIntent.LoadConfig)
@@ -145,7 +147,7 @@ class MainViewModel(
                 is MainIntent.SetShowUpdateBanner -> {
                     _state.update { it.copy(showUpdateBanner = intent.show) }
                 }
-                is MainIntent.SaveConfig -> {
+                is MainIntent.SaveConfig -> workspaceMutationMutex.withLock {
                     val configWithId = if (intent.config.id.isEmpty()) {
                         intent.config.copy(id = "${intent.config.league}-${intent.config.teamId}-${intent.config.robotId}-${intent.config.seasonId}")
                     } else {
@@ -162,7 +164,7 @@ class MainViewModel(
                     _state.update { it.copy(config = configWithId, workspaces = newList) }
                     loadMatchSchedule(configWithId)
                 }
-                is MainIntent.SelectWorkspace -> {
+                is MainIntent.SelectWorkspace -> workspaceMutationMutex.withLock {
                     val app = environmentService.loadWorkspaces()
                     val target = app.workspaces.find { it.id == intent.id }
                     if (target != null) {
@@ -180,7 +182,7 @@ class MainViewModel(
                         loadMatchSchedule(target)
                     }
                 }
-                is MainIntent.DeleteWorkspace -> {
+                is MainIntent.DeleteWorkspace -> workspaceMutationMutex.withLock {
                     val app = environmentService.loadWorkspaces()
                     val newList = app.workspaces.filter { it.id != intent.id }
                     val newActiveId = if (app.activeWorkspaceId == intent.id) {
@@ -206,12 +208,12 @@ class MainViewModel(
                         _state.update { it.copy(matches = emptyList()) }
                     }
                 }
-                is MainIntent.AddNewWorkspace -> {
+                is MainIntent.AddNewWorkspace -> workspaceMutationMutex.withLock {
                     scheduleGeneration.incrementAndGet()
                     if (_state.value.config != null) beforeWorkspaceChange()
                     _state.update { it.copy(config = null, matches = emptyList()) }
                 }
-                is MainIntent.CancelAddNewWorkspace -> {
+                is MainIntent.CancelAddNewWorkspace -> workspaceMutationMutex.withLock {
                     val app = environmentService.loadWorkspaces()
                     val active = app.workspaces.find { it.id == app.activeWorkspaceId } ?: app.workspaces.firstOrNull()
                     if (active != null) {
@@ -223,6 +225,7 @@ class MainViewModel(
                     _state.value.config?.let { loadMatchSchedule(it) }
                 }
                 is MainIntent.UpdateCachedMatches -> {
+                    scheduleGeneration.incrementAndGet()
                     val active = _state.value.config
                     if (active != null) {
                         val saved = runCatching { eventScheduleStore.saveMatches(active, intent.matches) }

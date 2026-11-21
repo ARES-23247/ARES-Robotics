@@ -25,7 +25,8 @@ class FollowPathTask @kotlin.jvm.JvmOverloads constructor(
     private val mirrorForAlliance: Boolean = true,
     private val holdVelocity: Boolean = false,
     private val predictivePathSkip: Boolean = false,
-    private val handoffRadiusMeters: Double = 0.20
+    private val handoffRadiusMeters: Double = 0.20,
+    private val fieldOrigin: com.areslib.math.coordinate.FieldOrigin = com.areslib.math.coordinate.FieldOrigin.CENTER
 ) : Task {
     private companion object {
         const val MAX_PATH_DURATION_MS = 15_000L
@@ -76,7 +77,7 @@ class FollowPathTask @kotlin.jvm.JvmOverloads constructor(
         validatePath()
         lastTimeMs = com.areslib.util.RobotClock.currentTimeMillis()
         val alliance = if (mirrorForAlliance) state.drive.alliance else com.areslib.state.Alliance.BLUE
-        activePath = com.areslib.math.coordinate.AllianceMirroring.mirror(path, alliance, symmetry, fieldLength, fieldWidth)
+        activePath = com.areslib.math.coordinate.AllianceMirroring.mirror(path, alliance, symmetry, fieldLength, fieldWidth, fieldOrigin)
         timeoutsSuspended = false
         scheduledEvents = activePath.events.toTypedArray()
         scheduledEvents.sortWith { a, b ->
@@ -142,8 +143,14 @@ class FollowPathTask @kotlin.jvm.JvmOverloads constructor(
         }
         if (predictivePathSkip && handoffRadiusMeters.isFinite() && handoffRadiusMeters > 0.0) {
             updateForesight(state)
+            val remainingDistance = targetDistance - state.pathState.currentDistanceMeters
+            val skipArmWindow = kotlin.math.max(
+                handoffRadiusMeters * 2.0,
+                follower.foresightEstimator.stoppingDistanceMeters + handoffRadiusMeters
+            )
             val endPose = activePath.points.last().pose
-            if (follower.foresightEstimator.shouldTriggerPathSkip(
+            if (remainingDistance <= skipArmWindow &&
+                follower.foresightEstimator.shouldTriggerPathSkip(
                     estimate.estimatedPoseX,
                     estimate.estimatedPoseY,
                     endPose,
@@ -317,9 +324,19 @@ class FollowPathTask @kotlin.jvm.JvmOverloads constructor(
     }
 
     private fun updateForesight(state: RobotState) {
-        if (!follower.foresightEstimator.config.enabled) return
         val drive = state.drive
         val pose = drive.poseEstimator
+        if (!follower.foresightEstimator.config.enabled) {
+            follower.foresightEstimator.updateFieldRelative(
+                currentX = pose.estimatedPoseX,
+                currentY = pose.estimatedPoseY,
+                currentHeadingRad = pose.estimatedPoseHeading,
+                fieldVxMps = 0.0,
+                fieldVyMps = 0.0,
+                omegaRadPerSec = 0.0
+            )
+            return
+        }
         if (drive.measuredMotionValid) {
             follower.foresightEstimator.updateFieldRelative(
                 currentX = pose.estimatedPoseX,

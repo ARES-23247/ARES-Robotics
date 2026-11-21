@@ -1,10 +1,18 @@
 package com.ares.analytics.desktop
 
+import java.io.ByteArrayOutputStream
 import java.io.Closeable
+import java.io.InputStream
 import java.net.InetAddress
 import java.net.ServerSocket
 import java.nio.charset.StandardCharsets
+import java.security.MessageDigest
 import java.util.Base64
+import java.util.concurrent.ArrayBlockingQueue
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.RejectedExecutionException
+import java.util.concurrent.ThreadPoolExecutor
+import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.concurrent.thread
@@ -79,20 +87,34 @@ internal object DesktopTestCommandParser {
  */
 internal class DesktopTestControlServer(
     private val port: Int,
+    private val authToken: String? = null,
     private val execute: (DesktopTestCommand) -> String,
 ) : Closeable {
     private val running = AtomicBoolean(false)
     private val clientSequence = AtomicInteger(0)
     private var serverSocket: ServerSocket? = null
     private var serverThread: Thread? = null
+    private var clientExecutor: ExecutorService? = null
 
     internal val localPort: Int?
         get() = serverSocket?.localPort
 
     fun start() {
         check(running.compareAndSet(false, true)) { "Desktop test control server is already running" }
-        val socket = ServerSocket(port, 1, InetAddress.getLoopbackAddress())
+        val socket = ServerSocket(port, 4, InetAddress.getLoopbackAddress())
         serverSocket = socket
+        val executor = ThreadPoolExecutor(
+            2,
+            MAX_CLIENT_THREADS,
+            30L,
+            TimeUnit.SECONDS,
+            ArrayBlockingQueue(MAX_PENDING_CLIENTS),
+        ) { runnable ->
+            Thread(runnable, "desktop-test-control-client-${clientSequence.incrementAndGet()}").apply {
+                isDaemon = true
+            }
+        }
+        clientExecutor = executor
         serverThread = thread(
             start = true,
             isDaemon = true,
@@ -100,42 +122,85 @@ internal class DesktopTestControlServer(
         ) {
             while (running.get()) {
                 val client = runCatching { socket.accept() }.getOrNull() ?: break
-                thread(
-                    start = true,
-                    isDaemon = true,
-                    name = "desktop-test-control-client-${clientSequence.incrementAndGet()}",
-                ) {
-                    runCatching {
-                        client.use { connection ->
-                            val request = connection.getInputStream().bufferedReader().readLine().orEmpty()
-                            val response = runCatching {
-                                execute(DesktopTestCommandParser.parse(request))
-                            }.fold(
-                                onSuccess = { "OK $it" },
-                                onFailure = { "ERROR ${it.message ?: it::class.simpleName}" },
-                            )
-                            connection.getOutputStream().bufferedWriter().use { writer ->
-                                writer.appendLine(response)
-                            }
-                        }
-                    }.onFailure { failure ->
-                        if (running.get()) {
-                            System.err.println(
-                                "[ARES-Analytics] Desktop test control client disconnected: " +
-                                    (failure.message ?: failure::class.simpleName)
-                            )
-                        }
-                    }
+                try {
+                    executor.execute { handleClient(client) }
+                } catch (_: RejectedExecutionException) {
+                    runCatching { client.close() }
                 }
             }
         }
     }
 
+    private fun handleClient(client: java.net.Socket) {
+        runCatching {
+            client.soTimeout = CLIENT_SOCKET_TIMEOUT_MS
+            client.use { connection ->
+                val rawLine = readBoundedLine(connection.getInputStream(), MAX_COMMAND_LINE_BYTES)
+                val response = if (rawLine == null) {
+                    "ERROR Command line exceeded $MAX_COMMAND_LINE_BYTES bytes"
+                } else {
+                    val commandLine = verifyAndStripAuth(rawLine)
+                    if (commandLine == null) {
+                        "ERROR Unauthorized desktop test control request"
+                    } else {
+                        runCatching {
+                            execute(DesktopTestCommandParser.parse(commandLine))
+                        }.fold(
+                            onSuccess = { "OK $it" },
+                            onFailure = { "ERROR ${it.message ?: it::class.simpleName}" },
+                        )
+                    }
+                }
+                connection.getOutputStream().bufferedWriter(StandardCharsets.UTF_8).use { writer ->
+                    writer.appendLine(response)
+                }
+            }
+        }.onFailure { failure ->
+            if (running.get()) {
+                System.err.println(
+                    "[ARES-Analytics] Desktop test control client disconnected: " +
+                        (failure.message ?: failure::class.simpleName)
+                )
+            }
+        }
+    }
+
+    private fun verifyAndStripAuth(rawLine: String): String? {
+        val expected = authToken ?: return rawLine
+        val parts = rawLine.trim().split(' ', limit = 3)
+        if (parts.size < 3 || !parts[0].equals("AUTH", ignoreCase = true)) return null
+        val suppliedBytes = parts[1].toByteArray(StandardCharsets.UTF_8)
+        val expectedBytes = expected.toByteArray(StandardCharsets.UTF_8)
+        return if (MessageDigest.isEqual(suppliedBytes, expectedBytes)) parts[2] else null
+    }
+
     override fun close() {
         if (!running.compareAndSet(true, false)) return
         runCatching { serverSocket?.close() }
+        clientExecutor?.shutdownNow()
         serverThread?.join(1_000)
+        clientExecutor?.awaitTermination(1_000, TimeUnit.MILLISECONDS)
         serverThread = null
+        clientExecutor = null
         serverSocket = null
+    }
+
+    companion object {
+        internal const val CLIENT_SOCKET_TIMEOUT_MS = 5_000
+        internal const val MAX_COMMAND_LINE_BYTES = 8 * 1024
+        private const val MAX_CLIENT_THREADS = 4
+        private const val MAX_PENDING_CLIENTS = 8
+
+        internal fun readBoundedLine(input: InputStream, maxBytes: Int): String? {
+            val out = ByteArrayOutputStream(minOf(maxBytes, 256))
+            while (true) {
+                val b = input.read()
+                if (b == -1 || b == '\n'.code) break
+                if (b == '\r'.code) continue
+                if (out.size() >= maxBytes) return null
+                out.write(b)
+            }
+            return out.toString(StandardCharsets.UTF_8)
+        }
     }
 }

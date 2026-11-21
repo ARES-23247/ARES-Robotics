@@ -102,12 +102,23 @@ internal class DesktopShutdownCoordinator(
     }
 
     companion object {
+        private val emergencyTerminationStarted = java.util.concurrent.atomic.AtomicBoolean(false)
+
         /**
          * Unexpected loss of the only usable window must not leave either a lock-owning Studio JVM
          * or a simulator/build child process. Normal Compose shutdown is unavailable at this point,
          * so give the same service registry one bounded cleanup opportunity before exiting nonzero.
          */
         fun terminateForUnusableWindow(reason: String, services: ServiceRegistry): Nothing {
+            if (!emergencyTerminationStarted.compareAndSet(false, true)) {
+                System.err.println("[ARES-Analytics] Duplicate emergency shutdown suppressed: $reason")
+                try {
+                    Thread.sleep(SHUTDOWN_TIMEOUT_MS + 4_000L)
+                } catch (_: InterruptedException) {
+                    Thread.currentThread().interrupt()
+                }
+                Runtime.getRuntime().halt(1)
+            }
             System.err.println("[ARES-Analytics] $reason")
             thread(isDaemon = true, name = "emergency-shutdown-halt-watchdog") {
                 Thread.sleep(SHUTDOWN_TIMEOUT_MS + 3_000L)

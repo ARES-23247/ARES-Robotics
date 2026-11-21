@@ -594,8 +594,8 @@ class HardwareSetupService(
 
     private fun collisionKey(item: HardwareInventoryItem): String = when (item.addressKind) {
         HardwareAddressKind.FTC_HARDWARE_MAP -> "ftc:${item.address.lowercase()}"
-        HardwareAddressKind.XRP_PORT -> "xrp:${item.address.lowercase()}"
-        HardwareAddressKind.CAN -> "can:${item.bus.orEmpty().lowercase()}:${item.address}"
+        HardwareAddressKind.XRP_PORT -> "${xrpPortNamespace(item)}:${item.address.lowercase()}"
+        HardwareAddressKind.CAN -> "can:${normalizeFrcCanBus(item.bus)}:${item.address}"
         HardwareAddressKind.PWM -> "pwm:${item.address}"
         HardwareAddressKind.I2C -> "i2c:${item.address.lowercase()}"
         HardwareAddressKind.DIO -> "dio:${item.address}"
@@ -603,6 +603,20 @@ class HardwareSetupService(
         HardwareAddressKind.SPI -> "spi:${item.address.lowercase()}"
         HardwareAddressKind.PNEUMATICS -> "pneumatics:${item.bus.orEmpty().lowercase()}:${item.address}"
         HardwareAddressKind.UNKNOWN -> "unknown:${item.address.lowercase()}"
+    }
+
+    private fun normalizeFrcCanBus(bus: String?): String =
+        bus?.trim()?.lowercase()?.takeIf(String::isNotEmpty) ?: "rio"
+
+    private fun xrpPortNamespace(item: HardwareInventoryItem): String {
+        val role = item.roleKey.uppercase()
+        return when {
+            role == "SERVO" || role.contains("SERVO") -> "xrp-servo"
+            role == "DIGITAL_INPUT" || role.contains("DIO") -> "xrp-dio"
+            role == "ANALOG_INPUT" || role.contains("ANALOG") -> "xrp-analog"
+            item.owner == HardwareInventoryOwner.DRIVEBASE || role.contains("MOTOR") || item.isMotionActuator -> "xrp-motor"
+            else -> "xrp-builtin:${role.lowercase()}"
+        }
     }
 
     private fun inventoryHash(

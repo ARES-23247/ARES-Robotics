@@ -45,10 +45,7 @@ import com.areslib.superstructure.SuperstructureIssueSeverity
 import com.areslib.superstructure.TransitionTriggerKind
 import com.areslib.superstructure.validateSuperstructureProject
 import com.areslib.tuning.TuningComponentDocument
-import com.areslib.tuning.TuningParameterDeclaration
 import com.areslib.tuning.TuningProfileDocument
-import com.areslib.tuning.validateTuningParameterDeclarations
-import com.areslib.tuning.validateTuningProfileDocument
 
 public enum class ProjectModelSeverity { WARNING, ERROR }
 
@@ -307,19 +304,7 @@ public object RobotProjectAssembler {
             }
         }
 
-        val tuningDeclarations = buildList<TuningParameterDeclaration> {
-            snapshot.tuningComponents.forEach { addAll(it.parameters) }
-            snapshot.drivetrains.forEach { addAll(it.parameters) }
-            snapshot.subsystems.forEach { addAll(it.tuningParameters) }
-        }
-        validateTuningParameterDeclarations(tuningDeclarations).forEach {
-            issues.error(ProjectDocumentKind.TUNING_COMPONENT, null, it.path, "tuning_declaration", it.message)
-        }
-        snapshot.tuningProfiles.forEach { profile ->
-            validateTuningProfileDocument(profile, tuningDeclarations).forEach {
-                issues.error(ProjectDocumentKind.TUNING_PROFILE, profile.uid, it.path, "tuning_profile", it.message)
-            }
-        }
+        validateTuningDocuments(snapshot, issues)
     }
 
     private fun validateSuperstructures(

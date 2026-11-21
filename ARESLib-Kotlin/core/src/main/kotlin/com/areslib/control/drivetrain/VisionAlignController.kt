@@ -95,8 +95,9 @@ class VisionAlignController {
         val dtSec = if (elapsedMs < 0L) 0.2 else elapsedMs.coerceAtMost(200L) / 1000.0
         
         // Require fresh data (age < 250ms), rejecting future time before subtraction wraps.
+        // VisionReducer appends newer frames to the tail, so iterate backward for the newest valid frame.
         var activeMeasurement: com.areslib.state.VisionMeasurementSnapshot? = null
-        for (i in 0 until state.vision.measurements.size) {
+        for (i in state.vision.measurements.size - 1 downTo 0) {
             val measurement = state.vision.measurements[i]
             val ageMs = now - measurement.timestampMs
             if (measurement.tagId == targetTagId && measurement.timestampMs <= now &&

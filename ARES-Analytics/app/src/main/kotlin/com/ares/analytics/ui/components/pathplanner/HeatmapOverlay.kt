@@ -12,6 +12,9 @@ object HeatmapOverlay {
     private var globalMaxCount = 0
     private var lastPathSize = 0
     private var lastFirstPoint: Waypoint? = null
+    private var lastLeague: League? = null
+    private var lastFieldWidthM: Double = 0.0
+    private var lastFieldHeightM: Double = 0.0
 
     fun resetHeatmap() {
         for (i in globalCounts.indices) {
@@ -22,6 +25,9 @@ object HeatmapOverlay {
         globalMaxCount = 0
         lastPathSize = 0
         lastFirstPoint = null
+        lastLeague = null
+        lastFieldWidthM = 0.0
+        lastFieldHeightM = 0.0
     }
 
     fun drawHeatmap(
@@ -41,8 +47,13 @@ object HeatmapOverlay {
         val width = drawScope.size.width
         val height = drawScope.size.height
 
-        // If the path seems completely new (e.g. simulation reset), clear the heatmap
-        if (lastPathSize > actualPath.size || (actualPath.isNotEmpty() && lastFirstPoint != actualPath.first())) {
+        // Reset whenever the path, league, or field dimensions change.
+        if (lastPathSize > actualPath.size ||
+            (actualPath.isNotEmpty() && lastFirstPoint != actualPath.first()) ||
+            lastLeague != league ||
+            lastFieldWidthM != fieldWidthM ||
+            lastFieldHeightM != fieldHeightM
+        ) {
             resetHeatmap()
         }
 
@@ -51,18 +62,9 @@ object HeatmapOverlay {
 
         for (i in startIndex until actualPath.size) {
             val wp = actualPath[i]
-            val pctX = if (league == League.FTC) {
-                ((wp.x + fieldWidthM / 2.0) / fieldWidthM).coerceIn(0.0, 1.0)
-            } else {
-                (wp.x / fieldWidthM).coerceIn(0.0, 1.0)
-            }
-            val pctY = if (league == League.FTC) {
-                ((fieldHeightM / 2.0 - wp.y) / fieldHeightM).coerceIn(0.0, 1.0)
-            } else {
-                ((fieldHeightM - wp.y) / fieldHeightM).coerceIn(0.0, 1.0)
-            }
-            val col = (pctX * (gridSize - 1)).toInt()
-            val row = (pctY * (gridSize - 1)).toInt()
+            val normalized = getCanvasOffsetBase(wp, 1f, 1f, fieldWidthM, fieldHeightM, league)
+            val col = (normalized.x.coerceIn(0f, 1f) * (gridSize - 1)).toInt()
+            val row = (normalized.y.coerceIn(0f, 1f) * (gridSize - 1)).toInt()
 
             globalCounts[row][col]++
             if (globalCounts[row][col] > globalMaxCount) {
@@ -72,6 +74,9 @@ object HeatmapOverlay {
 
         lastPathSize = actualPath.size
         lastFirstPoint = actualPath.firstOrNull()
+        lastLeague = league
+        lastFieldWidthM = fieldWidthM
+        lastFieldHeightM = fieldHeightM
 
         if (globalMaxCount == 0) return
 

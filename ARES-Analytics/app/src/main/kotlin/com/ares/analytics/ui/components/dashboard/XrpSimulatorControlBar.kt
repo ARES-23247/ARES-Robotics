@@ -82,19 +82,22 @@ internal fun XrpSimulatorControlBar(
                         enabled = canLaunchSimulator && !isLaunchPreparationRunning,
                     ) { Text(if (isLaunchPreparationRunning) "Preparing…" else "Launch simulator") }
                 }
+                val loopbackConnected = isConnected && com.ares.analytics.service.isLoopbackDriveControlHost(xrpLink.serverHost)
                 Button(
                     onClick = {
+                        if (!com.ares.analytics.service.isLoopbackDriveControlHost(xrpLink.serverHost)) return@Button
                         keyboardDriveState.disarm()
                         xrpLink.requestInitialize()
                     },
-                    enabled = isConnected && request.mode != XrpRequestedMode.INITIALIZE,
+                    enabled = loopbackConnected && request.mode != XrpRequestedMode.INITIALIZE,
                 ) { Text("Initialize / recover") }
                 Button(
                     onClick = {
-                        xrpLink.requestTeleOp()
+                        if (!com.ares.analytics.service.isLoopbackDriveControlHost(xrpLink.serverHost)) return@Button
                         keyboardDriveState.enabled = true
+                        xrpLink.requestTeleOp()
                     },
-                    enabled = isConnected && request.mode != XrpRequestedMode.TELEOP,
+                    enabled = loopbackConnected && request.mode != XrpRequestedMode.TELEOP,
                 ) { Text("Start TeleOp") }
                 Column {
                     OutlinedButton(onClick = { menuOpen = true }, enabled = autos.isNotEmpty()) {
@@ -108,17 +111,19 @@ internal fun XrpSimulatorControlBar(
                 }
                 Button(
                     onClick = {
+                        if (!com.ares.analytics.service.isLoopbackDriveControlHost(xrpLink.serverHost)) return@Button
                         keyboardDriveState.disarm()
                         selectedAuto?.let(xrpLink::requestAutonomous)
                     },
-                    enabled = isConnected && selectedAuto != null,
+                    enabled = loopbackConnected && selectedAuto != null,
                 ) { Text("Start autonomous") }
                 OutlinedButton(
                     onClick = {
+                        if (!com.ares.analytics.service.isLoopbackDriveControlHost(xrpLink.serverHost)) return@OutlinedButton
                         keyboardDriveState.disarm()
                         xrpLink.requestStop()
                     },
-                    enabled = isConnected && request.mode != XrpRequestedMode.STOPPED,
+                    enabled = loopbackConnected && request.mode != XrpRequestedMode.STOPPED,
                 ) { Text("Stop") }
             }
             simulatorLaunchDisabledReason?.takeIf { !canLaunchSimulator }?.let { Text(it) }

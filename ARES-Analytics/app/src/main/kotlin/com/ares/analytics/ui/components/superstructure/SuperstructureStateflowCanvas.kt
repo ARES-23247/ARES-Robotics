@@ -26,6 +26,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.geometry.CornerRadius
@@ -96,6 +97,8 @@ fun StateflowGraphCanvas(
     }
 
     var draggedNodeId by remember { mutableStateOf<String?>(null) }
+    var activeDragOffset by remember { mutableStateOf<Offset?>(null) }
+    val currentNodePositions by rememberUpdatedState(nodePositions)
 
     Card(
         colors = CardDefaults.cardColors(containerColor = AresSurfaceElevated),
@@ -106,9 +109,9 @@ fun StateflowGraphCanvas(
             Canvas(
                 modifier = Modifier
                     .fillMaxSize()
-                    .pointerInput(draft.states, draft.nodeLayouts) {
+                    .pointerInput(viewModel) {
                         detectTapGestures { tapOffset ->
-                            val clicked = nodePositions.entries.firstOrNull { (_, pos) ->
+                            val clicked = currentNodePositions.entries.firstOrNull { (_, pos) ->
                                 tapOffset.x >= pos.x && tapOffset.x <= pos.x + nodeWidth &&
                                     tapOffset.y >= pos.y && tapOffset.y <= pos.y + nodeHeight
                             }
@@ -117,30 +120,38 @@ fun StateflowGraphCanvas(
                             }
                         }
                     }
-                    .pointerInput(draft.states, draft.nodeLayouts) {
+                    .pointerInput(viewModel) {
                         detectDragGestures(
                             onDragStart = { startOffset ->
-                                val hit = nodePositions.entries.firstOrNull { (_, pos) ->
+                                val hit = currentNodePositions.entries.firstOrNull { (_, pos) ->
                                     startOffset.x >= pos.x && startOffset.x <= pos.x + nodeWidth &&
                                         startOffset.y >= pos.y && startOffset.y <= pos.y + nodeHeight
                                 }
                                 if (hit != null) {
                                     draggedNodeId = hit.key
+                                    activeDragOffset = hit.value
                                     viewModel.selectState(hit.key)
                                 }
                             },
                             onDrag = { change, dragAmount ->
                                 change.consume()
                                 draggedNodeId?.let { id ->
-                                    val currentPos = nodePositions[id] ?: Offset.Zero
-                                    val newPos = currentPos + dragAmount
+                                    val basePos = activeDragOffset ?: currentNodePositions[id] ?: Offset.Zero
+                                    val newPos = basePos + dragAmount
                                     val clampedX = max(10f, min(1400f, newPos.x))
                                     val clampedY = max(10f, min(900f, newPos.y))
+                                    activeDragOffset = Offset(clampedX, clampedY)
                                     viewModel.moveStateNode(id, clampedX.toDouble(), clampedY.toDouble())
                                 }
                             },
-                            onDragEnd = { draggedNodeId = null },
-                            onDragCancel = { draggedNodeId = null },
+                            onDragEnd = {
+                                draggedNodeId = null
+                                activeDragOffset = null
+                            },
+                            onDragCancel = {
+                                draggedNodeId = null
+                                activeDragOffset = null
+                            },
                         )
                     },
             ) {

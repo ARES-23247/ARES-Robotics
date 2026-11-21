@@ -290,15 +290,32 @@ internal class IntegrationRepository(
                 return@inTransaction
             }
 
-            val latestRevision = connection.prepareStatement(
-                "SELECT MAX(revision) FROM engineering_notebook_entries WHERE entry_id = ?"
+            val latestMeta = connection.prepareStatement(
+                """
+                SELECT revision, team_id, season_id, robot_id
+                FROM engineering_notebook_entries
+                WHERE entry_id = ?
+                ORDER BY revision DESC
+                LIMIT 1
+                """.trimIndent()
             ).use { statement ->
                 statement.setString(1, entry.entryId)
                 statement.executeQuery().use { rows ->
-                    rows.next()
-                    rows.getInt(1).takeUnless { rows.wasNull() }
+                    if (rows.next()) {
+                        rows.getInt(1) to IntegrationWorkspaceIdentity(
+                            teamId = rows.getString(2),
+                            seasonId = rows.getString(3),
+                            robotId = rows.getString(4),
+                        )
+                    } else null
                 }
             }
+            if (latestMeta != null) {
+                require(latestMeta.second == entry.workspace) {
+                    "Notebook entry '${entry.entryId}' belongs to a different workspace"
+                }
+            }
+            val latestRevision = latestMeta?.first
             require(entry.revision == (latestRevision?.plus(1) ?: 1)) {
                 "Notebook revisions must be inserted sequentially"
             }
@@ -377,6 +394,39 @@ internal class IntegrationRepository(
             """.trimIndent()
         ).use { statement ->
             statement.setInt(1, limit)
+            statement.executeQuery().use { rows ->
+                buildList { while (rows.next()) add(rows.toNotebookEntry()) }
+            }
+        }
+    }
+
+    override suspend fun listLatestNotebookEntriesForWorkspace(
+        workspace: IntegrationWorkspaceIdentity,
+        limit: Int,
+    ): List<EngineeringNotebookEntry> = mutex.withLock {
+        require(limit in 1..1_000) { "Notebook history limit must be between 1 and 1000" }
+        connection.prepareStatement(
+            """
+            SELECT entries.*
+            FROM engineering_notebook_entries entries
+            INNER JOIN (
+                SELECT entry_id, MAX(revision) AS revision
+                FROM engineering_notebook_entries
+                WHERE team_id = ? AND season_id = ? AND robot_id = ?
+                GROUP BY entry_id
+            ) latest ON entries.entry_id = latest.entry_id AND entries.revision = latest.revision
+            WHERE entries.team_id = ? AND entries.season_id = ? AND entries.robot_id = ?
+            ORDER BY entries.updated_at_ms DESC, entries.entry_id
+            LIMIT ?
+            """.trimIndent()
+        ).use { statement ->
+            statement.setString(1, workspace.teamId)
+            statement.setString(2, workspace.seasonId)
+            statement.setString(3, workspace.robotId)
+            statement.setString(4, workspace.teamId)
+            statement.setString(5, workspace.seasonId)
+            statement.setString(6, workspace.robotId)
+            statement.setInt(7, limit)
             statement.executeQuery().use { rows ->
                 buildList { while (rows.next()) add(rows.toNotebookEntry()) }
             }

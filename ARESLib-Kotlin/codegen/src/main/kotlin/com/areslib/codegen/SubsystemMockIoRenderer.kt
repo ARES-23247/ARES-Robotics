@@ -82,6 +82,7 @@ internal object SubsystemMockIoRenderer {
                 "${target.hardwareId}Command = $bounded\n        ${target.hardwareId}SimSignal.publish(${target.hardwareId}Command)"
             }
             """    override fun ${device.commandName()}(value: Double) {
+        if (closed) return
         val requested = value.takeIf(Double::isFinite) ?: $neutral
         if (outputFaultLatched && requested != $neutral) return
         if (requested != $neutral && (!configurationHealthy || !homed || !calibrated ||
@@ -168,11 +169,13 @@ $telemetryCache
             $commands
 
                 override fun safe() {
+                    if (closed) return
                     safeCalls++
             $safe
                 }
 
                 override fun recoverWithNeutral(): Boolean {
+                    if (closed) return false
                     neutralRecoveryAttempts++
                     if (failNextWrite) {
                         failNextWrite = false

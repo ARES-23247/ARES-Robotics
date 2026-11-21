@@ -18,6 +18,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -30,6 +31,7 @@ import com.ares.analytics.service.DashboardHealthService
 import com.ares.analytics.service.DashboardHealthSnapshot
 import com.ares.analytics.service.Nt4ClientService
 import com.ares.analytics.service.TelemetryStore
+import com.ares.analytics.shared.models.League
 import com.ares.analytics.ui.theme.AresAmber
 import com.ares.analytics.ui.theme.AresBorder
 import com.ares.analytics.ui.theme.AresCyan
@@ -82,6 +84,11 @@ internal fun extractPitVitalsSnapshot(
     )
 }
 
+internal fun pitVitalsBatteryThresholds(league: League): Pair<Double, Double> = when (league) {
+    League.XRP -> 4.7 to 5.1
+    League.FTC, League.FRC -> 11.2 to 12.0
+}
+
 /**
  * Compact header telemetry pill shown on non-Dashboard screens so drive-team engineers keep live
  * visibility into link rate, battery voltage, and control-loop timing while editing or tuning.
@@ -91,26 +98,30 @@ internal fun PitVitalsHeaderBadge(
     nt4ClientService: Nt4ClientService,
     dashboardHealthService: DashboardHealthService,
     isRobotLinkConnected: Boolean,
+    league: League = League.FRC,
     compact: Boolean = false,
     onClick: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val health by dashboardHealthService.health.collectAsState()
-    var vitals by remember {
+    val currentHealth by rememberUpdatedState(health)
+    val currentLinkConnected by rememberUpdatedState(isRobotLinkConnected)
+    var vitals by remember(nt4ClientService) {
         mutableStateOf(extractPitVitalsSnapshot(nt4ClientService.telemetryStore, health, isRobotLinkConnected))
     }
 
-    LaunchedEffect(nt4ClientService, health, isRobotLinkConnected) {
+    LaunchedEffect(nt4ClientService) {
         while (true) {
-            vitals = extractPitVitalsSnapshot(nt4ClientService.telemetryStore, health, isRobotLinkConnected)
+            vitals = extractPitVitalsSnapshot(nt4ClientService.telemetryStore, currentHealth, currentLinkConnected)
             delay(250L)
         }
     }
 
+    val (criticalVolts, warnVolts) = pitVitalsBatteryThresholds(league)
     val dotColor = when {
         !vitals.isConnected -> AresTextSecondary
-        vitals.batteryVolts != null && vitals.batteryVolts!! < 11.2 -> AresRed
-        vitals.batteryVolts != null && vitals.batteryVolts!! < 12.0 -> AresAmber
+        vitals.batteryVolts != null && vitals.batteryVolts!! < criticalVolts -> AresRed
+        vitals.batteryVolts != null && vitals.batteryVolts!! < warnVolts -> AresAmber
         else -> AresGreen
     }
     val hzText = if (vitals.isConnected) {
@@ -151,7 +162,11 @@ internal fun PitVitalsHeaderBadge(
             Text("·", color = AresTextSecondary, fontSize = 11.sp)
             Text(
                 text = battText,
-                color = if (vitals.batteryVolts != null && vitals.batteryVolts!! < 11.5) AresAmber else AresTextPrimary,
+                color = when {
+                    vitals.batteryVolts != null && vitals.batteryVolts!! < criticalVolts -> AresRed
+                    vitals.batteryVolts != null && vitals.batteryVolts!! < warnVolts -> AresAmber
+                    else -> AresTextPrimary
+                },
                 fontSize = 11.sp,
                 fontFamily = FontFamily.Monospace,
                 fontWeight = FontWeight.SemiBold,

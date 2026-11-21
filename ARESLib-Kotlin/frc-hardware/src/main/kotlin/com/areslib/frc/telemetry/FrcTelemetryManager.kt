@@ -49,7 +49,10 @@ open class FrcTelemetryManager(
 
     // Pre-allocated buffers to prevent high-frequency GC allocations in update loop
     private val swerveStates = DoubleArray(8)
+    private val swerveEncoders = DoubleArray(4)
+    private val swerveModuleSpeeds = DoubleArray(4)
     private val swerveFaults = IntArray(4)
+    private var cachedCanStatus: CANBus.CANBusStatus? = null
 
     private fun isRealRobot(): Boolean {
         return try {
@@ -67,6 +70,15 @@ open class FrcTelemetryManager(
     }
 
     private var activeBrownoutGuard: BrownoutGuard? = null
+
+    /** Refreshes cached CAN-bus diagnostics during the robot hardware-refresh phase. */
+    internal fun refreshDiagnostics() {
+        cachedCanStatus = try {
+            canBus?.status
+        } catch (_: Throwable) {
+            null
+        }
+    }
 
     /**
      * Publishes core robot state, custom sub-state publishers, and AdvantageScope 3D visualization
@@ -101,21 +113,65 @@ open class FrcTelemetryManager(
             customPublishers[i](state, dataLoggingTelemetry)
         }
 
-        // Publish swerve module states
-        val vx = state.drive.xVelocityMetersPerSecond
-        val vy = state.drive.yVelocityMetersPerSecond
-        val omega = state.drive.angularVelocityRadiansPerSecond
-        for (i in 0..3) {
-            val wvx = vx - omega * SWERVE_OFFSETS[i].second
-            val wvy = vy + omega * SWERVE_OFFSETS[i].first
-            swerveStates[i * 2] = Math.atan2(wvy, wvx)
-            swerveStates[i * 2 + 1] = Math.hypot(wvx, wvy)
+        // Publish swerve module states from cached hardware feedback when available, falling back
+        // to robot-frame kinematics rotated by the estimated heading.
+        var usedMeasuredModules = false
+        if (swerveIO != null && swerveIO.getEncoderPositionsIfValid(swerveEncoders)) {
+            try {
+                swerveIO.getModuleSpeeds(swerveModuleSpeeds)
+                var allFinite = true
+                for (i in 0..3) {
+                    if (!swerveModuleSpeeds[i].isFinite()) {
+                        allFinite = false
+                        break
+                    }
+                }
+                if (allFinite) {
+                    for (i in 0..3) {
+                        swerveStates[i * 2] = swerveEncoders[i] * TWO_PI
+                        swerveStates[i * 2 + 1] = swerveModuleSpeeds[i]
+                    }
+                    usedMeasuredModules = true
+                }
+            } catch (_: Throwable) {
+                // Fall back to chassis kinematics below if module speed read fails.
+            }
+        }
+        if (!usedMeasuredModules) {
+            if (state.drive.isXLock || state.drive.driveMode == com.areslib.state.DriveMode.X_BRAKE) {
+                swerveStates[0] = Math.PI / 4.0; swerveStates[1] = 0.0
+                swerveStates[2] = -Math.PI / 4.0; swerveStates[3] = 0.0
+                swerveStates[4] = -Math.PI / 4.0; swerveStates[5] = 0.0
+                swerveStates[6] = Math.PI / 4.0; swerveStates[7] = 0.0
+            } else {
+                val rawVx = state.drive.xVelocityMetersPerSecond
+                val rawVy = state.drive.yVelocityMetersPerSecond
+                val robotVx: Double
+                val robotVy: Double
+                if (state.drive.isFieldCentric) {
+                    val heading = state.drive.poseEstimator.estimatedPoseHeading
+                    val cosH = kotlin.math.cos(heading)
+                    val sinH = kotlin.math.sin(heading)
+                    robotVx = rawVx * cosH + rawVy * sinH
+                    robotVy = -rawVx * sinH + rawVy * cosH
+                } else {
+                    robotVx = rawVx
+                    robotVy = rawVy
+                }
+                val omega = state.drive.angularVelocityRadiansPerSecond
+                for (i in 0..3) {
+                    val wvx = robotVx - omega * SWERVE_OFFSETS[i].second
+                    val wvy = robotVy + omega * SWERVE_OFFSETS[i].first
+                    swerveStates[i * 2] = Math.atan2(wvy, wvx)
+                    swerveStates[i * 2 + 1] = Math.hypot(wvx, wvy)
+                }
+            }
         }
         dataLoggingTelemetry.putDoubleArray("Robot/SwerveStates", swerveStates)
 
         // --- Log FRC CANbus Diagnostics & Latency ---
         try {
-            val canStatus = canBus?.status
+            val canStatus = cachedCanStatus
             if (canStatus != null) {
                 val latencyMs = swerveIO?.signalLatencyMs ?: 0.0
 
@@ -162,6 +218,7 @@ open class FrcTelemetryManager(
 
 
     companion object {
+        private const val TWO_PI = 2.0 * Math.PI
         private val SWERVE_OFFSETS = arrayOf(
             Pair(0.35, 0.35), Pair(0.35, -0.35),
             Pair(-0.35, 0.35), Pair(-0.35, -0.35)

@@ -51,16 +51,26 @@ class ProjectBackupAutoSyncService internal constructor(
     private val pendingPaths = LinkedHashSet<String>()
     private val wakeups = Channel<Unit>(Channel.CONFLATED)
     private val worker: Job = scope.launch { processRequests() }
+    private val activeProjectPath = java.util.concurrent.atomic.AtomicReference<String?>(null)
     private val _state = MutableStateFlow(ProjectBackupAutoSyncState())
     val state: StateFlow<ProjectBackupAutoSyncState> = _state.asStateFlow()
 
+    private fun publishStateIfActive(next: ProjectBackupAutoSyncState) {
+        val active = activeProjectPath.get()
+        if (active == null || active == next.projectPath) {
+            _state.value = next
+        }
+    }
+
     suspend fun load(projectPath: String): ProjectBackupAutoSyncState {
         val root = requireCanonicalProjectRoot(projectPath)
+        activeProjectPath.set(root.path)
         return stateFor(root).also { _state.value = it }
     }
 
     suspend fun setEnabled(projectPath: String, enabled: Boolean): ProjectBackupAutoSyncState {
         val root = requireCanonicalProjectRoot(projectPath)
+        activeProjectPath.set(root.path)
         Git.open(root).use { git ->
             require(git.repository.resolve(Constants.HEAD) != null) {
                 "Save the first local project version before enabling automatic GitHub backup."
@@ -76,13 +86,15 @@ class ProjectBackupAutoSyncService internal constructor(
 
     fun schedule(projectPath: String) {
         val root = runCatching { requireCanonicalProjectRoot(projectPath) }.getOrNull() ?: return
-        if (!isEnabled(root)) return
-        _state.value = ProjectBackupAutoSyncState(
-            projectPath = root.path,
-            enabled = true,
-            status = ProjectBackupAutoSyncStatus.SCHEDULED,
-            message = "A local version was saved. GitHub backup is queued.",
-            lastSuccessEpochSeconds = _state.value.lastSuccessEpochSeconds,
+        if (!runCatching { isEnabled(root) }.getOrDefault(false)) return
+        publishStateIfActive(
+            ProjectBackupAutoSyncState(
+                projectPath = root.path,
+                enabled = true,
+                status = ProjectBackupAutoSyncStatus.SCHEDULED,
+                message = "A local version was saved. GitHub backup is queued.",
+                lastSuccessEpochSeconds = _state.value.lastSuccessEpochSeconds,
+            )
         )
         synchronized(pendingLock) {
             pendingPaths.remove(root.path)
@@ -93,13 +105,15 @@ class ProjectBackupAutoSyncService internal constructor(
 
     fun markSynchronized(projectPath: String) {
         val root = runCatching { requireCanonicalProjectRoot(projectPath) }.getOrNull() ?: return
-        if (!isEnabled(root)) return
-        _state.value = ProjectBackupAutoSyncState(
-            projectPath = root.path,
-            enabled = true,
-            status = ProjectBackupAutoSyncStatus.UP_TO_DATE,
-            message = "GitHub backup is up to date.",
-            lastSuccessEpochSeconds = epochSeconds(),
+        if (!runCatching { isEnabled(root) }.getOrDefault(false)) return
+        publishStateIfActive(
+            ProjectBackupAutoSyncState(
+                projectPath = root.path,
+                enabled = true,
+                status = ProjectBackupAutoSyncStatus.UP_TO_DATE,
+                message = "GitHub backup is up to date.",
+                lastSuccessEpochSeconds = epochSeconds(),
+            )
         )
     }
 
@@ -129,53 +143,113 @@ class ProjectBackupAutoSyncService internal constructor(
                     val iterator = pendingPaths.iterator()
                     if (!iterator.hasNext()) null else iterator.next().also { iterator.remove() }
                 } ?: break
-                runSync(nextPath)
+                try {
+                    runSync(nextPath)
+                } catch (cancelled: CancellationException) {
+                    throw cancelled
+                } catch (failure: Exception) {
+                    publishStateIfActive(
+                        ProjectBackupAutoSyncState(
+                            projectPath = nextPath,
+                            enabled = true,
+                            status = if (isRecoverableFailure(failure)) {
+                                ProjectBackupAutoSyncStatus.OFFLINE_RETRY
+                            } else {
+                                ProjectBackupAutoSyncStatus.ATTENTION_REQUIRED
+                            },
+                            message = failure.message ?: "GitHub backup encountered an unexpected error.",
+                            lastSuccessEpochSeconds = _state.value.lastSuccessEpochSeconds,
+                        )
+                    )
+                }
             }
         }
     }
 
     private suspend fun runSync(projectPath: String) {
         val root = runCatching { requireCanonicalProjectRoot(projectPath) }.getOrElse { failure ->
-            _state.value = ProjectBackupAutoSyncState(
-                projectPath = projectPath,
-                enabled = true,
-                status = ProjectBackupAutoSyncStatus.ATTENTION_REQUIRED,
-                message = failure.message ?: "The project is no longer available.",
+            publishStateIfActive(
+                ProjectBackupAutoSyncState(
+                    projectPath = projectPath,
+                    enabled = true,
+                    status = ProjectBackupAutoSyncStatus.ATTENTION_REQUIRED,
+                    message = failure.message ?: "The project is no longer available.",
+                )
             )
             return
         }
-        if (!isEnabled(root)) {
-            _state.value = disabledState(root)
+        val enabled = try {
+            isEnabled(root)
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (failure: Exception) {
+            publishStateIfActive(
+                ProjectBackupAutoSyncState(
+                    projectPath = root.path,
+                    enabled = true,
+                    status = ProjectBackupAutoSyncStatus.ATTENTION_REQUIRED,
+                    message = failure.message ?: "Unable to read local Git backup configuration.",
+                )
+            )
             return
         }
-        val plan = inspectProject(root.path)
+        if (!enabled) {
+            publishStateIfActive(disabledState(root))
+            return
+        }
+        val plan = try {
+            inspectProject(root.path)
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (failure: Exception) {
+            publishStateIfActive(
+                ProjectBackupAutoSyncState(
+                    projectPath = root.path,
+                    enabled = true,
+                    status = if (isRecoverableFailure(failure)) {
+                        ProjectBackupAutoSyncStatus.OFFLINE_RETRY
+                    } else {
+                        ProjectBackupAutoSyncStatus.ATTENTION_REQUIRED
+                    },
+                    message = failure.message ?: "Unable to inspect project backup state.",
+                    lastSuccessEpochSeconds = _state.value.lastSuccessEpochSeconds,
+                )
+            )
+            return
+        }
         when {
             plan.destination == null -> {
-                _state.value = ProjectBackupAutoSyncState(
-                    root.path,
-                    true,
-                    ProjectBackupAutoSyncStatus.WAITING_FOR_DESTINATION,
-                    "Automatic backup is on. Choose an approved GitHub repository to begin syncing.",
+                publishStateIfActive(
+                    ProjectBackupAutoSyncState(
+                        root.path,
+                        true,
+                        ProjectBackupAutoSyncStatus.WAITING_FOR_DESTINATION,
+                        "Automatic backup is on. Choose an approved GitHub repository to begin syncing.",
+                    )
                 )
                 return
             }
             plan.changes.isNotEmpty() -> {
-                _state.value = ProjectBackupAutoSyncState(
-                    root.path,
-                    true,
-                    ProjectBackupAutoSyncStatus.WAITING_FOR_LOCAL_SAVE,
-                    "Automatic backup is waiting for the remaining project changes to be saved locally.",
+                publishStateIfActive(
+                    ProjectBackupAutoSyncState(
+                        root.path,
+                        true,
+                        ProjectBackupAutoSyncStatus.WAITING_FOR_LOCAL_SAVE,
+                        "Automatic backup is waiting for the remaining project changes to be saved locally.",
+                    )
                 )
                 return
             }
         }
         for (attempt in RETRY_DELAYS_MS.indices) {
-            _state.value = ProjectBackupAutoSyncState(
-                projectPath = root.path,
-                enabled = true,
-                status = ProjectBackupAutoSyncStatus.SYNCING,
-                message = "Syncing the latest saved version to GitHub…",
-                lastSuccessEpochSeconds = _state.value.lastSuccessEpochSeconds,
+            publishStateIfActive(
+                ProjectBackupAutoSyncState(
+                    projectPath = root.path,
+                    enabled = true,
+                    status = ProjectBackupAutoSyncStatus.SYNCING,
+                    message = "Syncing the latest saved version to GitHub…",
+                    lastSuccessEpochSeconds = _state.value.lastSuccessEpochSeconds,
+                )
             )
             try {
                 pushBackup(root.path)
@@ -185,26 +259,30 @@ class ProjectBackupAutoSyncService internal constructor(
                 throw cancelled
             } catch (failure: Exception) {
                 if (!isRecoverableFailure(failure)) {
-                    _state.value = ProjectBackupAutoSyncState(
-                        projectPath = root.path,
-                        enabled = true,
-                        status = ProjectBackupAutoSyncStatus.ATTENTION_REQUIRED,
-                        message = failure.message ?: "GitHub backup needs attention.",
-                        lastSuccessEpochSeconds = _state.value.lastSuccessEpochSeconds,
+                    publishStateIfActive(
+                        ProjectBackupAutoSyncState(
+                            projectPath = root.path,
+                            enabled = true,
+                            status = ProjectBackupAutoSyncStatus.ATTENTION_REQUIRED,
+                            message = failure.message ?: "GitHub backup needs attention.",
+                            lastSuccessEpochSeconds = _state.value.lastSuccessEpochSeconds,
+                        )
                     )
                     return
                 }
                 val hasRetry = attempt < RETRY_DELAYS_MS.lastIndex
-                _state.value = ProjectBackupAutoSyncState(
-                    projectPath = root.path,
-                    enabled = true,
-                    status = ProjectBackupAutoSyncStatus.OFFLINE_RETRY,
-                    message = if (hasRetry) {
-                        "GitHub is temporarily unreachable. ARES will retry automatically."
-                    } else {
-                        "GitHub is still unreachable. Your local versions are safe; use Sync backup now when the connection returns."
-                    },
-                    lastSuccessEpochSeconds = _state.value.lastSuccessEpochSeconds,
+                publishStateIfActive(
+                    ProjectBackupAutoSyncState(
+                        projectPath = root.path,
+                        enabled = true,
+                        status = ProjectBackupAutoSyncStatus.OFFLINE_RETRY,
+                        message = if (hasRetry) {
+                            "GitHub is temporarily unreachable. ARES will retry automatically."
+                        } else {
+                            "GitHub is still unreachable. Your local versions are safe; use Sync backup now when the connection returns."
+                        },
+                        lastSuccessEpochSeconds = _state.value.lastSuccessEpochSeconds,
+                    )
                 )
                 if (!hasRetry) return
                 workerDelay(RETRY_DELAYS_MS[attempt])

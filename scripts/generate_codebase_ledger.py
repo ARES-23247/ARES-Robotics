@@ -31,6 +31,7 @@ def compute_ledger(root: Path):
         ["git", "ls-files", "-z", "*.kt"],
         cwd=root,
         text=True,
+        encoding="utf-8",
         errors="surrogateescape"
     ).rstrip("\0").split("\0")
 

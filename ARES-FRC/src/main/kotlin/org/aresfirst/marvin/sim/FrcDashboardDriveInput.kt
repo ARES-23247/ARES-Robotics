@@ -103,8 +103,10 @@ internal class FrcDashboardDriveInput(
     }
 }
 
-/** Converts canonical FRC field axes back through the normal cached controller boundary. */
+/** Converts driver-perspective FRC axes back through the normal cached controller boundary. */
 internal fun DesktopDriveFrameGate.applyTo(controllerState: GamepadState) {
+    // DesktopDriveCommandMapper emits driver-perspective axes (+vx forward, +vy left) without
+    // alliance mirroring; FRCTeleOpDriveController applies the single Red alliance inversion.
     controllerState.leftStickY = (-vxMetersPerSecond / FRC_MAX_TRANSLATION_MPS).coerceIn(-1.0, 1.0).toFloat()
     controllerState.leftStickX = (-vyMetersPerSecond / FRC_MAX_TRANSLATION_MPS).coerceIn(-1.0, 1.0).toFloat()
     controllerState.rightStickX = (-omegaRadiansPerSecond / Math.PI).coerceIn(-1.0, 1.0).toFloat()

@@ -4280,8 +4280,13 @@ public final class com/areslib/pathing/PathPlannerAutoParser {
 	public static final field INSTANCE Lcom/areslib/pathing/PathPlannerAutoParser;
 	public final fun getFirstPathName (Ljava/lang/String;)Ljava/lang/String;
 	public final fun getStartingPose (Ljava/lang/String;)Lcom/areslib/math/geometry/Pose2d;
+	public final fun parseAuto (Ljava/lang/String;Lcom/areslib/pathing/HolonomicPathFollower;J)Lcom/areslib/sequencer/Task;
 	public final fun parseAuto (Ljava/lang/String;Lcom/areslib/pathing/HolonomicPathFollower;JLcom/areslib/state/Alliance;)Lcom/areslib/sequencer/Task;
-	public static synthetic fun parseAuto$default (Lcom/areslib/pathing/PathPlannerAutoParser;Ljava/lang/String;Lcom/areslib/pathing/HolonomicPathFollower;JLcom/areslib/state/Alliance;ILjava/lang/Object;)Lcom/areslib/sequencer/Task;
+	public final fun parseAuto (Ljava/lang/String;Lcom/areslib/pathing/HolonomicPathFollower;JLcom/areslib/state/Alliance;Lcom/areslib/math/coordinate/FieldOrigin;)Lcom/areslib/sequencer/Task;
+	public final fun parseAuto (Ljava/lang/String;Lcom/areslib/pathing/HolonomicPathFollower;JLcom/areslib/state/Alliance;Lcom/areslib/math/coordinate/FieldOrigin;D)Lcom/areslib/sequencer/Task;
+	public final fun parseAuto (Ljava/lang/String;Lcom/areslib/pathing/HolonomicPathFollower;JLcom/areslib/state/Alliance;Lcom/areslib/math/coordinate/FieldOrigin;DD)Lcom/areslib/sequencer/Task;
+	public final fun parseAuto (Ljava/lang/String;Lcom/areslib/pathing/HolonomicPathFollower;JLcom/areslib/state/Alliance;Lcom/areslib/math/coordinate/FieldOrigin;DDLcom/areslib/math/coordinate/FieldSymmetry;)Lcom/areslib/sequencer/Task;
+	public static synthetic fun parseAuto$default (Lcom/areslib/pathing/PathPlannerAutoParser;Ljava/lang/String;Lcom/areslib/pathing/HolonomicPathFollower;JLcom/areslib/state/Alliance;Lcom/areslib/math/coordinate/FieldOrigin;DDLcom/areslib/math/coordinate/FieldSymmetry;ILjava/lang/Object;)Lcom/areslib/sequencer/Task;
 }
 
 public final class com/areslib/pathing/PathPlannerJsonParser {
@@ -5001,7 +5006,8 @@ public final class com/areslib/sequencer/FollowPathTask : com/areslib/sequencer/
 	public fun <init> (Lcom/areslib/pathing/HolonomicPathFollower;Lcom/areslib/pathing/Path;Lcom/areslib/math/coordinate/FieldSymmetry;DDZZ)V
 	public fun <init> (Lcom/areslib/pathing/HolonomicPathFollower;Lcom/areslib/pathing/Path;Lcom/areslib/math/coordinate/FieldSymmetry;DDZZZ)V
 	public fun <init> (Lcom/areslib/pathing/HolonomicPathFollower;Lcom/areslib/pathing/Path;Lcom/areslib/math/coordinate/FieldSymmetry;DDZZZD)V
-	public synthetic fun <init> (Lcom/areslib/pathing/HolonomicPathFollower;Lcom/areslib/pathing/Path;Lcom/areslib/math/coordinate/FieldSymmetry;DDZZZDILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Lcom/areslib/pathing/HolonomicPathFollower;Lcom/areslib/pathing/Path;Lcom/areslib/math/coordinate/FieldSymmetry;DDZZZDLcom/areslib/math/coordinate/FieldOrigin;)V
+	public synthetic fun <init> (Lcom/areslib/pathing/HolonomicPathFollower;Lcom/areslib/pathing/Path;Lcom/areslib/math/coordinate/FieldSymmetry;DDZZZDLcom/areslib/math/coordinate/FieldOrigin;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public fun cancel ()V
 	public fun end (Lcom/areslib/state/RobotState;Z)Ljava/util/List;
 	public fun execute (Lcom/areslib/state/RobotState;J)Ljava/util/List;

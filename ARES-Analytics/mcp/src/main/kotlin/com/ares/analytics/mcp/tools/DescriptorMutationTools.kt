@@ -213,6 +213,10 @@ internal object DescriptorMutationTools {
                 putJsonObject("operation") { enumProp("UPSERT or DELETE (default UPSERT)", listOf("UPSERT", "DELETE")) }
                 putJsonObject("documentId") { stringProp("Target documentId / profileId / superstructureId") }
                 putJsonObject("documentJson") { stringProp("Canonical JSON payload for descriptor upsert") }
+                putJsonObject("maxLinearSpeedMps") { numberProp("Optional drivetrain max linear speed (m/s) for descriptorKind='DRIVETRAIN'") }
+                putJsonObject("maxAngularSpeedRadPerSec") { numberProp("Optional drivetrain max angular speed (rad/s) for descriptorKind='DRIVETRAIN'") }
+                putJsonObject("registerAutonomousDisplayName") { stringProp("Optional autonomous catalog display name for descriptorKind='ROUTINE'") }
+                putJsonObject("targetKind") { enumProp("Controls target kind (CONTROL_SCHEME or CONTROLLER_PROFILE) for descriptorKind='CONTROLS'", listOf("CONTROL_SCHEME", "CONTROLLER_PROFILE")) }
                 putJsonObject("target") { enumProp("Tuning target (LOCAL_OVERLAY or CANONICAL)", listOf("LOCAL_OVERLAY", "CANONICAL")) }
                 putJsonObject("assignments") { anyArrayProp("Tuning assignments for descriptorKind='TUNING'") }
                 putJsonObject("expectedRevision") { stringProp("Optional CAS project revision SHA-256") }

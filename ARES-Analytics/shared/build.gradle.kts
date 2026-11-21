@@ -8,6 +8,6 @@ dependencies {
     api(platform("org.aresfirst.ares:ares-bom:$aresVersion"))
     api("org.aresfirst.ares:core")
     api("org.aresfirst.ares:telemetry-schema")
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.11.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.13.0")
     testImplementation(kotlin("test"))
 }

@@ -37,8 +37,15 @@ try {
         git -C $temporary config http.https://github.com/.extraheader $githubExtraHeader
     }
 
-    git -C $temporary fetch --quiet origin $Branch
-    if ($LASTEXITCODE -eq 0) {
+    $remoteRef = (git -C $temporary ls-remote --heads origin $Branch)
+    if ($LASTEXITCODE -ne 0) {
+        throw "Unable to query remote branch '$Branch' on origin; refusing to assume an orphan publication branch."
+    }
+    if (-not [string]::IsNullOrWhiteSpace(($remoteRef -join ''))) {
+        git -C $temporary fetch --quiet origin $Branch
+        if ($LASTEXITCODE -ne 0) {
+            throw "Unable to fetch existing remote branch '$Branch' from origin."
+        }
         git -C $temporary checkout --quiet -B $Branch "origin/$Branch"
     } else {
         git -C $temporary checkout --quiet --orphan $Branch

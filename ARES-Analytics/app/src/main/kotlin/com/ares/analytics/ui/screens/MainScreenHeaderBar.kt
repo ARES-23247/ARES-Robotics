@@ -156,6 +156,7 @@ internal fun MainScreenHeaderBar(
                         nt4ClientService = nt4ClientService,
                         dashboardHealthService = dashboardHealthService,
                         isRobotLinkConnected = isRobotLinkConnected,
+                        league = currentConfig.league,
                         compact = compactShell,
                         onClick = { onNavigate(NavigationTarget.DASHBOARD) },
                     )

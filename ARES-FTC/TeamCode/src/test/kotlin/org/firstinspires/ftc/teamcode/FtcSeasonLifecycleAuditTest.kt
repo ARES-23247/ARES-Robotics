@@ -37,8 +37,8 @@ class FtcSeasonLifecycleAuditTest {
             field("base", base); field("driveController", drive); field("telemetryHelper", telemetry)
             field("superstructureController", superstructure)
         }
-        fun failSeason(failure: Throwable = IllegalStateException("season read failed")): Throwable {
-            doAnswer { throw failure }.`when`(base).readAllSensors(anyLong())
+        fun failSeason(failure: Throwable = IllegalStateException("season telemetry failed")): Throwable {
+            doAnswer { throw failure }.`when`(telemetry).updateTelemetry()
             assertSame(failure, assertThrows(Throwable::class.java) { robot.update() })
             return failure
         }
@@ -138,7 +138,7 @@ class FtcSeasonLifecycleAuditTest {
         val failure = f.failSeason()
         repeat(2) { assertSame(failure, assertThrows(Throwable::class.java) { f.robot.update() }) }
         verify(f.base, times(3)).safeHardware()
-        verify(f.base, times(1)).readAllSensors(anyLong())
+        verify(f.telemetry, times(1)).updateTelemetry()
         assertEquals(listOf(safety), failure.suppressed.toList())
     }
 
@@ -204,32 +204,17 @@ class FtcSeasonLifecycleAuditTest {
         }
     }
 
-    @Test fun healthyFramesConsumeOneFreshCacheAndPowerScaleInOrder() {
+    @Test fun healthyFramesDelegateSharedUpdateAndRefreshDriverStationTelemetryInOrder() {
         val f = RuntimeFixture()
-        val power = f.base.powerManager
-        var nextScale = 0.0
-        doAnswer {
-            doReturn(nextScale).`when`(power).powerScale
-            RobotClock.useMockTime(4321L)
-            null
-        }.`when`(f.base).update(null, null)
-        try {
-            for (scale in listOf(0.0, 0.25, 1.0)) {
-                nextScale = scale
-                clearInvocations(f.base, power, f.telemetry)
-                f.robot.update()
-                val order = inOrder(f.base, power, f.telemetry)
-                order.verify(f.base).update(null, null)
-                order.verify(f.base).readAllSensors(4321L)
-                order.verify(power).powerScale
-                order.verify(f.base).writeAllOutputs(scale)
-                order.verify(f.telemetry).updateTelemetry()
-                verify(f.base, times(1)).readAllSensors(anyLong())
-                verify(f.base, times(1)).writeAllOutputs(anyDouble())
-                verify(f.base, never()).safeAll()
-                verify(f.base, never()).safeHardware()
-            }
-        } finally { RobotClock.useSystemTime() }
+        clearInvocations(f.base, f.telemetry)
+        f.robot.update()
+        val order = inOrder(f.base, f.telemetry)
+        order.verify(f.base).update(null, null)
+        order.verify(f.telemetry).updateTelemetry()
+        verify(f.base, never()).readAllSensors(anyLong())
+        verify(f.base, never()).writeAllOutputs(anyDouble())
+        verify(f.base, never()).safeAll()
+        verify(f.base, never()).safeHardware()
     }
 
     @Test fun aSharedFrameFailureSkipsSeasonReadsWritesAndTelemetry() {

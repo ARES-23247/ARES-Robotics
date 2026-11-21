@@ -7,7 +7,7 @@ Starts Wi-Fi AP / STA network and executes the 50Hz ARES robot cycle.
 import math
 import time
 from ares_micro import XrpRobot
-from generated_ares_project import CONTENT_SHA256, PROJECT, DEFAULT_AUTONOMOUS_ID, create_autonomous_routines, create_subsystems
+from generated_ares_project import AUTONOMOUS_ROUTINES, CONTENT_SHA256, PROJECT, DEFAULT_AUTONOMOUS_ID, create_autonomous_routines, create_subsystems
 from hardware import create_otos_i2c, create_xrp_hardware, create_xrp_mecanum_motors
 
 def _wifi_password(required):
@@ -103,6 +103,9 @@ def main():
 
         robot.set_subsystems(create_subsystems(create_xrp_hardware))
         robot.set_autonomous_routines(create_autonomous_routines(robot.handle_action), DEFAULT_AUTONOMOUS_ID)
+        if DEFAULT_AUTONOMOUS_ID in AUTONOMOUS_ROUTINES:
+            pose = AUTONOMOUS_ROUTINES[DEFAULT_AUTONOMOUS_ID]["starting_pose"]
+            robot.drivetrain.reset_pose(pose["xMeters"], pose["yMeters"], pose["headingRadians"])
 
         print("[Robot] Ready for ARES Studio Driver Station connection.")
 

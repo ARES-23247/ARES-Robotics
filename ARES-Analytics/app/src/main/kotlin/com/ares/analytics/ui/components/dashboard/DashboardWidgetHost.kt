@@ -99,7 +99,7 @@ fun DashboardWidgetHost(
             }
         }
 
-    key(replayFrame?.sessionId ?: "live") {
+    key(workspace.id, workspace.projectPath, replayFrame?.sessionId ?: "live") {
         DashboardWidgetGrid(
             widgets = layout.widgets,
             isEditing = dashboardState.isLayoutEditing,

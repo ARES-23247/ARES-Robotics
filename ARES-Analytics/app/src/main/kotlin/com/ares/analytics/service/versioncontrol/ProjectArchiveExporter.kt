@@ -4,12 +4,15 @@ import com.ares.analytics.service.writeFileAtomically
 import com.ares.analytics.service.normalizeUnixGradleWrapper
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.InputStream
+import java.nio.file.AccessDeniedException
 import java.nio.file.Files
 import java.nio.file.LinkOption
+import java.nio.file.Path
 import java.nio.file.StandardOpenOption
 import java.util.Locale
 import java.util.zip.ZipEntry
@@ -126,7 +129,9 @@ class ProjectArchiveExporter internal constructor(private val openArchive: (File
                     removedEmptyDirectory = true
                 }
                 // Sibling rename, deliberately without REPLACE_EXISTING (including the race at publication).
-                Files.move(staging.toPath(), destination.toPath())
+                // On Windows, real-time scanners can hold a brief handle on freshly extracted files;
+                // retry transient AccessDeniedException while destination remains absent.
+                moveDirectoryWithTransientRetry(staging.toPath(), destination.toPath())
                 destination
             } catch (error: Throwable) {
                 failure = error
@@ -142,6 +147,22 @@ class ProjectArchiveExporter internal constructor(private val openArchive: (File
                 }
             }
         }
+
+    private suspend fun moveDirectoryWithTransientRetry(source: Path, target: Path) {
+        var lastAccessDenied: AccessDeniedException? = null
+        repeat(15) { attempt ->
+            try {
+                Files.move(source, target)
+                return
+            } catch (denied: AccessDeniedException) {
+                lastAccessDenied = denied
+                if (Files.exists(target, LinkOption.NOFOLLOW_LINKS) || attempt == 14) throw denied
+                currentCoroutineContext().ensureActive()
+                delay(100L)
+            }
+        }
+        throw checkNotNull(lastAccessDenied)
+    }
 
     private suspend fun extractInto(archive: File, destination: File) {
         // ZipInputStream alone accepts EOF between local entries, including a truncated archive.

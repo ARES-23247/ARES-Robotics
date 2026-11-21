@@ -31,6 +31,7 @@ class FtcIndicatorLightIO(
 
     private val servo: Servo = hardwareMap.get(Servo::class.java, name)
     private var lastSentPosition = Double.NaN
+    @Volatile private var closed = false
 
     override var currentPosition: Double = 0.0
         private set
@@ -42,7 +43,8 @@ class FtcIndicatorLightIO(
      * @param position Target normalized servo position $[0.0, 1.0]$.
      */
     override fun setPosition(position: Double) {
-        val clamped = position.coerceIn(0.0, 1.0)
+        if (closed) return
+        val clamped = if (position.isFinite()) position.coerceIn(0.0, 1.0) else IndicatorLightColor.OFF.position
         currentPosition = clamped
         // Skip redundant writes to avoid I2C bus congestion
         if (lastSentPosition.isNaN() || abs(clamped - lastSentPosition) > 0.001) {
@@ -79,7 +81,12 @@ class FtcIndicatorLightIO(
      * Safely turns off the indicator light and releases hardware references.
      */
     override fun close() {
-        safe()
+        if (closed) return
+        try {
+            safe()
+        } finally {
+            closed = true
+        }
     }
 }
 

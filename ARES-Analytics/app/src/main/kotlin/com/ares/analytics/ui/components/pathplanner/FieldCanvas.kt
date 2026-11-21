@@ -216,39 +216,123 @@ fun FieldCanvas(
     val currentActiveAprilTags by rememberUpdatedState(activeAprilTags)
     val currentActiveFieldWaypoints by rememberUpdatedState(activeFieldWaypoints)
 
-    LaunchedEffect(projectPath) {
+    LaunchedEffect(projectPath, league) {
         try {
-            if (!projectPath.isNullOrEmpty()) {
+            if (projectPath.isNullOrEmpty()) {
+                if (obstacles == null) localObstacles.clear()
+                if (gamePieces == null) localGamePieces.clear()
+                if (aprilTags == null) localAprilTags.clear()
+                if (fieldWaypoints == null) localFieldWaypoints.clear()
+                if (fieldImageConfig == null) {
+                    localFieldImageConfig = FieldImageConfig()
+                    localFieldConfigLoaded = false
+                }
+                if (fieldImage == null) {
+                    localFieldImage = null
+                    localFieldImageError = null
+                }
+                return@LaunchedEffect
+            }
+            val loaded = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
                 var configuredImagePath = fieldImageConfig?.imagePath
                 val documentFile = ProjectLayout.fieldDefinitionFile(projectPath, league)
-                if (documentFile.isFile) {
-                    val document = RobotFieldDocument.decode(documentFile.readText())
-                    if (obstacles == null) updateObstacles(FieldDocumentMapper.obstacles(document))
-                    if (gamePieces == null) updateGamePieces(FieldDocumentMapper.gamePieces(document))
-                    if (aprilTags == null) updateAprilTags(FieldDocumentMapper.aprilTags(document))
-                    if (fieldWaypoints == null) updateFieldWaypoints(FieldDocumentMapper.fieldWaypoints(document))
-                    if (fieldImageConfig == null) {
-                        localFieldImageConfig = FieldDocumentMapper.image(document)
-                        localFieldConfigLoaded = true
-                    }
-                    configuredImagePath = fieldImageConfig?.imagePath ?: FieldDocumentMapper.image(document).imagePath
+                val decoded = if (documentFile.isFile) {
+                    val doc = RobotFieldDocument.decode(documentFile.readText())
+                    configuredImagePath = fieldImageConfig?.imagePath ?: FieldDocumentMapper.image(doc).imagePath
+                    doc
+                } else {
+                    null
                 }
-
-                if (fieldImage == null) {
+                val imageResult = if (fieldImage == null) {
                     FieldImageLoader.load(projectPath, league, configuredImagePath)
-                        .onSuccess {
-                            localFieldImage = it
-                            localFieldImageError = null
-                        }
-                        .onFailure { error ->
-                            localFieldImage = null
-                            localFieldImageError = error.message ?: "Field image could not be loaded."
-                        }
+                } else {
+                    null
+                }
+                decoded to imageResult
+            }
+            val (document, imageResult) = loaded
+            if (document != null) {
+                if (obstacles == null) updateObstacles(FieldDocumentMapper.obstacles(document))
+                if (gamePieces == null) updateGamePieces(FieldDocumentMapper.gamePieces(document))
+                if (aprilTags == null) updateAprilTags(FieldDocumentMapper.aprilTags(document))
+                if (fieldWaypoints == null) updateFieldWaypoints(FieldDocumentMapper.fieldWaypoints(document))
+                if (fieldImageConfig == null) {
+                    localFieldImageConfig = FieldDocumentMapper.image(document)
+                    localFieldConfigLoaded = true
+                }
+            } else {
+                if (obstacles == null) localObstacles.clear()
+                if (gamePieces == null) localGamePieces.clear()
+                if (aprilTags == null) localAprilTags.clear()
+                if (fieldWaypoints == null) localFieldWaypoints.clear()
+                if (fieldImageConfig == null) {
+                    localFieldImageConfig = FieldImageConfig()
+                    localFieldConfigLoaded = false
                 }
             }
+            if (imageResult != null) {
+                imageResult
+                    .onSuccess {
+                        localFieldImage = it
+                        localFieldImageError = null
+                    }
+                    .onFailure { error ->
+                        localFieldImage = null
+                        localFieldImageError = error.message ?: "Field image could not be loaded."
+                    }
+            }
+        } catch (cancelled: kotlinx.coroutines.CancellationException) {
+            throw cancelled
         } catch (e: Exception) {
             localFieldImageError = e.message ?: "Field configuration could not be loaded."
             e.printStackTrace()
+        }
+    }
+
+    val gestureState = remember { FieldCanvasGestureState() }.apply {
+        this.editorMode = editorMode
+        this.zoomScale = zoomScale
+        this.panOffset = panOffset
+        this.viewRotation = viewRotation
+        this.fieldWidthM = fieldWidthM
+        this.fieldHeightM = fieldHeightM
+        this.league = league
+        this.robotDimensions = robotDimensions
+        this.waypoints = currentWaypoints
+        this.activeObstacles = currentActiveObstacles
+        this.activeGamePieces = currentActiveGamePieces
+        this.activeAprilTags = currentActiveAprilTags
+        this.activeFieldWaypoints = currentActiveFieldWaypoints
+        this.availableGamePieceTypes = availableGamePieceTypes
+        this.activeGamePieceType = activeGamePieceType
+        this.showObstacleControls = showObstacleControls
+        this.isShiftPressed = isShiftPressed
+        this.selectedWaypointIndex = selectedWaypointIndex
+        this.onWaypointsChanged = onWaypointsChanged
+        this.updateObstacles = updateObstacles
+        this.updateGamePieces = updateGamePieces
+        this.updateAprilTags = updateAprilTags
+        this.updateFieldWaypoints = updateFieldWaypoints
+        this.onPenStrokeCompleted = onPenStrokeCompleted
+        this.onItemSelected = onItemSelected
+        this.onItemDoubleTapped = onItemDoubleTapped
+        this.onOpenContextMenu = { offset, targetType, targetIndex, targetId ->
+            contextMenuOffset = with(density) { DpOffset(offset.x.toDp(), offset.y.toDp()) }
+            contextTargetType = targetType
+            contextTargetIndex = targetIndex
+            contextTargetId = targetId
+            contextMenuExpanded = true
+        }
+        this.onSelectionChanged = { wpIdx, obsId, atId, gpId, fwpId, dHeading, dPrevHeading, dFwp, dFwpHeading ->
+            selectedWaypointIndex = wpIdx
+            selectedObstacleId = obsId
+            selectedAprilTagId = atId
+            selectedGamePieceId = gpId
+            selectedFieldWaypointId = fwpId
+            isDraggingHeading = dHeading
+            isDraggingPrevHeading = dPrevHeading
+            isDraggingFieldWaypoint = dFwp
+            isDraggingFieldWaypointHeading = dFwpHeading
         }
     }
 
@@ -323,52 +407,9 @@ fun FieldCanvas(
                         }
                         .fieldCanvasGestures(
                             autoGoalMode = autoGoalMode,
-                            editorMode = editorMode,
-                            zoomScale = zoomScale,
-                            panOffset = panOffset,
-                            viewRotation = viewRotation,
-                            fieldWidthM = fieldWidthM,
-                            fieldHeightM = fieldHeightM,
-                            league = league,
-                            robotDimensions = robotDimensions,
-                            currentWaypoints = currentWaypoints,
-                            currentActiveObstacles = currentActiveObstacles,
-                            currentActiveGamePieces = currentActiveGamePieces,
-                            currentActiveAprilTags = currentActiveAprilTags,
-                            currentActiveFieldWaypoints = currentActiveFieldWaypoints,
+                            gestureState = gestureState,
                             currentPolygonPoints = currentPolygonPoints,
                             currentPenStrokePoints = currentPenStrokePoints,
-                            onPenStrokeCompleted = onPenStrokeCompleted,
-                            availableGamePieceTypes = availableGamePieceTypes,
-                            activeGamePieceType = activeGamePieceType,
-                            showObstacleControls = showObstacleControls,
-                            isShiftPressed = isShiftPressed,
-                            selectedWaypointIndex = selectedWaypointIndex,
-                            onWaypointsChanged = onWaypointsChanged,
-                            updateObstacles = updateObstacles,
-                            updateGamePieces = updateGamePieces,
-                            updateAprilTags = updateAprilTags,
-                            updateFieldWaypoints = updateFieldWaypoints,
-                            onItemSelected = onItemSelected,
-                            onItemDoubleTapped = onItemDoubleTapped,
-                            onOpenContextMenu = { offset, targetType, targetIndex, targetId ->
-                                contextMenuOffset = with(density) { DpOffset(offset.x.toDp(), offset.y.toDp()) }
-                                contextTargetType = targetType
-                                contextTargetIndex = targetIndex
-                                contextTargetId = targetId
-                                contextMenuExpanded = true
-                            },
-                            onSelectionChanged = { wpIdx, obsId, atId, gpId, fwpId, dHeading, dPrevHeading, dFwp, dFwpHeading ->
-                                selectedWaypointIndex = wpIdx
-                                selectedObstacleId = obsId
-                                selectedAprilTagId = atId
-                                selectedGamePieceId = gpId
-                                selectedFieldWaypointId = fwpId
-                                isDraggingHeading = dHeading
-                                isDraggingPrevHeading = dPrevHeading
-                                isDraggingFieldWaypoint = dFwp
-                                isDraggingFieldWaypointHeading = dFwpHeading
-                            },
                         )
                 ) {
                     val w = size.width

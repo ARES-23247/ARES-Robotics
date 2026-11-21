@@ -38,6 +38,29 @@ import kotlinx.coroutines.withContext
  * Tab 2 inside Competition Strategy Hub: Pre-Match Alliance Matchup Briefing comparing projected
  * NP-OPR scores, partner auto-zone conflicts, phase advantages, and coaching talking points.
  */
+internal fun matchBriefingKey(compLevel: String, matchNumber: Int): String =
+    "${compLevel.trim().lowercase(Locale.US).ifBlank { "quals" }}:$matchNumber"
+
+internal fun selectActiveBriefingMatch(
+    combinedMatches: List<MatchInfo>,
+    selectedMatchKey: String?,
+    selectedMatchNumber: Int?,
+    cleanOur: String?,
+): MatchInfo? {
+    val byKey = selectedMatchKey?.takeIf(String::isNotBlank)?.let { targetKey ->
+        combinedMatches.firstOrNull { matchBriefingKey(it.compLevel, it.matchNumber) == targetKey }
+    }
+    if (byKey != null) return byKey
+    return combinedMatches.firstOrNull { it.matchNumber == selectedMatchNumber }
+        ?: cleanOur?.let { ours ->
+            combinedMatches.firstOrNull { m ->
+                m.redAlliance.any { normalizeTeamNumber(it) == ours } ||
+                    m.blueAlliance.any { normalizeTeamNumber(it) == ours }
+            }
+        }
+        ?: combinedMatches.firstOrNull()
+}
+
 @Composable
 internal fun StrategyMatchupBriefingTab(
     workspace: WorkspaceConfig?,
@@ -47,6 +70,8 @@ internal fun StrategyMatchupBriefingTab(
     standSummaries: Map<String, TeamStandScoutingSummary>,
     selectedMatchNumber: Int?,
     onSelectMatchNumber: (Int) -> Unit,
+    selectedMatchKey: String? = null,
+    onSelectMatchKey: ((String) -> Unit)? = null,
     exportService: ExportService?,
     notebookCaptureService: EngineeringNotebookCaptureService?,
     onScoutTeam: (String) -> Unit,
@@ -61,7 +86,7 @@ internal fun StrategyMatchupBriefingTab(
     val combinedMatches = remember(matches, bundle.matchResults) {
         val byKey = LinkedHashMap<String, MatchInfo>()
         matches.forEach { m ->
-            byKey["${m.compLevel.lowercase(Locale.US)}:${m.matchNumber}"] = m
+            byKey[matchBriefingKey(m.compLevel, m.matchNumber)] = m
         }
         bundle.matchResults.forEach { res ->
             val key = res.normalizedKey()
@@ -78,15 +103,8 @@ internal fun StrategyMatchupBriefingTab(
         byKey.values.sortedWith(compareBy<MatchInfo> { it.compLevel }.thenBy { it.matchNumber })
     }
 
-    val activeMatch = remember(combinedMatches, selectedMatchNumber, cleanOur) {
-        combinedMatches.firstOrNull { it.matchNumber == selectedMatchNumber }
-            ?: cleanOur?.let { ours ->
-                combinedMatches.firstOrNull { m ->
-                    m.redAlliance.any { normalizeTeamNumber(it) == ours } ||
-                        m.blueAlliance.any { normalizeTeamNumber(it) == ours }
-                }
-            }
-            ?: combinedMatches.firstOrNull()
+    val activeMatch = remember(combinedMatches, selectedMatchKey, selectedMatchNumber, cleanOur) {
+        selectActiveBriefingMatch(combinedMatches, selectedMatchKey, selectedMatchNumber, cleanOur)
     }
 
     val pitByTeam = remember(bundle.pitProfiles) {
@@ -151,17 +169,25 @@ internal fun StrategyMatchupBriefingTab(
                         )
                         FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                             combinedMatches.take(18).forEach { candidate ->
+                                val candidateKey = matchBriefingKey(candidate.compLevel, candidate.matchNumber)
                                 val isOurs = cleanOur != null && (
                                     candidate.redAlliance.any { normalizeTeamNumber(it) == cleanOur } ||
                                         candidate.blueAlliance.any { normalizeTeamNumber(it) == cleanOur }
                                     )
+                                val levelCode = candidate.compLevel.trim().lowercase(Locale.US)
+                                val chipPrefix = when {
+                                    levelCode.isBlank() || levelCode == "qm" || levelCode == "quals" || levelCode == "qualification" -> "M"
+                                    else -> levelCode.uppercase(Locale.US).take(2)
+                                }
                                 FilterChip(
-                                    selected = candidate.matchNumber == activeMatch.matchNumber &&
-                                        candidate.compLevel.equals(activeMatch.compLevel, ignoreCase = true),
-                                    onClick = { onSelectMatchNumber(candidate.matchNumber) },
+                                    selected = candidateKey == matchBriefingKey(activeMatch.compLevel, activeMatch.matchNumber),
+                                    onClick = {
+                                        onSelectMatchKey?.invoke(candidateKey)
+                                        onSelectMatchNumber(candidate.matchNumber)
+                                    },
                                     label = {
                                         Text(
-                                            if (isOurs) "*M#${candidate.matchNumber}" else "M#${candidate.matchNumber}",
+                                            if (isOurs) "*$chipPrefix#${candidate.matchNumber}" else "$chipPrefix#${candidate.matchNumber}",
                                             fontSize = 11.sp,
                                             fontFamily = FontFamily.Monospace,
                                         )

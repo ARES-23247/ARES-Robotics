@@ -61,6 +61,11 @@ class FtcPrismDriverI2cIO @JvmOverloads constructor(
         const val ANIM_SINGLE_FILL = 10
         const val ANIM_RAINBOW_SNAKES = 11
         const val ANIM_POLICE_LIGHTS = 12
+
+        private const val MODE_NONE = 0
+        private const val MODE_SOLID = 1
+        private const val MODE_RAINBOW = 2
+        private const val MODE_ARTBOARD = 3
     }
 
     private val i2cDevice: I2cDeviceSynch = hardwareMap.get(I2cDeviceSynch::class.java, name)
@@ -72,6 +77,17 @@ class FtcPrismDriverI2cIO @JvmOverloads constructor(
     /** Maximum global LED brightness cap percentage $[0, 100]$. */
     override var maxBrightnessPercent: Int = 75
 
+    @Volatile private var closed = false
+    private val word32Buffer = ByteArray(4)
+    private val pairBuffer = ByteArray(2)
+    private val rgbBuffer = ByteArray(4)
+    private var lastCommandMode = MODE_NONE
+    private var lastCommandBrightness = -1
+    private var lastCommandR = -1
+    private var lastCommandG = -1
+    private var lastCommandB = -1
+    private var lastArtboardSlot = -1
+
     init {
         i2cDevice.i2cAddress = I2cAddr.create7bit(i2cAddress)
     }
@@ -82,23 +98,39 @@ class FtcPrismDriverI2cIO @JvmOverloads constructor(
      * @return Hardware device ID byte.
      */
     fun readDeviceId(): Byte {
+        check(!closed) { "FtcPrismDriverI2cIO is closed" }
         return i2cDevice.read8(REG_DEVICE_ID)
     }
 
+    private fun invalidateCache() {
+        lastCommandMode = MODE_NONE
+        lastCommandBrightness = -1
+        lastCommandR = -1
+        lastCommandG = -1
+        lastCommandB = -1
+        lastArtboardSlot = -1
+    }
+
     private fun write32Bit(reg: Int, value: Int) {
-        val bytes = byteArrayOf(
-            (value and 0xFF).toByte(),
-            ((value shr 8) and 0xFF).toByte(),
-            ((value shr 16) and 0xFF).toByte(),
-            ((value shr 24) and 0xFF).toByte()
-        )
-        i2cDevice.write(reg, bytes)
+        word32Buffer[0] = (value and 0xFF).toByte()
+        word32Buffer[1] = ((value shr 8) and 0xFF).toByte()
+        word32Buffer[2] = ((value shr 16) and 0xFF).toByte()
+        word32Buffer[3] = ((value shr 24) and 0xFF).toByte()
+        i2cDevice.write(reg, word32Buffer)
+    }
+
+    private fun writeLayerPair(paramId: Int, value: Int) {
+        pairBuffer[0] = paramId.toByte()
+        pairBuffer[1] = value.toByte()
+        i2cDevice.write(REG_LAYER_0, pairBuffer)
     }
 
     /**
      * Sends a control bit command clearing all active animations from the LED strip.
      */
     fun clearAnimations() {
+        if (closed) return
+        invalidateCache()
         // Control register bit 25 = Clear animations
         write32Bit(REG_CONTROL, (1 shl 25))
     }
@@ -109,9 +141,18 @@ class FtcPrismDriverI2cIO @JvmOverloads constructor(
      * @param slot EEPROM artboard slot index $[0, 7]$.
      */
     fun loadArtboard(slot: Int) {
+        if (closed) return
         val clampedSlot = slot.coerceIn(0, 7)
+        if (lastCommandMode == MODE_ARTBOARD && lastArtboardSlot == clampedSlot) return
         val command = (1 shl (8 + clampedSlot))
-        write32Bit(REG_SAVE_LOAD_ARTBOARD, command)
+        try {
+            write32Bit(REG_SAVE_LOAD_ARTBOARD, command)
+            lastCommandMode = MODE_ARTBOARD
+            lastArtboardSlot = clampedSlot
+        } catch (failure: Throwable) {
+            invalidateCache()
+            throw failure
+        }
     }
 
     /**
@@ -120,8 +161,10 @@ class FtcPrismDriverI2cIO @JvmOverloads constructor(
      * @param slot EEPROM artboard slot index $[0, 7]$.
      */
     fun saveArtboard(slot: Int) {
+        if (closed) return
         val clampedSlot = slot.coerceIn(0, 7)
         val command = (1 shl clampedSlot)
+        invalidateCache()
         write32Bit(REG_SAVE_LOAD_ARTBOARD, command)
     }
 
@@ -133,16 +176,40 @@ class FtcPrismDriverI2cIO @JvmOverloads constructor(
      * @param b Blue intensity $[0, 255]$.
      */
     override fun setSolidColorRgb(r: Int, g: Int, b: Int) {
-        val scale = maxBrightnessPercent.coerceIn(0, 100) / 100.0
+        if (closed) return
+        val brightnessCap = maxBrightnessPercent.coerceIn(0, 100)
+        val scale = brightnessCap / 100.0
         val red = (r.coerceIn(0, 255) * scale).toInt()
         val green = (g.coerceIn(0, 255) * scale).toInt()
         val blue = (b.coerceIn(0, 255) * scale).toInt()
+        if (lastCommandMode == MODE_SOLID &&
+            lastCommandBrightness == brightnessCap &&
+            lastCommandR == red &&
+            lastCommandG == green &&
+            lastCommandB == blue
+        ) {
+            return
+        }
 
-        i2cDevice.write(REG_LAYER_0, byteArrayOf(0x00, ANIM_SOLID_COLOR.toByte()))
-        i2cDevice.write(REG_LAYER_0, byteArrayOf(0x01, maxBrightnessPercent.coerceIn(0, 100).toByte()))
-        i2cDevice.write(REG_LAYER_0, byteArrayOf(0x02, 0.toByte()))
-        i2cDevice.write(REG_LAYER_0, byteArrayOf(0x03, 255.toByte()))
-        i2cDevice.write(REG_LAYER_0, byteArrayOf(0x04, red.toByte(), green.toByte(), blue.toByte()))
+        try {
+            writeLayerPair(0x00, ANIM_SOLID_COLOR)
+            writeLayerPair(0x01, brightnessCap)
+            writeLayerPair(0x02, 0)
+            writeLayerPair(0x03, 255)
+            rgbBuffer[0] = 0x04
+            rgbBuffer[1] = red.toByte()
+            rgbBuffer[2] = green.toByte()
+            rgbBuffer[3] = blue.toByte()
+            i2cDevice.write(REG_LAYER_0, rgbBuffer)
+            lastCommandMode = MODE_SOLID
+            lastCommandBrightness = brightnessCap
+            lastCommandR = red
+            lastCommandG = green
+            lastCommandB = blue
+        } catch (failure: Throwable) {
+            invalidateCache()
+            throw failure
+        }
     }
 
     /**
@@ -151,11 +218,20 @@ class FtcPrismDriverI2cIO @JvmOverloads constructor(
      * @param brightness Animation peak brightness percentage $[0, 100]$ (default 100).
      */
     fun setRainbowAnimation(brightness: Int = 100) {
+        if (closed) return
         val cappedBrightness = ((brightness.coerceIn(0, 100) * (maxBrightnessPercent.coerceIn(0, 100) / 100.0))).toInt()
-        i2cDevice.write(REG_LAYER_0, byteArrayOf(0x00, ANIM_RAINBOW.toByte()))
-        i2cDevice.write(REG_LAYER_0, byteArrayOf(0x01, cappedBrightness.toByte()))
-        i2cDevice.write(REG_LAYER_0, byteArrayOf(0x02, 0.toByte()))
-        i2cDevice.write(REG_LAYER_0, byteArrayOf(0x03, 255.toByte()))
+        if (lastCommandMode == MODE_RAINBOW && lastCommandBrightness == cappedBrightness) return
+        try {
+            writeLayerPair(0x00, ANIM_RAINBOW)
+            writeLayerPair(0x01, cappedBrightness)
+            writeLayerPair(0x02, 0)
+            writeLayerPair(0x03, 255)
+            lastCommandMode = MODE_RAINBOW
+            lastCommandBrightness = cappedBrightness
+        } catch (failure: Throwable) {
+            invalidateCache()
+            throw failure
+        }
     }
 
     /**
@@ -164,6 +240,7 @@ class FtcPrismDriverI2cIO @JvmOverloads constructor(
      * @param pulseWidthUs PWM pulse width duration in microseconds ($\mu s$).
      */
     override fun setPulseWidthUs(pulseWidthUs: Int) {
+        if (closed) return
         val clampedUs = pulseWidthUs.coerceIn(500, 2500)
         currentPulseWidthUs = clampedUs
 
@@ -211,6 +288,11 @@ class FtcPrismDriverI2cIO @JvmOverloads constructor(
      * Safely clears LED animations and releases hardware device handles.
      */
     override fun close() {
-        safe()
+        if (closed) return
+        try {
+            safe()
+        } finally {
+            closed = true
+        }
     }
 }

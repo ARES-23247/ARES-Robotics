@@ -312,6 +312,10 @@ class RevAbsoluteAnalogEncoderController @kotlin.jvm.JvmOverloads constructor(
         } catch (_: Exception) {}
     }
 
+    override fun refresh() {
+        updateInputs()
+    }
+
     override val velocity: Double
         get() = 0.0
 

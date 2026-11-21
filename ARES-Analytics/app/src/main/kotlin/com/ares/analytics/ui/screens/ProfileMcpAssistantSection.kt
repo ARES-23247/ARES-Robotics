@@ -53,7 +53,9 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.putJsonObject
 import com.ares.analytics.mcp.bridge.StudioBridgeClient
 import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.File
 
 internal enum class McpAssistantClient(val slug: String, val label: String, val destination: String) {
@@ -208,10 +210,14 @@ fun ProfileMcpAssistantSection(
                     checking = true
                     scope.launch {
                         try {
-                            val status = StudioBridgeClient(StudioBridgeClient.resolveBridgeDir()).health()
+                            val status = withContext(Dispatchers.IO) {
+                                StudioBridgeClient(StudioBridgeClient.resolveBridgeDir()).health()
+                            }
                             connection = if (status.connected) {
                                 "Connected to Studio " + status.studioVersion + " · " + (status.activeProjectRoot ?: "No open project")
                             } else status.fallbackReason
+                        } catch (error: Exception) {
+                            connection = "Bridge check failed: ${error.message ?: "unexpected error"}"
                         } finally { checking = false }
                     }
                 }) { Text(if (checking) "Checking…" else "Check Studio connection") }

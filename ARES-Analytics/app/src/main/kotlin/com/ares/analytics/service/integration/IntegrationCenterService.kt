@@ -10,6 +10,7 @@ import com.ares.analytics.shared.models.NotificationProviderConfig
 import com.ares.analytics.shared.models.NotificationProviderKind
 import com.ares.analytics.shared.models.PublicationReceipt
 import io.ktor.client.HttpClient
+import kotlinx.coroutines.sync.withLock
 import java.time.Clock
 
 data class IntegrationCenterSnapshot(
@@ -51,6 +52,8 @@ class IntegrationCenterService(
     private val httpClient: HttpClient = notificationHttpClient(),
     private val clock: Clock = Clock.systemUTC(),
 ) : IntegrationCenterOperations, AutoCloseable {
+    private val settingsMutex = kotlinx.coroutines.sync.Mutex()
+
     override suspend fun snapshot(): IntegrationCenterSnapshot = IntegrationCenterSnapshot(
         settings = settingsService.load(),
         deliveries = store.listRecentDeliveries(),
@@ -67,7 +70,7 @@ class IntegrationCenterService(
     override suspend fun saveNotificationProvider(
         config: NotificationProviderConfig,
         credential: IntegrationCredential?,
-    ) {
+    ) = settingsMutex.withLock {
         val current = settingsService.load()
         require(current.notebookPublishers.none { it.publisherId == config.providerId }) {
             "Provider ID is already used by a notebook publisher"
@@ -85,7 +88,7 @@ class IntegrationCenterService(
     override suspend fun saveNotebookPublisher(
         config: NotebookPublisherConfig,
         credential: IntegrationCredential?,
-    ) {
+    ) = settingsMutex.withLock {
         val current = settingsService.load()
         require(current.notificationProviders.none { it.providerId == config.publisherId }) {
             "Provider ID is already used by a notification provider"
@@ -100,7 +103,7 @@ class IntegrationCenterService(
         reloadIntegrations()
     }
 
-    override suspend fun deleteProvider(providerId: String) {
+    override suspend fun deleteProvider(providerId: String) = settingsMutex.withLock {
         val current = settingsService.load()
         settingsService.save(
             current.copy(

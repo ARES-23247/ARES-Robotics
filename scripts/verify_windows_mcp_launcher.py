@@ -48,8 +48,14 @@ def check_handshake(command: list[str]) -> None:
                 raise RuntimeError("Missing recorded-run resource")
             print("External stdio handshake passed for", hello["serverInfo"]["name"])
         finally:
-            server.stdin.close()
-            server.wait(timeout=15)
+            if server.stdin is not None and not server.stdin.closed:
+                server.stdin.close()
+            try:
+                server.wait(timeout=15)
+            except subprocess.TimeoutExpired:
+                server.kill()
+                server.wait(timeout=15)
+                raise RuntimeError("Launcher did not exit within 15s after stdin EOF")
         if server.returncode:
             raise RuntimeError(f"Launcher exited with status {server.returncode}")
 

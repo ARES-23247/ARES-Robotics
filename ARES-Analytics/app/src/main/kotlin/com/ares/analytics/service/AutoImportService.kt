@@ -514,7 +514,7 @@ class AutoImportService(
 
     private suspend fun listFilesOnFtcRobot(adbPath: String, directory: String): List<String> {
         val result = processRunner.runProcessOrNull(
-            ProcessBuilder(adbPath, "shell", "ls", directory),
+            ProcessBuilder(adbPath, "shell", "ls -- ${processRunner.shellQuote(directory)}"),
             processRunner.listProcessTimeoutMs
         ) ?: return emptyList()
         if (!result.succeeded) return emptyList()
@@ -529,12 +529,14 @@ class AutoImportService(
     }
 
     private suspend fun getFtcFileSnapshot(adbPath: String, remotePath: String): SourceSnapshot? {
-        return processRunner.readSnapshotFromProcess(ProcessBuilder(adbPath, "shell", "stat", "-c", "%s:%Y", remotePath))
+        return processRunner.readSnapshotFromProcess(
+            ProcessBuilder(adbPath, "shell", "stat -c '%s:%Y' -- ${processRunner.shellQuote(remotePath)}")
+        )
     }
 
     private suspend fun isFileInUseOnFtcRobot(adbPath: String, remotePath: String): Boolean {
         val result = processRunner.runProcessOrNull(
-            ProcessBuilder(adbPath, "shell", "lsof", remotePath),
+            ProcessBuilder(adbPath, "shell", "lsof -- ${processRunner.shellQuote(remotePath)}"),
             processRunner.listProcessTimeoutMs
         ) ?: return false
         // Only treat an explicit lsof match on the remote path as "in use". A usage banner from a
@@ -592,7 +594,12 @@ class AutoImportService(
             it.isNotEmpty() &&
                 !it.contains("No such file") &&
                 !it.contains("Permission denied") &&
-                !it.contains("ls:")
+                !it.contains("ls:") &&
+                !it.contains('/') &&
+                !it.contains('\\') &&
+                it != "." &&
+                it != ".." &&
+                !it.any { ch -> ch.code < 0x20 || ch.code == 0x7F }
         }
 
     // --- General Utility Methods ---

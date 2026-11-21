@@ -74,7 +74,9 @@ internal fun handleMainScreenPreviewKeyEvent(
                 }
                 true
             }
-            Key.D -> {
+            Key.D -> if (activeNav == NavigationTarget.FIELD_EDITOR && !keyEvent.isShiftPressed) {
+                false
+            } else {
                 requestSimulatorLaunch()
                 true
             }

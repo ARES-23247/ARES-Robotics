@@ -259,6 +259,43 @@ class GeneratedProjectTest(unittest.TestCase):
         self.assertGreaterEqual(project["deadman_timeout_ms"], 100)
         self.assertLessEqual(project["deadman_timeout_ms"], 1000)
 
+    def test_port_collision_and_differential_inversion_are_rejected(self):
+        tool_path = ROOT / "tools" / "ares_project.py"
+        spec = importlib.util.spec_from_file_location("ares_project_collision_tool", tool_path)
+        tool = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(tool)
+        _, drivebase, _, _, _ = tool.validate()
+
+        inverted_diff = json.loads(json.dumps(drivebase))
+        inverted_diff["components"][0]["inverted"] = True
+        with self.assertRaisesRegex(ValueError, "Differential XRP drive does not support inverted"):
+            tool.validate_drivebase(inverted_diff)
+
+        mecanum = json.loads(json.dumps(drivebase))
+        mecanum["kind"] = "FTC_MECANUM"
+        mecanum["components"] = [
+            {"role": "DRIVE_MOTOR", "hardwareId": str(port)} for port in (1, 2, 3, 4)
+        ]
+        colliding_motor = {
+            "documentId": "arm",
+            "hardware": [{"deviceId": "motor", "kind": "MOTOR", "connection": {"channel": 3}}],
+        }
+        with self.assertRaisesRegex(ValueError, "motor:3"):
+            tool.validate_hardware_port_collisions(mecanum, [colliding_motor])
+
+        dup_servos = [
+            {"documentId": "claw", "hardware": [{"deviceId": "s1", "kind": "POSITIONAL_SERVO", "connection": {"channel": 1}}]},
+            {"documentId": "wrist", "hardware": [{"deviceId": "s2", "kind": "POSITIONAL_SERVO", "connection": {"channel": 1}}]},
+        ]
+        with self.assertRaisesRegex(ValueError, "servo:1"):
+            tool.validate_hardware_port_collisions(drivebase, dup_servos)
+
+        non_colliding = [
+            {"documentId": "claw", "hardware": [{"deviceId": "s1", "kind": "POSITIONAL_SERVO", "connection": {"channel": 1}}]},
+            {"documentId": "arm", "hardware": [{"deviceId": "m3", "kind": "MOTOR", "connection": {"channel": 3}}]},
+        ]
+        tool.validate_hardware_port_collisions(drivebase, non_colliding)
+
     def test_auto_builder_routine_is_compiled_to_python(self):
         path = ROOT / "build" / "generated" / "ares" / "python" / "generated_ares_project.py"
         spec = importlib.util.spec_from_file_location("generated_ares_project_auto", path)

@@ -41,6 +41,19 @@ internal suspend fun installImmutableCloudObject(
         swapManifest(newObjectId) { ids ->
             priorObjectIds = ids
         }
+    } catch (cancelled: CancellationException) {
+        kotlinx.coroutines.withContext(kotlinx.coroutines.NonCancellable) {
+            var reconciliationSucceeded = false
+            val referencedObjectId = try {
+                currentManifestObjectId().also { reconciliationSucceeded = true }
+            } catch (_: Exception) {
+                null
+            }
+            if (reconciliationSucceeded && referencedObjectId != newObjectId) {
+                runCatching { deleteObject(newObjectId) }
+            }
+        }
+        throw cancelled
     } catch (failure: Exception) {
         var reconciliationSucceeded = false
         val referencedObjectId = try {
@@ -173,6 +186,8 @@ class SyncEngineService(
                     parentId = parentId,
                     mimeType = mimeType,
                 )
+            } catch (cancelled: CancellationException) {
+                throw cancelled
             } catch (failure: Exception) {
                 attempt++
                 if (attempt >= CLOUD_UPLOAD_ATTEMPTS) throw failure
@@ -341,12 +356,16 @@ class SyncEngineService(
     private suspend fun readRemoteIndexState(): RemoteIndexState = withContext(Dispatchers.IO) {
         val rootFolderId = try {
             googleDriveService.workspaceRootId()
+        } catch (cancelled: CancellationException) {
+            throw cancelled
         } catch (e: Exception) {
             e.printStackTrace()
             return@withContext RemoteIndexState.Failed
         }
         val indexFileIds = try {
             googleDriveService.findFiles("index.json", rootFolderId)
+        } catch (cancelled: CancellationException) {
+            throw cancelled
         } catch (e: Exception) {
             e.printStackTrace()
             return@withContext RemoteIndexState.Failed
@@ -354,6 +373,8 @@ class SyncEngineService(
         if (indexFileIds.isEmpty()) return@withContext RemoteIndexState.Absent
         try {
             RemoteIndexState.Loaded(mergeIndexSummaries(indexFileIds.map { readIndex(it).first }))
+        } catch (cancelled: CancellationException) {
+            throw cancelled
         } catch (e: Exception) {
             e.printStackTrace()
             RemoteIndexState.Failed
@@ -586,25 +607,35 @@ class SyncEngineService(
         val remoteIds = remoteSummaries.map { it.sessionId }.toSet()
 
         // Download remote sessions missing locally (existing behavior).
+        val activeWorkspace = environmentService.loadConfig()
+        val activeRobotId = activeWorkspace?.robotId?.takeIf(String::isNotBlank)
         val missingSummaries = remoteSummaries.filter {
-            it.teamId == teamId && it.seasonId == seasonId && !localIds.contains(it.sessionId)
+            it.teamId == teamId && it.seasonId == seasonId &&
+                (activeRobotId == null || it.robotId == activeRobotId) &&
+                !localIds.contains(it.sessionId)
         }
         for (summary in missingSummaries) {
             try {
                 downloadSession(summary)
+            } catch (cancelled: CancellationException) {
+                throw cancelled
             } catch (e: Exception) {
                 e.printStackTrace()
             }
         }
 
         // Symmetric branch: upload local sessions missing remotely. Best-effort per
-        // session, scoped to the active team/season so user-triggered sync stays bounded.
+        // session, scoped to the active workspace's team/season/robot so cloudWorkspaceKey matches.
         val localMissingRemote = localSummaries.filter {
-            it.teamId == teamId && it.seasonId == seasonId && !remoteIds.contains(it.sessionId)
+            it.teamId == teamId && it.seasonId == seasonId &&
+                (activeRobotId == null || it.robotId == activeRobotId) &&
+                !remoteIds.contains(it.sessionId)
         }
         for (summary in localMissingRemote) {
             try {
                 uploadSession(summary.sessionId)
+            } catch (cancelled: CancellationException) {
+                throw cancelled
             } catch (e: Exception) {
                 e.printStackTrace()
             }
@@ -618,6 +649,9 @@ class SyncEngineService(
                 ?: throw IllegalStateException("Cloud session index is unavailable")
             val removedSummary = indexState.summaries.singleOrNull { it.sessionId == sessionId }
                 ?: throw IllegalArgumentException("Cloud session $sessionId is not indexed")
+            require(removedSummary.teamId == teamId) {
+                "Cloud session $sessionId belongs to team '${removedSummary.teamId}', not '$teamId'"
+            }
             val cloudObjectFileId = requireNotNull(removedSummary.cloudFileId) {
                 "Cloud session manifest is missing its immutable file id"
             }

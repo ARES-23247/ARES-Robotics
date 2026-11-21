@@ -158,9 +158,11 @@ internal fun DashboardScreen(
     val xrpBrownoutThresholdVolts by produceState<Double?>(null, currentConfig.league, currentConfig.projectPath) {
         value = if (currentConfig.league == League.XRP) {
             kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-                ProjectMetadataRepository().load(currentConfig.projectPath).getOrNull()
-                    ?.requireXrpRuntimeOptions()
-                    ?.brownoutThresholdVolts
+                runCatching {
+                    ProjectMetadataRepository().load(currentConfig.projectPath).getOrNull()
+                        ?.requireXrpRuntimeOptions()
+                        ?.brownoutThresholdVolts
+                }.getOrNull()
             }
         } else {
             null
@@ -249,7 +251,7 @@ internal fun DashboardScreen(
                 xrpLink = liveServices.xrpLinkService,
                 keyboardDriveState = liveServices.keyboardDriveState,
                 projectPath = currentConfig.projectPath,
-                isConnected = isRobotLinkConnected,
+                isConnected = isRobotLinkConnected && isLoopbackDriveControlHost(liveServices.xrpLinkService.serverHost),
                 isSimulatorProcessRunning = isSimRunning,
                 isLaunchPreparationRunning = isSimulatorLaunchPreparationRunning,
                 canLaunchSimulator = canLaunchSimulator,
@@ -264,7 +266,7 @@ internal fun DashboardScreen(
                 seasonId = currentConfig.seasonId,
                 robotId = currentConfig.robotId,
                 projectPath = currentConfig.projectPath,
-                isConnected = isRobotLinkConnected,
+                isConnected = isRobotLinkConnected && isLoopbackDriveControlHost(liveServices.nt4ClientService.serverIp),
                 isSimulatorProcessRunning = isSimRunning,
                 isLaunchPreparationRunning = isSimulatorLaunchPreparationRunning,
                 launchRequiresVerification = simulatorLaunchRequiresVerification,

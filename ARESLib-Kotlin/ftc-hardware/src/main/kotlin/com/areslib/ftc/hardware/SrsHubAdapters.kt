@@ -261,7 +261,7 @@ class SrsHubVL53L5CX(
     private val rawDistances = IntArray(zoneCount)
 
     init {
-        require(port in 0..3) { "SRS Hub I2C port must be in 0..3" }
+        require(port == 0) { "SRS Hub 256-byte register window exposes VL53L5CX multizone data on port 0 only" }
         require(zoneCount in 1..32) { "SRS Hub register window exposes at most 32 VL53L5CX zones" }
     }
 

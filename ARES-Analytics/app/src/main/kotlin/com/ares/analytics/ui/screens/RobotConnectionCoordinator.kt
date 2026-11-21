@@ -26,23 +26,35 @@ internal fun RobotConnectionCoordinator(
     focusRequester: FocusRequester,
 ) {
     LaunchedEffect(liveRobotIp, config.league, config.projectPath, canonicalContentHash) {
+        val xrpPort = runCatching { loadXrpMetadata(config)?.requireXrpRuntimeOptions()?.port }.getOrNull()
         services.targetScannerService.startScanning(
             liveRobotHost = liveRobotIp,
-            port = loadXrpMetadata(config)?.requireXrpRuntimeOptions()?.port ?: defaultPort(config.league),
+            port = xrpPort ?: defaultPort(config.league),
         )
     }
 
-    LaunchedEffect(config, targetSelection, liveRobotIp, simulatorRunning, canonicalContentHash) {
+    LaunchedEffect(
+        config.id,
+        config.league,
+        config.projectPath,
+        config.teamId,
+        config.seasonId,
+        config.robotId,
+        targetSelection,
+        liveRobotIp,
+        simulatorRunning,
+        canonicalContentHash,
+    ) {
         focusRequester.requestFocus()
         val host = if (targetSelection == TargetSelection.LOCAL_SIM) "127.0.0.1" else liveRobotIp
         if (config.league == League.XRP) {
             services.nt4ClientService.stop()
             val metadata = loadXrpMetadata(config)
-            if (metadata == null || canonicalContentHash == null) {
+            val options = metadata?.let { runCatching { it.requireXrpRuntimeOptions() }.getOrNull() }
+            if (metadata == null || options == null || canonicalContentHash == null) {
                 services.xrpLinkService.stop()
                 return@LaunchedEffect
             }
-            val options = metadata.requireXrpRuntimeOptions()
             services.alertEngineService.configureRobotContext(League.XRP, options.brownoutThresholdVolts)
             services.xrpLinkService.start(host, options.port, metadata.projectId, canonicalContentHash)
         } else {

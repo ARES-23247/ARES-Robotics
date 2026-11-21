@@ -379,8 +379,10 @@ object MatchStrategyAnalyzer {
             }
         }
 
-        if (summary != null && (summary.visionAcceptanceRate > 0.0 || summary.avgVisionLatencyMs > 0.0)) {
-            val acceptPct = summary.visionAcceptanceRate * 100.0
+        val observedAcceptance = summary?.observedMetric("acceptance", summary.visionAcceptanceRate)
+        val observedLatency = summary?.observedMetric("latency", summary.avgVisionLatencyMs)
+        if (summary != null && (observedAcceptance != null || observedLatency != null)) {
+            val acceptPct = (observedAcceptance ?: summary.visionAcceptanceRate) * 100.0
             insights += if (acceptPct < 65.0) {
                 MatchCoachingInsight(
                     id = "vision_rejection_rate",
@@ -557,7 +559,7 @@ object MatchStrategyAnalyzer {
                 formatValue = { String.format(Locale.US, "%.0f%%", it) },
                 formatDelta = { String.format(Locale.US, "%+.0f%%", it) },
                 points = ordered.mapIndexedNotNull { idx, s ->
-                    (s.visionAcceptanceRate * 100.0).takeIf { it > 0.0 }?.let {
+                    s.observedMetric("acceptance", s.visionAcceptanceRate)?.times(100.0)?.let {
                         EventProgressionPoint(s.sessionId, runLabel(idx, s), s.createdAt, it)
                     }
                 },
@@ -571,7 +573,7 @@ object MatchStrategyAnalyzer {
                 formatValue = { String.format(Locale.US, "%.1f cm", it) },
                 formatDelta = { String.format(Locale.US, "%+.1f cm", it) },
                 points = ordered.mapIndexedNotNull { idx, s ->
-                    (s.avgCrossTrackError * 100.0).takeIf { it > 0.0 }?.let {
+                    s.observedMetric("cross_track", s.avgCrossTrackError)?.times(100.0)?.let {
                         EventProgressionPoint(s.sessionId, runLabel(idx, s), s.createdAt, it)
                     }
                 },

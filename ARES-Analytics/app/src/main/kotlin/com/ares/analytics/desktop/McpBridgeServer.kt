@@ -29,18 +29,21 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import org.slf4j.LoggerFactory
 import java.io.File
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption
+import java.nio.file.attribute.PosixFilePermissions
 import java.security.MessageDigest
 import java.security.SecureRandom
 import java.util.concurrent.atomic.AtomicBoolean
@@ -170,7 +173,16 @@ class McpBridgeServer(
             call.respondText("""{"error":"unauthorized"}""", ContentType.Application.Json, HttpStatusCode.Unauthorized)
             return
         }
+        val contentLength = call.request.headers[HttpHeaders.ContentLength]?.toLongOrNull()
+        if (contentLength != null && contentLength > MAX_RELOAD_BODY_BYTES) {
+            call.respondText("""{"error":"reload payload too large"}""", ContentType.Application.Json, HttpStatusCode.PayloadTooLarge)
+            return
+        }
         val bodyText = call.receiveText()
+        if (bodyText.toByteArray(Charsets.UTF_8).size > MAX_RELOAD_BODY_BYTES) {
+            call.respondText("""{"error":"reload payload too large"}""", ContentType.Application.Json, HttpStatusCode.PayloadTooLarge)
+            return
+        }
         val request = runCatching {
             json.decodeFromString(McpBridgeReloadRequest.serializer(), bodyText)
         }.getOrElse {
@@ -261,46 +273,69 @@ class McpBridgeServer(
         return MessageDigest.isEqual(expectedAuthBytes, headerValue.toByteArray(Charsets.UTF_8))
     }
 
+    private val descriptorIoLock = Any()
+
     private fun publishDescriptor(activeProjectRoot: String?) {
-        val portCopy: Int
-        val startedMillisCopy: Long
-        synchronized(lock) {
-            if (!started.get() || boundPort !in 1..65535) return
-            portCopy = boundPort
-            startedMillisCopy = startedAtEpochMillis
-        }
-        val descriptor = McpBridgeDescriptor(
-            pid = pid,
-            port = portCopy,
-            bearerToken = bearerToken,
-            studioVersion = studioVersion,
-            activeProjectRoot = activeProjectRoot,
-            startedAtEpochMillis = startedMillisCopy,
-        )
-        runCatching {
-            val dir = bridgeDirProvider()
-            dir.mkdirs()
-            val targetFile = File(dir, MCP_BRIDGE_FILE_NAME)
-            val tempFile = File.createTempFile(".mcp-bridge-", ".tmp", dir)
-            try {
-                tempFile.writeText(json.encodeToString(McpBridgeDescriptor.serializer(), descriptor))
-                runCatching {
-                    Files.move(
-                        tempFile.toPath(),
-                        targetFile.toPath(),
-                        StandardCopyOption.REPLACE_EXISTING,
-                        StandardCopyOption.ATOMIC_MOVE,
+        synchronized(descriptorIoLock) {
+            val portCopy: Int
+            val startedMillisCopy: Long
+            synchronized(lock) {
+                if (!started.get() || boundPort !in 1..65535) return
+                portCopy = boundPort
+                startedMillisCopy = startedAtEpochMillis
+            }
+            val descriptor = McpBridgeDescriptor(
+                pid = pid,
+                port = portCopy,
+                bearerToken = bearerToken,
+                studioVersion = studioVersion,
+                activeProjectRoot = activeProjectRoot,
+                startedAtEpochMillis = startedMillisCopy,
+            )
+            runCatching {
+                val dir = bridgeDirProvider()
+                dir.mkdirs()
+                val targetFile = File(dir, MCP_BRIDGE_FILE_NAME)
+                val tempPath = runCatching {
+                    Files.createTempFile(
+                        dir.toPath(),
+                        ".mcp-bridge-",
+                        ".tmp",
+                        PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rw-------")),
                     )
                 }.getOrElse {
-                    Files.move(tempFile.toPath(), targetFile.toPath(), StandardCopyOption.REPLACE_EXISTING)
+                    Files.createTempFile(dir.toPath(), ".mcp-bridge-", ".tmp").also { created ->
+                        created.toFile().apply {
+                            setReadable(false, false)
+                            setReadable(true, true)
+                            setWritable(false, false)
+                            setWritable(true, true)
+                        }
+                    }
                 }
-            } finally {
-                if (tempFile.exists()) tempFile.delete()
+                val tempFile = tempPath.toFile()
+                try {
+                    tempFile.writeText(json.encodeToString(McpBridgeDescriptor.serializer(), descriptor))
+                    runCatching {
+                        Files.move(
+                            tempPath,
+                            targetFile.toPath(),
+                            StandardCopyOption.REPLACE_EXISTING,
+                            StandardCopyOption.ATOMIC_MOVE,
+                        )
+                    }.getOrElse {
+                        Files.move(tempPath, targetFile.toPath(), StandardCopyOption.REPLACE_EXISTING)
+                    }
+                } finally {
+                    if (tempFile.exists()) tempFile.delete()
+                }
+            }.onFailure { error ->
+                logger.warn("Unable to publish MCP bridge descriptor file", error)
             }
-        }.onFailure { error ->
-            logger.warn("Unable to publish MCP bridge descriptor file", error)
+            if (started.get()) {
+                _descriptorState.value = descriptor
+            }
         }
-        _descriptorState.value = descriptor
     }
 
     override fun close() {
@@ -317,31 +352,36 @@ class McpBridgeServer(
             sessionObserverJob = null
             boundPort = 0
         }
-        observer?.cancel()
+        runCatching {
+            runBlocking { observer?.cancelAndJoin() }
+        }
         scopeToCancel?.cancel()
         if (wasStarted || serverToStop != null) {
             runCatching { serverToStop?.stop(250, 750) }
         }
-        runCatching {
-            val file = File(bridgeDirProvider(), MCP_BRIDGE_FILE_NAME)
-            if (file.isFile) {
-                val existing = runCatching {
-                    json.decodeFromString(McpBridgeDescriptor.serializer(), file.readText())
-                }.getOrNull()
-                if (existing?.pid == pid) {
-                    file.delete()
+        synchronized(descriptorIoLock) {
+            runCatching {
+                val file = File(bridgeDirProvider(), MCP_BRIDGE_FILE_NAME)
+                if (file.isFile) {
+                    val existing = runCatching {
+                        json.decodeFromString(McpBridgeDescriptor.serializer(), file.readText())
+                    }.getOrNull()
+                    if (existing?.pid == pid) {
+                        file.delete()
+                    }
                 }
+            }.onFailure { error ->
+                logger.debug("Ignoring MCP bridge cleanup error", error)
             }
-        }.onFailure { error ->
-            logger.debug("Ignoring MCP bridge cleanup error", error)
+            _descriptorState.value = null
         }
-        _descriptorState.value = null
     }
 
     private fun sameCanonicalDirectory(left: String, right: String): Boolean =
         runCatching { File(left).canonicalFile == File(right).canonicalFile }.getOrDefault(false)
 
     companion object {
+        private const val MAX_RELOAD_BODY_BYTES = 16 * 1024
         private val secureRandom = SecureRandom()
 
         private fun generateHexToken(): String {

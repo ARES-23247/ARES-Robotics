@@ -199,6 +199,7 @@ internal object SubsystemFtcIoRenderer {
                 "${target.hardwareId}Command = $bounded\n            $write"
             }
             """    override fun ${device.commandName()}(value: Double) {
+        if (closed) return
         val requested = value.takeIf(Double::isFinite) ?: $neutral
         if (outputFaultLatched && requested != $neutral) return
         if (requested != $neutral && (!configurationHealthy || !homed || !calibrated ||
@@ -287,10 +288,12 @@ $telemetryCache
             $commands
 
                 override fun safe() {
+                    if (closed) return
                     if (!applyNeutral()) outputFaultLatched = ${document.safety.latchOutputFaults}
                 }
 
                 override fun recoverWithNeutral(): Boolean {
+                    if (closed) return false
                     val recovered = applyNeutral()
                     if (recovered) outputFaultLatched = false
                     return recovered

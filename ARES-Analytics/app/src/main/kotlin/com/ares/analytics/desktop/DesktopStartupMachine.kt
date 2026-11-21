@@ -49,11 +49,16 @@ class DesktopStartupMachine(private val maxRecoveryAttempts: Int = 3) {
             state == DesktopStartupState.SETTLED
 
     fun transitionTo(next: DesktopStartupState) {
-        val current = stateRef.get()
-        require(isLegalTransition(current, next)) {
-            "Illegal desktop startup transition: $current -> $next"
+        while (true) {
+            val current = stateRef.get()
+            require(isLegalTransition(current, next)) {
+                "Illegal desktop startup transition: $current -> $next"
+            }
+            if (stateRef.compareAndSet(current, next)) {
+                if (next == DesktopStartupState.SETTLED) recoveryAttempts.set(0)
+                return
+            }
         }
-        setState(next)
     }
 
     /**
@@ -62,14 +67,17 @@ class DesktopStartupMachine(private val maxRecoveryAttempts: Int = 3) {
      * Shutdown states are left untouched: [beginClosing] owns the machine from that point.
      */
     fun recordWindowLoss(): Boolean {
-        val current = stateRef.get()
-        if (current == DesktopStartupState.CLOSING || current == DesktopStartupState.CLOSED) return true
-        if (current == DesktopStartupState.PRESENTED || current == DesktopStartupState.SETTLED) {
-            stateBeforeLoss.set(current)
+        while (true) {
+            val current = stateRef.get()
+            if (current == DesktopStartupState.CLOSING || current == DesktopStartupState.CLOSED) return true
+            if (stateRef.compareAndSet(current, DesktopStartupState.WINDOW_LOST)) {
+                if (current == DesktopStartupState.PRESENTED || current == DesktopStartupState.SETTLED) {
+                    stateBeforeLoss.set(current)
+                }
+                val used = recoveryAttempts.incrementAndGet()
+                return used <= maxRecoveryAttempts
+            }
         }
-        val used = recoveryAttempts.incrementAndGet()
-        stateRef.set(DesktopStartupState.WINDOW_LOST)
-        return used <= maxRecoveryAttempts
     }
 
     /**
@@ -80,26 +88,32 @@ class DesktopStartupMachine(private val maxRecoveryAttempts: Int = 3) {
     fun recordWindowRecovered(
         recovered: DesktopStartupState = stateBeforeLoss.get() ?: DesktopStartupState.PRESENTED,
     ) {
-        val current = stateRef.get()
-        require(
-            current == DesktopStartupState.WINDOW_LOST &&
-                (recovered == DesktopStartupState.PRESENTED || recovered == DesktopStartupState.SETTLED),
-        ) {
-            "Illegal desktop window recovery: $current -> $recovered"
+        while (true) {
+            val current = stateRef.get()
+            require(
+                current == DesktopStartupState.WINDOW_LOST &&
+                    (recovered == DesktopStartupState.PRESENTED || recovered == DesktopStartupState.SETTLED),
+            ) {
+                "Illegal desktop window recovery: $current -> $recovered"
+            }
+            if (stateRef.compareAndSet(current, recovered)) {
+                if (recovered == DesktopStartupState.SETTLED) recoveryAttempts.set(0)
+                stateBeforeLoss.set(null)
+                return
+            }
         }
-        setState(recovered)
-        stateBeforeLoss.set(null)
     }
 
     /** CLOSING is reachable from every non-terminal state: shutdown may start at any point. */
     fun beginClosing() {
-        val current = stateRef.get()
-        if (current == DesktopStartupState.CLOSING || current == DesktopStartupState.CLOSED) return
-        setState(DesktopStartupState.CLOSING)
+        stateRef.updateAndGet { current ->
+            if (current == DesktopStartupState.CLOSING || current == DesktopStartupState.CLOSED) current
+            else DesktopStartupState.CLOSING
+        }
     }
 
     fun markClosed() {
-        setState(DesktopStartupState.CLOSED)
+        stateRef.set(DesktopStartupState.CLOSED)
     }
 
     /**

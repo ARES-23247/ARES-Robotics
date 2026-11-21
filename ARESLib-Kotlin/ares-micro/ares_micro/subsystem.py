@@ -203,10 +203,16 @@ class GeneratedXrpSubsystem:
                 for source, measurements in groups:
                     raw = adapter.read(source)
                     for field_id, scale, offset, minimum, maximum in measurements:
+                        field_kind = self._fields[field_id]["type"]
+                        if field_kind == "BOOLEAN":
+                            if type(raw) is not bool:
+                                raise ValueError("XRP boolean feedback must be a bool")
+                            self.state[field_id] = raw
+                            continue
                         value = _number(raw * scale + offset)
                         if minimum is not None and value < minimum or maximum is not None and value > maximum:
                             raise ValueError("XRP feedback outside declared validity bounds")
-                        self.state[field_id] = value
+                        self.state[field_id] = int(round(value)) if field_kind == "INT" else value
             # Validate every controller result before issuing any nonzero output.
             for index, loop in enumerate(self._loops):
                 self._outputs[index] = self._calculate(loop, dt)

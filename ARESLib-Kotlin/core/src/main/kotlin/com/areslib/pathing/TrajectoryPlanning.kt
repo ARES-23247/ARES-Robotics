@@ -262,7 +262,7 @@ object JerkLimitedTrajectoryProvider : TrajectoryProvider {
             val end = waypoints[segment + 1].heading.radians
             val heading = when (headingMode) {
                 RoutineHeadingMode.LINEAR -> start + wrapAngle(end - start) * fraction
-                RoutineHeadingMode.CONSTANT -> start
+                RoutineHeadingMode.CONSTANT -> waypoints.first().heading.radians
                 RoutineHeadingMode.TANGENTIAL -> point.tangentRadians
                 RoutineHeadingMode.TANGENTIAL_REVERSE -> wrapAngle(point.tangentRadians + Math.PI)
                 RoutineHeadingMode.POINT_TOWARDS -> {

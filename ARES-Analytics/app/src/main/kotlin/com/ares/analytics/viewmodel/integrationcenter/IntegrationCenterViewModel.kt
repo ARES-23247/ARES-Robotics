@@ -143,17 +143,26 @@ class IntegrationCenterViewModel(
         }
     }
 
+    private val operationSequence = java.util.concurrent.atomic.AtomicLong(0L)
+
     private fun operation(label: String, loading: Boolean = false, block: suspend () -> Unit) {
+        val opId = operationSequence.incrementAndGet()
         scope.launch {
             _state.update { it.copy(isLoading = loading, activeOperation = label, error = null, message = null) }
             try {
                 withContext(ioDispatcher) { block() }
+            } catch (cancelled: kotlinx.coroutines.CancellationException) {
+                throw cancelled
             } catch (failure: Exception) {
-                _state.update {
-                    it.copy(error = failure.message?.take(1_024) ?: "Integration operation failed")
+                if (operationSequence.get() == opId) {
+                    _state.update {
+                        it.copy(error = failure.message?.take(1_024) ?: "Integration operation failed")
+                    }
                 }
             } finally {
-                _state.update { it.copy(isLoading = false, activeOperation = null) }
+                if (operationSequence.get() == opId) {
+                    _state.update { it.copy(isLoading = false, activeOperation = null) }
+                }
             }
         }
     }

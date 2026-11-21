@@ -516,8 +516,10 @@ private fun AddBatteryDialog(
                             seasonId = workspace?.seasonId?.trim().orEmpty(),
                             robotId = workspace?.robotId?.trim().orEmpty(),
                             label = normalized,
-                            nominalVoltage = nominalText.toDoubleOrNull()?.takeIf { it > 0.0 } ?: 12.0,
-                            capacityAh = capacityText.toDoubleOrNull()?.takeIf { it > 0.0 } ?: 3.0,
+                            nominalVoltage = nominalText.toDoubleOrNull()?.takeIf { it.isFinite() && it > 0.0 }
+                                ?: if (league == League.XRP) 6.0 else 12.0,
+                            capacityAh = capacityText.toDoubleOrNull()?.takeIf { it.isFinite() && it > 0.0 }
+                                ?: when (league) { League.FRC -> 18.0; League.FTC -> 3.0; League.XRP -> 2.0 },
                             status = BatteryPoolStatus.READY,
                             notes = notes.trim(),
                             createdAtMs = now,
@@ -543,8 +545,8 @@ private fun BatteryCheckinDialog(
     var beakMohmText by remember { mutableStateOf("") }
     var initials by remember { mutableStateOf("") }
     var notes by remember { mutableStateOf("") }
-    val valid = restingText.toDoubleOrNull()?.let { it > 0.0 } == true ||
-        beakMohmText.toDoubleOrNull()?.let { it > 0.0 } == true
+    val valid = restingText.toDoubleOrNull()?.let { it.isFinite() && it > 0.0 } == true ||
+        beakMohmText.toDoubleOrNull()?.let { it.isFinite() && it > 0.0 } == true
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -597,8 +599,8 @@ private fun BatteryCheckinDialog(
                             teamId = workspace?.teamId?.trim().orEmpty(),
                             seasonId = workspace?.seasonId?.trim().orEmpty(),
                             robotId = workspace?.robotId?.trim().orEmpty(),
-                            restingVoltage = restingText.toDoubleOrNull()?.takeIf { it > 0.0 },
-                            beakResistanceMilliohms = beakMohmText.toDoubleOrNull()?.takeIf { it > 0.0 },
+                            restingVoltage = restingText.toDoubleOrNull()?.takeIf { it.isFinite() && it > 0.0 },
+                            beakResistanceMilliohms = beakMohmText.toDoubleOrNull()?.takeIf { it.isFinite() && it > 0.0 },
                             inspectorInitials = initials.trim(),
                             notes = notes.trim(),
                             recordedAtMs = System.currentTimeMillis(),

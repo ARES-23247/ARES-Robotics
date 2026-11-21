@@ -215,10 +215,58 @@ def validate_drivebase(drivebase: dict) -> None:
         ports = {int(item.get("hardwareId", 0)) for item in motors}
         if len(motors) != 4 or ports != {1, 2, 3, 4}:
             raise ValueError("XRP mecanum requires exactly one drive motor on each port 1, 2, 3, and 4")
+    else:
+        for item in drivebase.get("components", []):
+            if item.get("role") == "DRIVE_MOTOR" and bool(item.get("inverted", False)):
+                raise ValueError("Differential XRP drive does not support inverted drive motor flags; XRPLib owns differential polarity")
     if not drivebase.get("safety", {}).get("safeNeutralRequired"):
         raise ValueError("XRP drive must require safe neutral")
     if not drivebase.get("safety", {}).get("explicitNeutralRecoveryRequired"):
         raise ValueError("XRP drive must require explicit neutral recovery")
+
+
+def validate_hardware_port_collisions(drivebase: dict, subsystems: list[dict]) -> None:
+    claimed: dict[str, str] = {}
+
+    def claim(resource_key: str, owner: str) -> None:
+        existing = claimed.get(resource_key)
+        if existing is not None:
+            raise ValueError(
+                f"XRP hardware resource collision on '{resource_key}' between {existing} and {owner}"
+            )
+        claimed[resource_key] = owner
+
+    if drivebase.get("kind") == "FTC_MECANUM":
+        for port in (1, 2, 3, 4):
+            claim(f"motor:{port}", "drivetrain (FTC_MECANUM)")
+    else:
+        for port in (1, 2):
+            claim(f"motor:{port}", "drivetrain (DIFFERENTIAL)")
+
+    for subsystem in subsystems:
+        subsystem_id = subsystem.get("documentId", "unknown")
+        for device in subsystem.get("hardware", []):
+            kind = device.get("kind")
+            channel = device.get("connection", {}).get("channel")
+            owner = f"subsystem '{subsystem_id}' device '{device.get('deviceId', kind)}'"
+            measurement_sources = {item.get("source") for item in device.get("measurements", [])}
+            is_reflectance = "REFLECTANCE_NORMALIZED" in measurement_sources
+            if kind == "MOTOR":
+                claim(f"motor:{channel}", owner)
+            elif kind == "POSITIONAL_SERVO":
+                claim(f"servo:{channel}", owner)
+            elif kind in ("DIGITAL_OUTPUT", "PWM_OUTPUT"):
+                claim(f"gpio:{channel}", owner)
+            elif kind == "DIGITAL_INPUT":
+                claim(f"gpio:{channel}" if channel is not None else "user_button", owner)
+            elif kind == "ANALOG_INPUT":
+                claim(f"reflectance:{channel}" if is_reflectance else f"gpio:{channel}", owner)
+            elif kind == "INDICATOR_LIGHT":
+                claim(f"led:{channel}" if channel is not None else "led:green", owner)
+            elif kind == "BUZZER":
+                claim("buzzer", owner)
+            elif kind == "DISTANCE_SENSOR":
+                claim("rangefinder", owner)
 
 
 def validate() -> tuple[dict, dict, str | None, dict[str, dict], list[dict]]:
@@ -250,6 +298,7 @@ def validate() -> tuple[dict, dict, str | None, dict[str, dict], list[dict]]:
     _, drivebase = one_document(ARES / "drivetrains", ".aresdrivetrain")
     validate_drivebase(drivebase)
     subsystems = load_subsystems(controller_model)
+    validate_hardware_port_collisions(drivebase, subsystems)
     actions = load_json(ARES / "action-catalog.json")
     if actions.get("projectId") != project.get("projectId"):
         raise ValueError("The action catalog must use the canonical projectId")
@@ -339,6 +388,7 @@ def generated_source(project: dict, drivebase: dict, default_routine_id: str | N
         "            name=definition['name'],\n"
         "            steps=[dict(step, waypoint=Waypoint(**step['waypoint'])) if step['kind'] == 'DRIVE_TO' else step for step in definition['steps']],\n"
         "            action_handler=action_handler,\n"
+        "            starting_pose=definition.get('starting_pose'),\n"
         "        )\n"
         "        for entry_id, definition in AUTONOMOUS_ROUTINES.items()\n"
         "    }\n\n"

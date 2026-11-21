@@ -1,7 +1,7 @@
 plugins {
     kotlin("jvm")
     kotlin("plugin.serialization")
-    id("io.ktor.plugin") version "3.5.2"
+    id("io.ktor.plugin") version "3.6.1"
 }
 
 application {
@@ -13,24 +13,24 @@ dependencies {
     implementation(project(":shared"))
 
     // Ktor server
-    implementation("io.ktor:ktor-server-core:3.5.2")
-    implementation("io.ktor:ktor-server-netty:3.5.2")
-    implementation("io.ktor:ktor-server-content-negotiation:3.5.2")
-    implementation("io.ktor:ktor-server-auth:3.5.2")
-    implementation("io.ktor:ktor-server-cors:3.5.2")
-    implementation("io.ktor:ktor-server-status-pages:3.5.2")
-    implementation("io.ktor:ktor-serialization-kotlinx-json:3.5.2")
-    implementation("io.ktor:ktor-server-rate-limit:3.5.2")
-    implementation("io.ktor:ktor-server-forwarded-header:3.5.2")
-    implementation("io.ktor:ktor-server-request-validation:3.5.2")
-    implementation("io.ktor:ktor-server-body-limit:3.5.2")
+    implementation("io.ktor:ktor-server-core:3.6.1")
+    implementation("io.ktor:ktor-server-netty:3.6.1")
+    implementation("io.ktor:ktor-server-content-negotiation:3.6.1")
+    implementation("io.ktor:ktor-server-auth:3.6.1")
+    implementation("io.ktor:ktor-server-cors:3.6.1")
+    implementation("io.ktor:ktor-server-status-pages:3.6.1")
+    implementation("io.ktor:ktor-serialization-kotlinx-json:3.6.1")
+    implementation("io.ktor:ktor-server-rate-limit:3.6.1")
+    implementation("io.ktor:ktor-server-forwarded-header:3.6.1")
+    implementation("io.ktor:ktor-server-request-validation:3.6.1")
+    implementation("io.ktor:ktor-server-body-limit:3.6.1")
 
     // Ktor HTTP client (for GitHub API, Vertex AI)
-    implementation("io.ktor:ktor-client-cio:3.5.2")
-    implementation("io.ktor:ktor-client-content-negotiation:3.5.2")
+    implementation("io.ktor:ktor-client-cio:3.6.1")
+    implementation("io.ktor:ktor-client-content-negotiation:3.6.1")
 
     // Serialization
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.11.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.13.0")
 
     // Google OIDC ID-token verification
     implementation("com.google.api-client:google-api-client:2.9.1")
@@ -43,8 +43,8 @@ dependencies {
 
     // Testing
     testImplementation(kotlin("test"))
-    testImplementation("io.ktor:ktor-client-mock-jvm:3.5.2")
-    testImplementation("io.ktor:ktor-server-test-host:3.5.2")
+    testImplementation("io.ktor:ktor-client-mock-jvm:3.6.1")
+    testImplementation("io.ktor:ktor-server-test-host:3.6.1")
     testImplementation("org.mockito:mockito-core:5.23.0")
 }
 

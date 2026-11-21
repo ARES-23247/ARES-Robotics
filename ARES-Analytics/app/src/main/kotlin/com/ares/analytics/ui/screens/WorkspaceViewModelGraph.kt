@@ -98,7 +98,7 @@ internal fun rememberWorkspaceViewModelGraph(
             projectSession = services.projectSession,
         )
     }
-    val fieldEditor = remember(projectKey) {
+    val fieldEditor = remember(projectKey, config.league) {
         val xrpLink = services.xrpLinkService
         FieldEditorViewModel(
             scope = workspaceScope,
@@ -174,7 +174,7 @@ internal fun rememberWorkspaceViewModelGraph(
         League.FRC -> ControllerInputPlatform.FRC
         League.XRP -> ControllerInputPlatform.XRP
     }
-    val tuning = remember(projectKey) {
+    val tuning = remember(projectKey, config.league) {
         TuningViewModel(
             nt4ClientService = services.nt4ClientService,
             scope = workspaceScope,
@@ -193,7 +193,7 @@ internal fun rememberWorkspaceViewModelGraph(
             workspaceScope,
         )
     }
-    val cloud = remember(projectKey) {
+    val cloud = remember(projectKey, config.league, config.driveDestination) {
         CloudViewModel(
             services.databaseService,
             services.syncEngineService,
@@ -293,7 +293,7 @@ internal fun rememberWorkspaceViewModelGraph(
             scope = workspaceScope,
         )
     }
-    val guidedTuningExperiment = remember(projectKey) {
+    val guidedTuningExperiment = remember(projectKey, config.league) {
         GuidedTuningExperimentViewModel(
             config,
             workspaceScope,

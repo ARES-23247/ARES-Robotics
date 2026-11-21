@@ -2,6 +2,7 @@ package com.ares.analytics.service.integration
 
 import com.ares.analytics.shared.models.EngineeringNotebookEntry
 import com.ares.analytics.shared.models.IntegrationEvent
+import com.ares.analytics.shared.models.IntegrationWorkspaceIdentity
 import com.ares.analytics.shared.models.PublicationReceipt
 
 enum class DeliveryState {
@@ -83,6 +84,10 @@ interface IntegrationStore {
     suspend fun getLatestNotebookRevision(entryId: String): EngineeringNotebookEntry?
     suspend fun listNotebookRevisions(entryId: String): List<EngineeringNotebookEntry>
     suspend fun listLatestNotebookEntries(limit: Int = 200): List<EngineeringNotebookEntry>
+    suspend fun listLatestNotebookEntriesForWorkspace(
+        workspace: IntegrationWorkspaceIdentity,
+        limit: Int = 200,
+    ): List<EngineeringNotebookEntry> = listLatestNotebookEntries(limit).filter { it.workspace == workspace }
     suspend fun recordPublicationReceipt(entryId: String, receipt: PublicationReceipt)
     suspend fun listPublicationReceipts(entryId: String): List<PublicationReceipt>
 }

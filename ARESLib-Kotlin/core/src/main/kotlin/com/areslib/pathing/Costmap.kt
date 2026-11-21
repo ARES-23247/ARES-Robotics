@@ -101,6 +101,7 @@ class Costmap(
      * Checks if a field-relative coordinate is traversable.
      */
     fun isTraversable(x: Double, y: Double): Boolean {
+        if (!x.isFinite() || !y.isFinite()) return false
         val cellX = ((x - origin.x) / resolutionMeters).roundToInt()
         val cellY = ((y - origin.y) / resolutionMeters).roundToInt()
         return isCellTraversable(cellX, cellY)
@@ -121,6 +122,7 @@ class Costmap(
      * Sets a field-relative coordinate as an obstacle.
      */
     fun setObstacle(x: Double, y: Double, isOccupied: Boolean = true) {
+        if (!x.isFinite() || !y.isFinite()) return
         val cellX = ((x - origin.x) / resolutionMeters).roundToInt()
         val cellY = ((y - origin.y) / resolutionMeters).roundToInt()
         setObstacle(cellX, cellY, isOccupied)
@@ -158,6 +160,7 @@ class Costmap(
      * Checks if a field-relative coordinate is occupied by a raw obstacle.
      */
     fun isOccupied(x: Double, y: Double): Boolean {
+        if (!x.isFinite() || !y.isFinite()) return true
         val cellX = ((x - origin.x) / resolutionMeters).roundToInt()
         val cellY = ((y - origin.y) / resolutionMeters).roundToInt()
         return isCellOccupied(cellX, cellY)
@@ -311,10 +314,8 @@ class Costmap(
             config: com.areslib.state.RobotFieldConfig,
             robotRadiusMeters: Double = if (config.fieldType == com.areslib.state.FieldType.FRC) 0.60 else 0.35
         ): Costmap {
-            val width = if (config.fieldType == com.areslib.state.FieldType.FRC) 16.0
-            else com.areslib.math.coordinate.CoordinateTransformers.FTC_FIELD_SIZE
-            val height = if (config.fieldType == com.areslib.state.FieldType.FRC) 8.0
-            else com.areslib.math.coordinate.CoordinateTransformers.FTC_FIELD_SIZE
+            val width = config.resolvedWidthMeters
+            val height = config.resolvedHeightMeters
             val origin = if (config.fieldType == com.areslib.state.FieldType.FRC) {
                 Translation2d(0.0, 0.0)
             } else {

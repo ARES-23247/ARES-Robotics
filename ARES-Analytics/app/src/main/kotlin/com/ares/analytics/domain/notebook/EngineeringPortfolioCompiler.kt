@@ -6,6 +6,7 @@ import com.ares.analytics.shared.models.NotebookEntryType
 import com.ares.analytics.shared.models.NotebookReviewState
 import com.ares.analytics.shared.models.Session
 import com.ares.analytics.shared.models.SessionSummary
+import com.ares.analytics.shared.models.isSimulationSessionTags
 import java.time.Instant
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
@@ -44,7 +45,9 @@ object EngineeringPortfolioCompiler {
     ): List<SeasonMetricProgressionRow> {
         if (sessions.size < 2 || summaries.size < 2) return emptyList()
         val summaryById = summaries.associateBy(SessionSummary::sessionId)
-        val ordered = sessions
+        val hardwareSessions = sessions.filter { !it.tags.isSimulationSessionTags() }
+        val pool = if (hardwareSessions.size >= 2) hardwareSessions else return emptyList()
+        val ordered = pool
             .filter { summaryById.containsKey(it.sessionId) }
             .sortedBy(Session::createdAt)
         if (ordered.size < 2) return emptyList()
@@ -62,23 +65,22 @@ object EngineeringPortfolioCompiler {
             val lowerIsBetter: Boolean,
             val decimals: Int,
             val scale: Double = 1.0,
-            val extractor: (SessionSummary) -> Double,
+            val extractor: (SessionSummary) -> Double?,
         )
 
         val specs = listOf(
-            Spec("Min Battery Voltage", "V", lowerIsBetter = false, decimals = 2) { it.minBatteryVoltage },
-            Spec("Avg Loop Time", "ms", lowerIsBetter = true, decimals = 2) { it.avgLoopTimeMs },
-            Spec("P95 Loop Time", "ms", lowerIsBetter = true, decimals = 2) { it.p95LoopTimeMs },
-            Spec("Max EKF Localization Drift", "m", lowerIsBetter = true, decimals = 3) { it.maxEkfDrift },
-            Spec("Avg Cross-Track Error", "cm", lowerIsBetter = true, decimals = 1, scale = 100.0) { it.avgCrossTrackError },
-            Spec("Vision Acceptance Rate", "%", lowerIsBetter = false, decimals = 1, scale = 100.0) { it.visionAcceptanceRate },
+            Spec("Min Battery Voltage", "V", lowerIsBetter = false, decimals = 2) { it.observedMetric("battery", it.minBatteryVoltage) },
+            Spec("Avg Loop Time", "ms", lowerIsBetter = true, decimals = 2) { it.observedMetric("loop", it.avgLoopTimeMs) },
+            Spec("P95 Loop Time", "ms", lowerIsBetter = true, decimals = 2) { it.observedMetric("loop_p95", it.p95LoopTimeMs) },
+            Spec("Max EKF Localization Drift", "m", lowerIsBetter = true, decimals = 3) { it.observedMetric("drift", it.maxEkfDrift) },
+            Spec("Avg Cross-Track Error", "cm", lowerIsBetter = true, decimals = 1, scale = 100.0) { it.observedMetric("cross_track", it.avgCrossTrackError) },
+            Spec("Vision Acceptance Rate", "%", lowerIsBetter = false, decimals = 1, scale = 100.0) { it.observedMetric("acceptance", it.visionAcceptanceRate) },
         )
 
         return specs.mapNotNull { spec ->
-            val rawBase = spec.extractor(firstSummary)
-            val rawLatest = spec.extractor(latestSummary)
+            val rawBase = spec.extractor(firstSummary) ?: return@mapNotNull null
+            val rawLatest = spec.extractor(latestSummary) ?: return@mapNotNull null
             if (!rawBase.isFinite() || !rawLatest.isFinite()) return@mapNotNull null
-            if (abs(rawBase) < 1e-9 && abs(rawLatest) < 1e-9) return@mapNotNull null
             val baseVal = rawBase * spec.scale
             val latestVal = rawLatest * spec.scale
             val delta = latestVal - baseVal

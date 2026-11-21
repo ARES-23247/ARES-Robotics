@@ -134,8 +134,9 @@ fun FieldLayoutCanvas(
     val currentTool by rememberUpdatedState(tool)
     val isShiftPressed = LocalWindowInfo.current.keyboardModifiers.isShiftPressed
     val textMeasurer = rememberTextMeasurer()
-    val fieldWidth = fieldImageConfig.widthMeters.takeIf { it > 0.0 } ?: if (league == League.FTC) 3.6576 else 16.541
-    val fieldHeight = fieldImageConfig.heightMeters.takeIf { it > 0.0 } ?: if (league == League.FTC) 3.6576 else 8.211
+    val (defaultW, defaultH) = com.ares.analytics.ui.components.pathplanner.defaultFieldDimensionsMeters(league)
+    val fieldWidth = fieldImageConfig.widthMeters.takeIf { it > 0.0 } ?: defaultW
+    val fieldHeight = fieldImageConfig.heightMeters.takeIf { it > 0.0 } ?: defaultH
 
     fun snap(value: Double): Double {
         val spacing = currentGridSpacing.coerceAtLeast(0.001)
@@ -520,10 +521,11 @@ private fun rotatePoint(point: PathPoint, center: Waypoint, radians: Double): Pa
 private fun DrawScope.drawSnapGrid(widthPx: Float, heightPx: Float, fieldWidth: Double, fieldHeight: Double, league: League, requestedSpacing: Double) {
     var spacing = requestedSpacing.coerceAtLeast(0.01)
     while (fieldWidth / spacing > 100.0 || fieldHeight / spacing > 100.0) spacing *= 2.0
-    val minX = if (league == League.FTC) -fieldWidth / 2.0 else 0.0
-    val maxX = if (league == League.FTC) fieldWidth / 2.0 else fieldWidth
-    val minY = if (league == League.FTC) -fieldHeight / 2.0 else 0.0
-    val maxY = if (league == League.FTC) fieldHeight / 2.0 else fieldHeight
+    val bounds = com.ares.analytics.ui.components.pathplanner.fieldCoordinateBounds(fieldWidth, fieldHeight, league)
+    val minX = bounds[0]
+    val maxX = bounds[1]
+    val minY = bounds[2]
+    val maxY = bounds[3]
     var x = kotlin.math.ceil(minX / spacing) * spacing
     while (x <= maxX + 1e-9) {
         val start = getCanvasOffsetBase(Waypoint(x, minY), widthPx, heightPx, fieldWidth, fieldHeight, league)

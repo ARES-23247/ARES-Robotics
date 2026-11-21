@@ -43,6 +43,14 @@ class PathCacheHolder {
     var actualPoints: List<Waypoint> = emptyList()
     var w: Float = 0f
     var h: Float = 0f
+    var splineFieldW: Double = 0.0
+    var splineFieldH: Double = 0.0
+    var splineLeague: League? = null
+    var actualW: Float = 0f
+    var actualH: Float = 0f
+    var actualFieldW: Double = 0.0
+    var actualFieldH: Double = 0.0
+    var actualLeague: League? = null
     var splinePath: Path? = null
     var actualPath: Path? = null
     var actualLastDrawnIndex: Int = -1
@@ -54,6 +62,26 @@ class PathCacheHolder {
     val dashEffect5 = androidx.compose.ui.graphics.PathEffect.dashPathEffect(floatArrayOf(5f, 5f), 0f)
     val dashEffect4 = androidx.compose.ui.graphics.PathEffect.dashPathEffect(floatArrayOf(4f, 4f), 0f)
     val dashEffectPen = androidx.compose.ui.graphics.PathEffect.dashPathEffect(floatArrayOf(10f, 6f), 0f)
+}
+
+/** Converts a canonical CCW+ field heading in degrees to screen canvas angle degrees (CW+ from +X right). */
+internal fun fieldHeadingToCanvasAngleDeg(headingDegrees: Double, league: League): Double = when (league) {
+    League.FTC -> -headingDegrees - 90.0
+    League.FRC, League.XRP -> -headingDegrees
+}
+
+/** Returns default canonical field `(widthMeters, heightMeters)` for [league]. */
+internal fun defaultFieldDimensionsMeters(league: League): Pair<Double, Double> = when (league) {
+    League.FTC -> 3.6576 to 3.6576
+    League.XRP -> 2.54 to 1.4224
+    League.FRC -> 16.541 to 8.211
+}
+
+/** Returns canonical field `(minX, maxX, minY, maxY)` bounds in meters for [league]. */
+internal fun fieldCoordinateBounds(fieldW: Double, fieldH: Double, league: League): DoubleArray = when (league) {
+    League.FTC -> doubleArrayOf(-fieldH / 2.0, fieldH / 2.0, -fieldW / 2.0, fieldW / 2.0)
+    League.XRP -> doubleArrayOf(-fieldW / 2.0, fieldW / 2.0, -fieldH / 2.0, fieldH / 2.0)
+    League.FRC -> doubleArrayOf(0.0, fieldW, 0.0, fieldH)
 }
 
 // Convert coordinates base models

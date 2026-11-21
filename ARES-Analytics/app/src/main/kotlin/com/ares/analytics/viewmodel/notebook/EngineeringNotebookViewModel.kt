@@ -108,13 +108,24 @@ class EngineeringNotebookViewModel(
     )
     val state: StateFlow<EngineeringNotebookState> = _state.asStateFlow()
 
+    private val loadGeneration = java.util.concurrent.atomic.AtomicLong(0L)
+    private var loadJob: kotlinx.coroutines.Job? = null
+    private val saveMutex = kotlinx.coroutines.sync.Mutex()
+
     fun refresh(selectEntryIdAfterLoad: String? = null) {
-        scope.launch {
+        loadJob?.cancel()
+        val generation = loadGeneration.incrementAndGet()
+        loadJob = scope.launch {
             _state.update { it.copy(isLoading = true, errorMessage = null) }
-            runCatching {
-                captureService.listWorkspaceEntries(workspace)
-            }.onSuccess { loaded ->
+            try {
+                val loaded = captureService.listWorkspaceEntries(workspace)
+                if (loadGeneration.get() != generation) return@launch
                 val current = _state.value
+                // Preserve unsaved user edits during background refreshes unless caller explicitly selects an entry.
+                if (current.isDirty && selectEntryIdAfterLoad == null) {
+                    _state.update { it.copy(entries = loaded, isLoading = false) }
+                    return@launch
+                }
                 val targetId = selectEntryIdAfterLoad
                     ?: current.selectedEntryId?.takeIf { id -> loaded.any { it.entryId == id } }
                     ?: if (!current.isDirty && loaded.isNotEmpty()) loaded.first().entryId else null
@@ -122,6 +133,7 @@ class EngineeringNotebookViewModel(
                 if (targetId != null) {
                     val revs = captureService.listRevisions(targetId)
                     val receipts = captureService.listReceipts(targetId)
+                    if (loadGeneration.get() != generation) return@launch
                     val latest = revs.lastOrNull() ?: loaded.firstOrNull { it.entryId == targetId }
                     if (latest != null) {
                         _state.update {
@@ -148,12 +160,16 @@ class EngineeringNotebookViewModel(
                 } else {
                     _state.update { it.copy(entries = loaded, isLoading = false) }
                 }
-            }.onFailure { error ->
-                _state.update {
-                    it.copy(
-                        isLoading = false,
-                        errorMessage = "Could not load workspace notebook entries: ${error.message ?: error::class.simpleName}",
-                    )
+            } catch (cancelled: kotlinx.coroutines.CancellationException) {
+                throw cancelled
+            } catch (error: Exception) {
+                if (loadGeneration.get() == generation) {
+                    _state.update {
+                        it.copy(
+                            isLoading = false,
+                            errorMessage = "Could not load workspace notebook entries: ${error.message ?: error::class.simpleName}",
+                        )
+                    }
                 }
             }
         }
@@ -172,13 +188,14 @@ class EngineeringNotebookViewModel(
     }
 
     fun selectEntry(entryId: String) {
-        scope.launch {
+        loadJob?.cancel()
+        val generation = loadGeneration.incrementAndGet()
+        loadJob = scope.launch {
             _state.update { it.copy(isLoading = true, errorMessage = null, statusMessage = null) }
-            runCatching {
+            try {
                 val revs = captureService.listRevisions(entryId)
                 val receipts = captureService.listReceipts(entryId)
-                revs to receipts
-            }.onSuccess { (revs, receipts) ->
+                if (loadGeneration.get() != generation) return@launch
                 val latest = revs.lastOrNull() ?: _state.value.entries.firstOrNull { it.entryId == entryId }
                 if (latest != null) {
                     _state.update {
@@ -201,12 +218,16 @@ class EngineeringNotebookViewModel(
                 } else {
                     _state.update { it.copy(isLoading = false) }
                 }
-            }.onFailure { error ->
-                _state.update {
-                    it.copy(
-                        isLoading = false,
-                        errorMessage = "Failed to load entry $entryId: ${error.message}",
-                    )
+            } catch (cancelled: kotlinx.coroutines.CancellationException) {
+                throw cancelled
+            } catch (error: Exception) {
+                if (loadGeneration.get() == generation) {
+                    _state.update {
+                        it.copy(
+                            isLoading = false,
+                            errorMessage = "Failed to load entry $entryId: ${error.message}",
+                        )
+                    }
                 }
             }
         }
@@ -352,16 +373,18 @@ class EngineeringNotebookViewModel(
     }
 
     fun saveRevision() {
-        val snapshot = _state.value
-        val markdown = if (snapshot.editorMode == NotebookEditorMode.GUIDED_FORM) {
-            NotebookSectionParser.renderMarkdown(snapshot.structuredDraft)
-        } else {
-            snapshot.rawMarkdownDraft
-        }
+        if (_state.value.isSaving) return
         scope.launch {
-            _state.update { it.copy(isSaving = true, errorMessage = null, statusMessage = null) }
-            runCatching {
-                captureService.saveEditedEntry(
+            if (!saveMutex.tryLock()) return@launch
+            try {
+                val snapshot = _state.value
+                val markdown = if (snapshot.editorMode == NotebookEditorMode.GUIDED_FORM) {
+                    NotebookSectionParser.renderMarkdown(snapshot.structuredDraft)
+                } else {
+                    snapshot.rawMarkdownDraft
+                }
+                _state.update { it.copy(isSaving = true, errorMessage = null, statusMessage = null) }
+                val saved = captureService.saveEditedEntry(
                     workspace = workspace,
                     entryId = if (snapshot.isNewDraft) null else snapshot.selectedEntryId,
                     entryType = snapshot.draftType,
@@ -369,7 +392,6 @@ class EngineeringNotebookViewModel(
                     evidence = snapshot.draftEvidence,
                     authorId = snapshot.draftAuthorId.takeIf(String::isNotBlank),
                 )
-            }.onSuccess { saved ->
                 val allEntries = captureService.listWorkspaceEntries(workspace)
                 val revs = captureService.listRevisions(saved.entryId)
                 val receipts = captureService.listReceipts(saved.entryId)
@@ -390,13 +412,17 @@ class EngineeringNotebookViewModel(
                         statusMessage = "Saved ${saved.entryId} · r${saved.revision} (SHA-256 ${saved.contentHash.take(12)}…)",
                     )
                 }
-            }.onFailure { error ->
+            } catch (cancelled: kotlinx.coroutines.CancellationException) {
+                throw cancelled
+            } catch (error: Exception) {
                 _state.update {
                     it.copy(
                         isSaving = false,
                         errorMessage = "Could not save notebook revision: ${error.message}",
                     )
                 }
+            } finally {
+                saveMutex.unlock()
             }
         }
     }

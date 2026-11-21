@@ -146,7 +146,11 @@ class ForesightLookaheadEstimator(
             // near-zero translation cannot over-bend the translational braking chord.
             val effectiveArcAngle = velocityAngle + arcDeltaTheta / 3.0
             val halfTurn = abs(arcDeltaTheta) * 0.5
-            val chordScale = if (halfTurn > 1e-4) sin(halfTurn) / halfTurn else 1.0
+            val chordScale = if (halfTurn > 1e-4) {
+                (sin(halfTurn.coerceAtMost(Math.PI)) / halfTurn).coerceIn(0.0, 1.0)
+            } else {
+                1.0
+            }
             val chordLength = stopDist * chordScale
             stopX = currentX + chordLength * cos(effectiveArcAngle)
             stopY = currentY + chordLength * sin(effectiveArcAngle)

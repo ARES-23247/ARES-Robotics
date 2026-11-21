@@ -27,9 +27,10 @@ class FieldEditorTransformsTest {
             for (mirrorX in listOf(true, false)) {
                 val mirrored = (if (mirrorX) FieldEditorTransforms.mirrorObstacleX(rectangle, 2.54, league)
                     else FieldEditorTransforms.mirrorObstacleY(rectangle, 1.4224, league)) as Obstacle.Rectangle
+                val isCenterOrigin = league == League.FTC || league == League.XRP
                 val expected = corners(rectangle).map { point ->
-                    if (mirrorX) point.copy(x = (if (league == League.FTC) 0.0 else 2.54) - point.x)
-                    else point.copy(y = (if (league == League.FTC) 0.0 else 1.4224) - point.y)
+                    if (mirrorX) point.copy(x = (if (isCenterOrigin) 0.0 else 2.54) - point.x)
+                    else point.copy(y = (if (isCenterOrigin) 0.0 else 1.4224) - point.y)
                 }
                 val actual = corners(mirrored)
                 expected.forEach { point -> assertTrue(actual.any { abs(it.x - point.x) < 1e-12 && abs(it.y - point.y) < 1e-12 }) }
@@ -38,15 +39,15 @@ class FieldEditorTransformsTest {
     }
 
     @Test
-    fun `XRP circles and polygons reflect through field dimensions`() {
+    fun `XRP circles and polygons reflect around center-origin axes`() {
         val circle = Obstacle.Circle("c", "Circle", 0.54, 0.4224, 0.1)
-        assertEquals(2.0, (FieldEditorTransforms.mirrorObstacleX(circle, 2.54, League.XRP) as Obstacle.Circle).centerX, 1e-12)
-        assertEquals(1.0, (FieldEditorTransforms.mirrorObstacleY(circle, 1.4224, League.XRP) as Obstacle.Circle).centerY, 1e-12)
+        assertEquals(-0.54, (FieldEditorTransforms.mirrorObstacleX(circle, 2.54, League.XRP) as Obstacle.Circle).centerX, 1e-12)
+        assertEquals(-0.4224, (FieldEditorTransforms.mirrorObstacleY(circle, 1.4224, League.XRP) as Obstacle.Circle).centerY, 1e-12)
         val polygon = Obstacle.Polygon("p", "Triangle", listOf(PathPoint(0.0, 0.0), PathPoint(1.0, 0.0), PathPoint(0.0, 1.0)))
-        assertEquals(polygon.copy(vertices = listOf(PathPoint(2.0, 0.0), PathPoint(1.0, 0.0), PathPoint(2.0, 1.0))),
-            FieldEditorTransforms.mirrorObstacleX(polygon, 2.0, League.XRP))
-        assertEquals(polygon.copy(vertices = listOf(PathPoint(0.0, 2.0), PathPoint(1.0, 2.0), PathPoint(0.0, 1.0))),
-            FieldEditorTransforms.mirrorObstacleY(polygon, 2.0, League.XRP))
+        assertEquals(polygon.copy(vertices = listOf(PathPoint(0.0, 0.0), PathPoint(-1.0, 0.0), PathPoint(0.0, 1.0))),
+            FieldEditorTransforms.mirrorObstacleX(polygon, 2.54, League.XRP))
+        assertEquals(polygon.copy(vertices = listOf(PathPoint(0.0, 0.0), PathPoint(1.0, 0.0), PathPoint(0.0, -1.0))),
+            FieldEditorTransforms.mirrorObstacleY(polygon, 1.4224, League.XRP))
     }
     @Test
     fun `FTC mirrors around the center-origin axes`() {

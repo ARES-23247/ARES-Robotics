@@ -25,11 +25,10 @@ jobs:
           service_account: ${{ vars.GOOGLE_GATEWAY_DEPLOY_SERVICE_ACCOUNT }}
       - uses: google-github-actions/setup-gcloud@v2
       - name: Build and deploy reviewed monorepo gateway
-        working-directory: ARES-Analytics
         run: >-
           gcloud builds submit .
           --project=aresfirst-portal
-          --config=gateway/cloudbuild.yaml
+          --config=ARES-Analytics/gateway/cloudbuild.yaml
           --gcs-source-staging-dir=gs://aresfirst-portal_cloudbuild/source
           --service-account=projects/aresfirst-portal/serviceAccounts/analytics-cloudbuild-deployer@aresfirst-portal.iam.gserviceaccount.com
           --substitutions=COMMIT_SHA=${GITHUB_SHA}

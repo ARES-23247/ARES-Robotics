@@ -20,6 +20,7 @@ class FRCTelemetry internal constructor(
     startDataLog: Boolean = true,
 ) : ITelemetry {
     private val entries = HashMap<String, NetworkTableEntry>()
+    @Volatile private var closed = false
 
     /** Creates the production adapter over WPILib's process-owned NT4 instance. */
     constructor() : this(NetworkTableInstance.getDefault(), true)
@@ -106,15 +107,35 @@ class FRCTelemetry internal constructor(
     }
 
     override fun update() {
+        check(!closed) { "FRCTelemetry is closed" }
         instance.flushLocal()
     }
 
+    @Synchronized
     override fun close() {
-        entries.values.forEach(NetworkTableEntry::close)
-        entries.clear()
+        if (closed) return
+        closed = true
+        var firstFailure: Throwable? = null
+        try {
+            for (entry in entries.values) {
+                try {
+                    entry.close()
+                } catch (failure: Throwable) {
+                    if (firstFailure == null) {
+                        firstFailure = failure
+                    } else if (firstFailure !== failure) {
+                        firstFailure.addSuppressed(failure)
+                    }
+                }
+            }
+        } finally {
+            entries.clear()
+        }
+        firstFailure?.let { throw it }
     }
 
     private fun entry(key: String): NetworkTableEntry {
+        check(!closed) { "FRCTelemetry is closed" }
         val canonical = TelemetryTopicNormalizer.normalizeTopic(key)
         return entries.getOrPut(canonical) { instance.getEntry(canonical) }
     }

@@ -18,7 +18,10 @@ data class McpBridgeDescriptor(
     val studioVersion: String,
     val activeProjectRoot: String? = null,
     val startedAtEpochMillis: Long,
-)
+) {
+    override fun toString(): String =
+        "McpBridgeDescriptor(protocolVersion=$protocolVersion, pid=$pid, port=$port, bearerToken=<redacted>, studioVersion=$studioVersion, activeProjectRoot=$activeProjectRoot, startedAtEpochMillis=$startedAtEpochMillis)"
+}
 
 /** Response from `GET /v1/mcp/health` on Studio's loopback bridge. */
 @Serializable

@@ -129,6 +129,8 @@ class LocalMarkdownNotebookPublisher(
                     acceptedAtMs = nowMs(),
                 )
             )
+        } catch (cancelled: kotlinx.coroutines.CancellationException) {
+            throw cancelled
         } catch (failure: Exception) {
             NotebookPublishResult.Rejected(
                 DeliveryErrorKind.CONFIGURATION,
@@ -191,6 +193,8 @@ class GoogleDriveNotebookPublisher(
                 acceptedAtMs = nowMs(),
             )
         )
+    } catch (cancelled: kotlinx.coroutines.CancellationException) {
+        throw cancelled
     } catch (failure: Exception) {
         NotebookPublishResult.Retry(
             DeliveryErrorKind.TRANSIENT,
@@ -225,6 +229,8 @@ class CmsNotebookPublisher(
                 // Keep nulls omitted so the strict endpoint receives only fields it understands.
                 setBody(transportJson.encodeToString(entry))
             }
+        } catch (cancelled: kotlinx.coroutines.CancellationException) {
+            throw cancelled
         } catch (failure: Exception) {
             return NotebookPublishResult.Retry(
                 DeliveryErrorKind.TRANSIENT,

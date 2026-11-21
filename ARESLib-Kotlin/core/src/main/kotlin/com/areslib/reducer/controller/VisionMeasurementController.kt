@@ -112,7 +112,7 @@ internal class StoreVisionMeasurementProcessor {
                     defaultStdDevY
                 }
                 val stdDevHeading = when {
-                    translationOnly -> 1.0e6
+                    translationOnly -> Double.POSITIVE_INFINITY
                     hasReportedHeading -> reportedStdDevHeading
                     else -> defaultStdDevHeading
                 }
@@ -134,7 +134,8 @@ internal class StoreVisionMeasurementProcessor {
                     maxAmbiguity = state.vision.filterConfig.maxAmbiguity,
                     scaleStdDevX = !hasReportedX,
                     scaleStdDevY = !hasReportedY,
-                    scaleStdDevHeading = !translationOnly && !hasReportedHeading
+                    scaleStdDevHeading = !translationOnly && !hasReportedHeading,
+                    observeHeading = !translationOnly
                 )
                 lastAccepted = estimator.lastMeasurementAccepted
                 lastReason = estimator.lastRejectionReason

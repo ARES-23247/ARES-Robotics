@@ -71,12 +71,20 @@ open class GoBildaPinpointDriver {
     /** Returns angular velocity in radians per second; [unit] is not converted. */
     @Synchronized
     fun getHeadingVelocity(unit: UnnormalizedAngleUnit): Double = headingVelocity
-    /** Returns X velocity in meters per second; [unit] is not converted. */
+    /** Returns reset-relative X velocity in meters per second; [unit] is not converted. */
     @Synchronized
-    fun getVelX(unit: DistanceUnit): Double = velX
-    /** Returns Y velocity in meters per second; [unit] is not converted. */
+    fun getVelX(unit: DistanceUnit): Double {
+        val cosOffset = kotlin.math.cos(trueOffsetHeading)
+        val sinOffset = kotlin.math.sin(trueOffsetHeading)
+        return velX * cosOffset + velY * sinOffset
+    }
+    /** Returns reset-relative Y velocity in meters per second; [unit] is not converted. */
     @Synchronized
-    fun getVelY(unit: DistanceUnit): Double = velY
+    fun getVelY(unit: DistanceUnit): Double {
+        val cosOffset = kotlin.math.cos(trueOffsetHeading)
+        val sinOffset = kotlin.math.sin(trueOffsetHeading)
+        return -velX * sinOffset + velY * cosOffset
+    }
     
     /** Returns a meter/radian pose snapshot after reset and pod-offset compensation. */
     @Synchronized

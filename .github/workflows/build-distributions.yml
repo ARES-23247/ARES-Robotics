@@ -10,16 +10,18 @@ permissions:
   contents: read
 
 env:
-  ARES_VERSION: 20.0.6
-  STUDIO_VERSION: 7.0.80
-  FTC_STARTER_URL: https://github.com/ARES-23247/ARES-Robotics/releases/download/v7.0.80/ARES-FTC-Starter-20.0.6.zip
-  FTC_STARTER_SHA256: c72f8c53d3497c123a211db2e2323994ad539a58786f1cc8155ac340b617a54d
-  FRC_STARTER_URL: https://github.com/ARES-23247/ARES-Robotics/releases/download/v7.0.80/ARES-FRC-Starter-20.0.6.zip
-  FRC_STARTER_SHA256: 9e361d0834b83b47014396635616e5655c06cfbda2c482a3559bebde89c9c53a
-  XRP_STARTER_URL: https://github.com/ARES-23247/ARES-Robotics/releases/download/v7.0.80/ARES-XRP-Starter-3.0.70.zip
-  XRP_STARTER_SHA256: 3c99dabb82412dc25ce9f9b3fbbc2e12581f09cde62679f64ac38c0b89bd6600
-  LIGHTBOT_EXAMPLE_URL: https://github.com/ARES-23247/ARES-Robotics/releases/download/v7.0.80/ARES-Lightbot-Example-3.0.75.zip
-  LIGHTBOT_EXAMPLE_SHA256: 5212a8b569ac188cb06b29c75d129580ba9cb35c8949f85d1d4dca1a5781ee1b
+  ARES_VERSION: 20.0.7
+  STUDIO_VERSION: 7.0.81
+  FTC_STARTER_URL: https://github.com/ARES-23247/ARES-Robotics/releases/download/v7.0.81/ARES-FTC-Starter-20.0.7.zip
+  FTC_STARTER_SHA256: fae66d428a6ce968552e48fe7a9e405deae690aa6c02889b2dfdf06213adc722
+  FRC_STARTER_URL: https://github.com/ARES-23247/ARES-Robotics/releases/download/v7.0.81/ARES-FRC-Starter-20.0.7.zip
+  FRC_STARTER_SHA256: d4841990ac4f58ecc690aecd2d1b76292092f158c1b605b5969856ca6e229959
+  XRP_STARTER_URL: https://github.com/ARES-23247/ARES-Robotics/releases/download/v7.0.81/ARES-XRP-Starter-3.0.71.zip
+  XRP_STARTER_SHA256: 0d02ed1b81d0893104a9670dbadcd2f070573b415158b95f97935cbc2a63ebf9
+  LIGHTBOT_EXAMPLE_URL: https://github.com/ARES-23247/ARES-Robotics/releases/download/v7.0.81/ARES-Lightbot-Example-3.0.76.zip
+  LIGHTBOT_EXAMPLE_SHA256: 41ed51ac7696398376cff04339c37d4d160ac3f416e3abf29c02270d20ededdd
+  BIOBUZZ_EXAMPLE_URL: https://github.com/ARES-23247/ARES-Robotics/releases/download/v7.0.81/ARES-BIOBUZZ-Example-1.1.14.zip
+  BIOBUZZ_EXAMPLE_SHA256: dbf1b70cbf6d39a4b505fc18df6cb9fafa59a26cc3e1e676752db8cd94fcbcc3
 
 concurrency:
   group: desktop-packaging-${{ github.event.pull_request.number || github.ref }}
@@ -204,9 +206,11 @@ jobs:
             ARES-Analytics/app/build/consumer-roundtrip-evidence/**
             ARES-Analytics/shared/build/reports/tests/test/**
             ARES-Analytics/gateway/build/reports/tests/test/**
+            ARES-Analytics/mcp/build/reports/tests/test/**
             ARES-Analytics/app/build/reports/kover/**
             ARES-Analytics/shared/build/reports/kover/**
             ARES-Analytics/gateway/build/reports/kover/**
+            ARES-Analytics/mcp/build/reports/kover/**
             ARES-Analytics/app/build/reports/dashboard-validation/**
 
   zero-code-project-acceptance:
@@ -248,12 +252,13 @@ jobs:
           ARES_OFFICIAL_TEMPLATE_OUTPUT_DIR: ${{ runner.temp }}\ares-zero-code-acceptance
           ARES_OFFICIAL_TEMPLATE_VALIDATION_REPOSITORY: ${{ github.workspace }}\.release-validation
           ARES_OFFICIAL_TEMPLATE_VALIDATION_VERSION: ${{ needs.candidate.outputs.ares-candidate-version }}
-        run: >-
-          .\ARES-Analytics\gradlew.bat -p ARES-Analytics :app:test
-          --tests 'com.ares.analytics.service.project.OfficialProjectTemplateIntegrationTest'
-          "-ParesVersion=${{ needs.candidate.outputs.ares-candidate-version }}"
-          "-ParesRepository=file:///${{ github.workspace }}/.release-validation"
-          --no-parallel --no-daemon --console=plain
+        run: |
+          $repoUri = [Uri]::new((Resolve-Path '.release-validation').Path).AbsoluteUri
+          .\ARES-Analytics\gradlew.bat -p ARES-Analytics :app:test `
+            --tests 'com.ares.analytics.service.project.OfficialProjectTemplateIntegrationTest' `
+            "-ParesVersion=${{ needs.candidate.outputs.ares-candidate-version }}" `
+            "-ParesRepository=$repoUri" `
+            --no-parallel --no-daemon --console=plain
 
       - uses: actions/upload-artifact@v7
         if: always()
@@ -382,7 +387,8 @@ jobs:
             @{ Name = "ARES-FTC-Starter-$($release['ftcStarterVersion']).zip"; HashKey = 'ftcStarterSha256' },
             @{ Name = "ARES-FRC-Starter-$($release['frcStarterVersion']).zip"; HashKey = 'frcStarterSha256' },
             @{ Name = "ARES-XRP-Starter-$($release['xrpStarterVersion']).zip"; HashKey = 'xrpStarterSha256' },
-            @{ Name = "ARES-Lightbot-Example-$($release['lightbotExampleVersion']).zip"; HashKey = 'lightbotExampleSha256' }
+            @{ Name = "ARES-Lightbot-Example-$($release['lightbotExampleVersion']).zip"; HashKey = 'lightbotExampleSha256' },
+            @{ Name = "ARES-BIOBUZZ-Example-$($release['biobuzzExampleVersion']).zip"; HashKey = 'biobuzzExampleSha256' }
           )
           foreach ($template in $templates) {
             $archive = Join-Path $output $template.Name

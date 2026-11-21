@@ -14,7 +14,10 @@ data class GoogleAuthorizationCodeExchangeRequest(
     val code: String,
     val codeVerifier: String,
     val redirectUri: String,
-)
+) {
+    override fun toString(): String =
+        "GoogleAuthorizationCodeExchangeRequest(code=<redacted>, codeVerifier=<redacted>, redirectUri=$redirectUri)"
+}
 
 /**
  * Refresh exchange sent over HTTPS when a Google access token expires.
@@ -25,7 +28,9 @@ data class GoogleAuthorizationCodeExchangeRequest(
 @Serializable
 data class GoogleRefreshTokenExchangeRequest(
     val refreshToken: String,
-)
+) {
+    override fun toString(): String = "GoogleRefreshTokenExchangeRequest(refreshToken=<redacted>)"
+}
 
 /** Token response returned by the ARES gateway after Google accepts an exchange. */
 @Serializable
@@ -35,7 +40,10 @@ data class GoogleOAuthBrokerTokenResponse(
     val refreshToken: String? = null,
     val idToken: String? = null,
     val tokenType: String = "Bearer",
-)
+) {
+    override fun toString(): String =
+        "GoogleOAuthBrokerTokenResponse(accessToken=<redacted>, expiresIn=$expiresIn, refreshToken=${if (refreshToken != null) "<redacted>" else "null"}, idToken=${if (idToken != null) "<redacted>" else "null"}, tokenType=$tokenType)"
+}
 
 /** Safe, credential-free failure returned by the gateway. */
 @Serializable

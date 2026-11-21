@@ -57,6 +57,7 @@ class FrcLimelightIO(
     private var lastHeartbeatChangeMs = Long.MIN_VALUE
     private var lastEmittedFrameId = Long.MIN_VALUE
     private var lastPublishedImuMode = Int.MIN_VALUE
+    @Volatile private var closed = false
     
     // Pre-allocated buffers to prevent GC
     private val scratchOrientation = DoubleArray(6)
@@ -105,6 +106,7 @@ class FrcLimelightIO(
         rollDegrees: Double, rollRateDegPerSec: Double,
         linearVelocityMps: Double
     ) {
+        if (closed) return
         scratchOrientation[0] = yawDegrees
         scratchOrientation[1] = yawRateDegPerSec
         scratchOrientation[2] = pitchDegrees
@@ -116,7 +118,7 @@ class FrcLimelightIO(
     }
 
     override fun setImuMode(mode: Int) {
-        if (mode == lastPublishedImuMode) return
+        if (closed || mode == lastPublishedImuMode) return
         imuModePub.set(mode.toDouble())
         lastPublishedImuMode = mode
     }
@@ -145,6 +147,11 @@ class FrcLimelightIO(
      */
     override fun updateInputs(inputs: VisionIOInputs) {
         inputs.clusterTargets = emptyList()
+        if (closed) {
+            inputs.isConnected = false
+            inputs.measurements = emptyList()
+            return
+        }
 
         inputs.cameraPoses = cameraPoses
         
@@ -355,21 +362,37 @@ class FrcLimelightIO(
         firstMicros > 0L && secondMicros > 0L &&
             kotlin.math.abs(firstMicros - secondMicros) <= MAX_COMPANION_TIMESTAMP_DELTA_MICROS
 
+    @Synchronized
     override fun close() {
-        botposeSub.close()
-        botposeMt2Sub.close()
-        tvSub.close()
-        botposeTargetSpaceSub.close()
-        tidSub.close()
-        heartbeatSub.close()
-        stdDevsSub.close()
-        orientationPub.close()
-        imuModePub.close()
-        pipelinePub.close()
-        ledModePub.close()
-        streamPub.close()
-        cameraPosePub.close()
-        fiducialFilterPub.close()
+        if (closed) return
+        closed = true
+        var firstFailure: Throwable? = null
+        fun closeQuietly(resource: AutoCloseable) {
+            try {
+                resource.close()
+            } catch (failure: Throwable) {
+                if (firstFailure == null) {
+                    firstFailure = failure
+                } else if (firstFailure !== failure) {
+                    firstFailure!!.addSuppressed(failure)
+                }
+            }
+        }
+        closeQuietly(botposeSub)
+        closeQuietly(botposeMt2Sub)
+        closeQuietly(tvSub)
+        closeQuietly(botposeTargetSpaceSub)
+        closeQuietly(tidSub)
+        closeQuietly(heartbeatSub)
+        closeQuietly(stdDevsSub)
+        closeQuietly(orientationPub)
+        closeQuietly(imuModePub)
+        closeQuietly(pipelinePub)
+        closeQuietly(ledModePub)
+        closeQuietly(streamPub)
+        closeQuietly(cameraPosePub)
+        closeQuietly(fiducialFilterPub)
+        firstFailure?.let { throw it }
     }
 
     private companion object {

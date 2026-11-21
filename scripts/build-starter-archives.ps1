@@ -105,7 +105,7 @@ try {
                         # Windows build agents.
                         $entry = $zip.CreateEntry($entryName, [System.IO.Compression.CompressionLevel]::NoCompression)
                         $entry.LastWriteTime = $fixedTimestamp
-                        $isExecutable = $_.Name -eq 'gradlew' -or $_.Extension -eq '.sh'
+                        $isExecutable = $_.Name -eq 'gradlew' -or $_.Name -eq 'ares' -or $_.Extension -eq '.sh'
                         $unixMode = if ($isExecutable) { 0x81ED } else { 0x81A4 } # 100755 / 100644
                         $entry.ExternalAttributes = $unixMode -shl 16
                         $output = $entry.Open()

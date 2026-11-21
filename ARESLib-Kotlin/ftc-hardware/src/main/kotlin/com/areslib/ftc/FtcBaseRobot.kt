@@ -420,7 +420,9 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
             val batteryVoltage = powerManager.batteryVoltage
             val t2 = com.areslib.util.RobotClock.nanoTime()
 
+            readAllSensors(timestamp)
             updateSubsystems(dtSeconds, batteryVoltage, effectiveScale)
+            writeAllOutputs(effectiveScale)
             val t3 = com.areslib.util.RobotClock.nanoTime()
 
             telemetryManager.publishFull(
@@ -458,15 +460,18 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
     }
 
     private fun safeAfterFatalFailure(primary: Throwable) {
-        try { safeHardware() }
-        catch (failure: Throwable) {
-            preserveFtcInterrupt(failure)
-            // INIT may continue retrying a latched fault. Keep its first safety diagnostic
-            // without retaining a newly allocated Throwable on every subsequent frame.
-            if (!reportedFatalSafetyFailure) {
-                reportedFatalSafetyFailure = true
-                retainFtcFailure(primary, failure)
+        val state = store.state
+        val registered = getRegisteredSubsystems()
+        for (i in registered.indices) {
+            try { registered[i].writeOutputs(state, 0.0) } catch (failure: Throwable) {
+                preserveFtcInterrupt(failure)
+                if (!reportedFatalSafetyFailure) { reportedFatalSafetyFailure = true; retainFtcFailure(primary, failure) }
             }
+        }
+        try { safeHardware() } catch (failure: Throwable) {
+            preserveFtcInterrupt(failure)
+            // Keep first safety diagnostic without retaining a new Throwable on subsequent retried INIT frames.
+            if (!reportedFatalSafetyFailure) { reportedFatalSafetyFailure = true; retainFtcFailure(primary, failure) }
         }
     }
 

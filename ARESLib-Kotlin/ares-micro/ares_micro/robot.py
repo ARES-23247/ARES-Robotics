@@ -82,6 +82,18 @@ class XrpRobot:
             return False
         return self.telemetry.start()
 
+    def _apply_routine_starting_pose(self, routine):
+        pose = getattr(routine, "starting_pose", None)
+        if pose is None:
+            return
+        if isinstance(pose, dict):
+            x = pose.get("xMeters", 0.0)
+            y = pose.get("yMeters", 0.0)
+            heading = pose.get("headingRadians", 0.0)
+        else:
+            x, y, heading = pose[0], pose[1], pose[2]
+        self.drivetrain.reset_pose(x, y, heading)
+
     def set_autonomous_routines(self, routines, default_id=None):
         self._autonomous_complete = False
         self.autonomous_routines = routines or {}
@@ -89,6 +101,7 @@ class XrpRobot:
         self.active_routine = self.autonomous_routines.get(default_id)
         if self.active_routine:
             self.active_routine.reset()
+            self._apply_routine_starting_pose(self.active_routine)
 
     def set_subsystems(self, subsystems):
         self.subsystems = tuple(subsystems or ())
@@ -173,6 +186,7 @@ class XrpRobot:
             self.active_routine = self.autonomous_routines.get(selected)
             if self.active_routine and not self.faulted:
                 self.active_routine.reset()
+                self._apply_routine_starting_pose(self.active_routine)
                 self._autonomous_complete = False
                 self.mode = self.STATE_AUTO
             else:
