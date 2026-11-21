@@ -67,10 +67,10 @@ dependencies {
     implementation platform("org.aresfirst.ares:ares-bom:$aresVersion")
     implementation 'org.aresfirst.ares:core'
     implementation 'org.aresfirst.ares:frc-runtime'
-    implementation 'com.google.code.gson:gson:2.14.0'
+    implementation 'com.google.code.gson:gson:2.15.0'
     aresCodegen platform("org.aresfirst.ares:ares-bom:$aresVersion")
     aresCodegen 'org.aresfirst.ares:codegen'
-    aresCodegen 'com.google.code.gson:gson:2.14.0'
+    aresCodegen 'com.google.code.gson:gson:2.15.0'
 
     implementation wpi.java.deps.wpilib()
     implementation wpi.java.vendor.java()
