@@ -100,9 +100,21 @@ object ProjectCodegenConventions {
     }
 
     fun fieldDefinitionFile(projectRoot: File, league: AresLeague): File = when (league) {
-        AresLeague.FTC -> File(projectRoot, "TeamCode/src/main/assets/paths/field.json")
+        AresLeague.FTC -> {
+            val teamCodeAssets = File(projectRoot, "TeamCode/src/main/assets")
+            val flatAssets = File(projectRoot, "src/main/assets")
+            if (!teamCodeAssets.exists() && flatAssets.exists()) {
+                File(flatAssets, "paths/field.json")
+            } else {
+                File(teamCodeAssets, "paths/field.json")
+            }
+        }
         AresLeague.FRC -> File(projectRoot, "src/main/deploy/paths/field.json")
-        AresLeague.XRP -> File(projectRoot, ".ares/field.json")
+        AresLeague.XRP -> {
+            val deployField = File(projectRoot, "deploy/paths/field.json")
+            val legacyField = File(projectRoot, ".ares/field.json")
+            if (!deployField.exists() && legacyField.exists()) legacyField else deployField
+        }
     }
 
     fun openStarterArchiveStream(

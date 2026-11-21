@@ -134,7 +134,7 @@ fun ProfileMcpAssistantSection(
 
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 McpSelectChip(
-                    label = "FULL (12 tools)",
+                    label = "FULL (16 tools)",
                     selected = selectedToolset == McpToolsetMode.FULL,
                     modifier = Modifier.testTag("mcp-toolset-full"),
                     onClick = {
@@ -143,7 +143,7 @@ fun ProfileMcpAssistantSection(
                     },
                 )
                 McpSelectChip(
-                    label = "COMPACT (7 tools)",
+                    label = "COMPACT (9 tools)",
                     selected = selectedToolset == McpToolsetMode.COMPACT,
                     modifier = Modifier.testTag("mcp-toolset-compact"),
                     onClick = {

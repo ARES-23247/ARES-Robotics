@@ -218,13 +218,13 @@ object AresMcpMain {
     ): Int = try {
         runBlocking {
             withTimeout(20_000L) {
-                verifyRoundTrip(McpToolsetMode.FULL, resolvedBridgeDir, options.templateDir, expectedTools = 12)
-                verifyRoundTrip(McpToolsetMode.COMPACT, resolvedBridgeDir, options.templateDir, expectedTools = 7)
+                verifyRoundTrip(McpToolsetMode.FULL, resolvedBridgeDir, options.templateDir, expectedTools = 16)
+                verifyRoundTrip(McpToolsetMode.COMPACT, resolvedBridgeDir, options.templateDir, expectedTools = 9)
             }
         }
         System.err.println(
             "[ares-mcp] MCP smoke verification passed " +
-                "(studioVersion=${McpBuildConfig.STUDIO_VERSION}, fullTools=12, compactTools=7)",
+                "(studioVersion=${McpBuildConfig.STUDIO_VERSION}, fullTools=16, compactTools=9)",
         )
         0
     } catch (error: Throwable) {
@@ -269,18 +269,32 @@ object AresMcpMain {
             require(tools.size == expectedTools) {
                 "Expected $expectedTools tools in $toolset mode but listed ${tools.size}: ${tools.map { it.name }}"
             }
+            val toolNames = tools.map { it.name }.toSet()
+            require("ares_hardware_bringup" in toolNames && "ares_project_verify" in toolNames) {
+                "Expected Wave 2 bring-up and verify tools in $toolset mode, found: $toolNames"
+            }
             val resources = client.listResources().resources
-            require(resources.isNotEmpty()) { "Expected static MCP resources in $toolset mode" }
+            val resourceUris = resources.map { it.uri }.toSet()
+            require("ares://runs" in resourceUris && "ares://templates/catalog" in resourceUris) {
+                "Expected static MCP resources (including ares://runs and ares://templates/catalog) in $toolset mode, found: $resourceUris"
+            }
             val templates = client.listResourceTemplates(ListResourceTemplatesRequest()).resourceTemplates
             require(templates.isNotEmpty()) { "Expected MCP resource templates in $toolset mode" }
             val prompts = client.listPrompts().prompts
-            require(prompts.size >= 4) { "Expected at least 4 MCP prompts, found ${prompts.size}" }
+            require(prompts.size >= 5) { "Expected at least 5 MCP prompts, found ${prompts.size}" }
             val safetyDoc = client.readResource(
                 ReadResourceRequest(ReadResourceRequestParams(uri = "ares://conventions/coordinates-and-safety")),
             )
             val safetyText = safetyDoc.contents.filterIsInstance<TextResourceContents>().joinToString("\n") { it.text }
             require(safetyText.contains("RobotClock") && safetyText.contains("CCW")) {
                 "Expected conventions resource to document RobotClock and CCW coordinates"
+            }
+            val catalogDoc = client.readResource(
+                ReadResourceRequest(ReadResourceRequestParams(uri = "ares://templates/catalog")),
+            )
+            val catalogText = catalogDoc.contents.filterIsInstance<TextResourceContents>().joinToString("\n") { it.text }
+            require(catalogText.contains("FRC_TALONFX_POSITION")) {
+                "Expected templates catalog resource to include FRC_TALONFX_POSITION"
             }
         } finally {
             runCatching { client.close() }

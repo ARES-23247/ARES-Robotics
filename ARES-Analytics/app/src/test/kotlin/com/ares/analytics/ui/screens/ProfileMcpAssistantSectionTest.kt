@@ -34,6 +34,8 @@ class ProfileMcpAssistantSectionTest {
 
         onNodeWithText("AI Coding Assistant (MCP)").assertIsDisplayed()
         onNodeWithText("Headless Ready (Offline)").assertIsDisplayed()
+        onNodeWithText("FULL (16 tools)").assertIsDisplayed()
+        onNodeWithText("COMPACT (9 tools)").assertIsDisplayed()
 
         onNodeWithTag("mcp-toolset-compact").performClick()
         onNodeWithTag("mcp-config-snippet").assert(
@@ -77,7 +79,7 @@ class ProfileMcpAssistantSectionTest {
                             pid = 1234L,
                             port = 51423,
                             bearerToken = "deadbeef",
-                            studioVersion = "7.0.79",
+                            studioVersion = "7.0.81",
                             startedAtEpochMillis = 1_700_000_000_000L,
                         ),
                         detectedLauncherCommand = "ares-robotics-studio" to listOf("--mcp-stdio"),

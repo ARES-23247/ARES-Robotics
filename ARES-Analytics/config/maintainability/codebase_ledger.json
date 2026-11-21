@@ -2,7 +2,7 @@
   "schemaVersion": 2,
   "scope": "Tracked production Kotlin file sizes; no review or test coverage claim.",
   "summary": {
-    "totalProductionKotlinFiles": 1255,
+    "totalProductionKotlinFiles": 1270,
     "grandfatheredFiles": 24,
     "violationsOverLimit": 0,
     "microfilesRemaining": 21,
@@ -6802,7 +6802,7 @@
     {
       "path": "ARES-Analytics/mcp/src/main/kotlin/com/ares/analytics/mcp/AresMcpMain.kt",
       "product": "ARES-Analytics",
-      "lines": 304,
+      "lines": 318,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -6812,7 +6812,17 @@
     {
       "path": "ARES-Analytics/mcp/src/main/kotlin/com/ares/analytics/mcp/AresMcpServerFactory.kt",
       "product": "ARES-Analytics",
-      "lines": 61,
+      "lines": 63,
+      "lineLimit": 750,
+      "effectiveLimit": 750,
+      "grandfathered": false,
+      "compliant": true,
+      "isMicrofile": false
+    },
+    {
+      "path": "ARES-Analytics/mcp/src/main/kotlin/com/ares/analytics/mcp/audit/CrossArtifactAndVendorRules.kt",
+      "product": "ARES-Analytics",
+      "lines": 321,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -6832,7 +6842,7 @@
     {
       "path": "ARES-Analytics/mcp/src/main/kotlin/com/ares/analytics/mcp/audit/KotlinInvariantAuditor.kt",
       "product": "ARES-Analytics",
-      "lines": 234,
+      "lines": 258,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -6860,9 +6870,49 @@
       "isMicrofile": false
     },
     {
+      "path": "ARES-Analytics/mcp/src/main/kotlin/com/ares/analytics/mcp/bringup/FrcVendordepCatalog.kt",
+      "product": "ARES-Analytics",
+      "lines": 187,
+      "lineLimit": 750,
+      "effectiveLimit": 750,
+      "grandfathered": false,
+      "compliant": true,
+      "isMicrofile": false
+    },
+    {
+      "path": "ARES-Analytics/mcp/src/main/kotlin/com/ares/analytics/mcp/bringup/FtcRevHubXmlGenerator.kt",
+      "product": "ARES-Analytics",
+      "lines": 276,
+      "lineLimit": 750,
+      "effectiveLimit": 750,
+      "grandfathered": false,
+      "compliant": true,
+      "isMicrofile": false
+    },
+    {
+      "path": "ARES-Analytics/mcp/src/main/kotlin/com/ares/analytics/mcp/bringup/HardwareBringupEngine.kt",
+      "product": "ARES-Analytics",
+      "lines": 547,
+      "lineLimit": 750,
+      "effectiveLimit": 750,
+      "grandfathered": false,
+      "compliant": true,
+      "isMicrofile": false
+    },
+    {
       "path": "ARES-Analytics/mcp/src/main/kotlin/com/ares/analytics/mcp/engine/ConfirmationTokenManager.kt",
       "product": "ARES-Analytics",
       "lines": 169,
+      "lineLimit": 750,
+      "effectiveLimit": 750,
+      "grandfathered": false,
+      "compliant": true,
+      "isMicrofile": false
+    },
+    {
+      "path": "ARES-Analytics/mcp/src/main/kotlin/com/ares/analytics/mcp/engine/DrivetrainPresetBuilder.kt",
+      "product": "ARES-Analytics",
+      "lines": 176,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -6882,7 +6932,7 @@
     {
       "path": "ARES-Analytics/mcp/src/main/kotlin/com/ares/analytics/mcp/engine/HeadlessProjectMutators.kt",
       "product": "ARES-Analytics",
-      "lines": 711,
+      "lines": 722,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -6900,9 +6950,39 @@
       "isMicrofile": false
     },
     {
+      "path": "ARES-Analytics/mcp/src/main/kotlin/com/ares/analytics/mcp/engine/McpPathAndIdentifierValidators.kt",
+      "product": "ARES-Analytics",
+      "lines": 69,
+      "lineLimit": 750,
+      "effectiveLimit": 750,
+      "grandfathered": false,
+      "compliant": true,
+      "isMicrofile": false
+    },
+    {
       "path": "ARES-Analytics/mcp/src/main/kotlin/com/ares/analytics/mcp/engine/ProjectCodegenConventions.kt",
       "product": "ARES-Analytics",
-      "lines": 279,
+      "lines": 291,
+      "lineLimit": 750,
+      "effectiveLimit": 750,
+      "grandfathered": false,
+      "compliant": true,
+      "isMicrofile": false
+    },
+    {
+      "path": "ARES-Analytics/mcp/src/main/kotlin/com/ares/analytics/mcp/engine/ProjectConfigAndFieldMutators.kt",
+      "product": "ARES-Analytics",
+      "lines": 727,
+      "lineLimit": 750,
+      "effectiveLimit": 750,
+      "grandfathered": false,
+      "compliant": true,
+      "isMicrofile": false
+    },
+    {
+      "path": "ARES-Analytics/mcp/src/main/kotlin/com/ares/analytics/mcp/engine/TemplateAndPatchSupport.kt",
+      "product": "ARES-Analytics",
+      "lines": 694,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -6912,7 +6992,7 @@
     {
       "path": "ARES-Analytics/mcp/src/main/kotlin/com/ares/analytics/mcp/prompts/AresMcpPrompts.kt",
       "product": "ARES-Analytics",
-      "lines": 104,
+      "lines": 127,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -6922,7 +7002,17 @@
     {
       "path": "ARES-Analytics/mcp/src/main/kotlin/com/ares/analytics/mcp/resources/AresMcpResources.kt",
       "product": "ARES-Analytics",
-      "lines": 194,
+      "lines": 212,
+      "lineLimit": 750,
+      "effectiveLimit": 750,
+      "grandfathered": false,
+      "compliant": true,
+      "isMicrofile": false
+    },
+    {
+      "path": "ARES-Analytics/mcp/src/main/kotlin/com/ares/analytics/mcp/resources/SchemaExemplarCatalog.kt",
+      "product": "ARES-Analytics",
+      "lines": 640,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -6950,9 +7040,39 @@
       "isMicrofile": false
     },
     {
+      "path": "ARES-Analytics/mcp/src/main/kotlin/com/ares/analytics/mcp/scaffold/HybridSubsystemRegistrar.kt",
+      "product": "ARES-Analytics",
+      "lines": 583,
+      "lineLimit": 750,
+      "effectiveLimit": 750,
+      "grandfathered": false,
+      "compliant": true,
+      "isMicrofile": false
+    },
+    {
       "path": "ARES-Analytics/mcp/src/main/kotlin/com/ares/analytics/mcp/scaffold/MockIoTestScaffoldRenderer.kt",
       "product": "ARES-Analytics",
       "lines": 52,
+      "lineLimit": 750,
+      "effectiveLimit": 750,
+      "grandfathered": false,
+      "compliant": true,
+      "isMicrofile": false
+    },
+    {
+      "path": "ARES-Analytics/mcp/src/main/kotlin/com/ares/analytics/mcp/scaffold/VendorSdkHardwareAdapterRenderer.kt",
+      "product": "ARES-Analytics",
+      "lines": 474,
+      "lineLimit": 750,
+      "effectiveLimit": 750,
+      "grandfathered": false,
+      "compliant": true,
+      "isMicrofile": false
+    },
+    {
+      "path": "ARES-Analytics/mcp/src/main/kotlin/com/ares/analytics/mcp/scaffold/VendorSdkScaffoldRenderer.kt",
+      "product": "ARES-Analytics",
+      "lines": 455,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -6972,7 +7092,17 @@
     {
       "path": "ARES-Analytics/mcp/src/main/kotlin/com/ares/analytics/mcp/tools/CodegenAndScaffoldTools.kt",
       "product": "ARES-Analytics",
-      "lines": 89,
+      "lines": 144,
+      "lineLimit": 750,
+      "effectiveLimit": 750,
+      "grandfathered": false,
+      "compliant": true,
+      "isMicrofile": false
+    },
+    {
+      "path": "ARES-Analytics/mcp/src/main/kotlin/com/ares/analytics/mcp/tools/ConfigAndFieldTools.kt",
+      "product": "ARES-Analytics",
+      "lines": 104,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -6982,7 +7112,7 @@
     {
       "path": "ARES-Analytics/mcp/src/main/kotlin/com/ares/analytics/mcp/tools/DescriptorMutationTools.kt",
       "product": "ARES-Analytics",
-      "lines": 279,
+      "lines": 360,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -7003,6 +7133,26 @@
       "path": "ARES-Analytics/mcp/src/main/kotlin/com/ares/analytics/mcp/tools/ProjectLifecycleTools.kt",
       "product": "ARES-Analytics",
       "lines": 83,
+      "lineLimit": 750,
+      "effectiveLimit": 750,
+      "grandfathered": false,
+      "compliant": true,
+      "isMicrofile": false
+    },
+    {
+      "path": "ARES-Analytics/mcp/src/main/kotlin/com/ares/analytics/mcp/tools/VerifyAndBringupTools.kt",
+      "product": "ARES-Analytics",
+      "lines": 103,
+      "lineLimit": 750,
+      "effectiveLimit": 750,
+      "grandfathered": false,
+      "compliant": true,
+      "isMicrofile": false
+    },
+    {
+      "path": "ARES-Analytics/mcp/src/main/kotlin/com/ares/analytics/mcp/verify/ProjectGradleVerifier.kt",
+      "product": "ARES-Analytics",
+      "lines": 464,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,

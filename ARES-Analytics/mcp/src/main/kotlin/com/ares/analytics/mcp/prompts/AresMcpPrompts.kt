@@ -71,7 +71,7 @@ internal object AresMcpPrompts {
                     |Scaffold clean zero-GC USER-OWNED Kotlin components for '$className' ($league):
                     |1. Preview `SEASON_REDUX_SLICE`, `HARDWARE_IO`, and `UNIT_TEST` with `ares_kotlin_scaffold` (`mode='PREVIEW'`).
                     |2. Review generated code and apply with `mode='APPLY'` (pass `confirmationToken` when updating an existing file).
-                    |3. Run `ares_code_audit` to verify all 8 static rules (`ARES-GC-001`..`ARES-SIM-008`) pass with 0 errors.
+                    |3. Run `ares_code_audit` to verify all 12 static rules (`ARES-GC-001`..`ARES-COORD-012`) pass with 0 errors.
                 """.trimMargin(),
             )
         }
@@ -89,8 +89,31 @@ internal object AresMcpPrompts {
                 text = """
                     |Audit project readiness for '$projectPath':
                     |1. Run `ares_project_validate` to check canonical `.ares/*` schemas and compiler IR lowering.
-                    |2. Run `ares_code_audit` to enforce all 8 static rules (`ARES-GC-001`..`ARES-SIM-008`).
-                    |3. Summarize blockers cleanly and explicitly note that desktop/static validation does not replace physical Pit Self-Test commissioning.
+                    |2. Run `ares_code_audit` to enforce all 12 static rules (`ARES-GC-001`..`ARES-COORD-012`).
+                    |3. Run `ares_project_verify` (`mode='UNIT_TEST'`) to verify Gradle compile and mock-IO unit tests.
+                    |4. Summarize blockers cleanly and explicitly note that desktop/static verification does not replace physical Pit Self-Test commissioning (`physicalValidation=NOT_RUN`).
+                """.trimMargin(),
+            )
+        }
+
+        server.addPrompt(
+            name = "ares-hardware-bringup",
+            description = "Guide FRC/FTC hardware bring-up: inventory audit, vendordeps, CTRE TunerConstants import, REV Hub XML generation/validation, and Gradle compile check.",
+            arguments = listOf(
+                PromptArgument(name = "league", description = "FTC or FRC", required = true),
+                PromptArgument(name = "projectPath", description = "Optional path to robot repo root", required = false),
+            ),
+        ) { request ->
+            val league = request.arguments?.get("league").orEmpty().ifBlank { "FTC" }
+            val projectPath = request.arguments?.get("projectPath").orEmpty().ifBlank { "<active-project>" }
+            singleUserPrompt(
+                description = "Hardware bring-up workflow ($league) for '$projectPath'",
+                text = """
+                    |Execute ARES hardware bring-up for '$projectPath' ($league):
+                    |1. Call `ares_hardware_bringup(operation='AUDIT_INVENTORY')` to inspect motor/servo/CAN declarations and hub port budgets.
+                    |2. For FRC: call `LIST_VENDORDEPS` and `INSTALL_VENDORDEP` as needed, or `IMPORT_CTRE_TUNER_CONSTANTS` (read-only over vendor `TunerConstants.java`) to derive CAN swerve geometry + `.arestuning` parameters.
+                    |3. For FTC: call `GENERATE_FTC_HUB_XML` (`confirmationToken` required on write) and `VALIDATE_FTC_HUB_XML` against Expansion Hub / Control Hub port limits.
+                    |4. Run `ares_project_verify` (`mode='UNIT_TEST'`) and remind the team that physical Pit Self-Test commissioning must still be run on hardware (`physicalValidation=NOT_RUN`).
                 """.trimMargin(),
             )
         }

@@ -105,7 +105,7 @@ class AresMcpStdioServerTest {
     }
 
     @Test
-    fun `full toolset exposes 12 tools resources templates prompts and executes e2e workflow`() {
+    fun `full toolset exposes 16 tools resources templates prompts and executes e2e workflow`() {
         val tempRoot = Files.createTempDirectory("ares-mcp-e2e-").toFile()
         val bridgeDir = File(tempRoot, "bridge").apply { mkdirs() }
         val projectDir = File(tempRoot, "robot-ftc")
@@ -123,9 +123,13 @@ class AresMcpStdioServerTest {
                         "ares_routine_mutate",
                         "ares_controls_mutate",
                         "ares_tuning_mutate",
+                        "ares_project_config_mutate",
+                        "ares_field_mutate",
                         "ares_codegen_reconcile",
                         "ares_kotlin_scaffold",
                         "ares_code_audit",
+                        "ares_hardware_bringup",
+                        "ares_project_verify",
                     ),
                     toolNames,
                 )
@@ -139,6 +143,7 @@ class AresMcpStdioServerTest {
                         "ares://project/catalog",
                         "ares://verification/latest",
                         "ares://runs",
+                        "ares://templates/catalog",
                     ),
                     resourceUris,
                 )
@@ -184,6 +189,7 @@ class AresMcpStdioServerTest {
                         "ares-build-autonomous",
                         "ares-migrate-hand-authored",
                         "ares-audit-readiness",
+                        "ares-hardware-bringup",
                     ),
                     prompts,
                 )
@@ -305,7 +311,7 @@ class AresMcpStdioServerTest {
     }
 
     @Test
-    fun `compact toolset exposes 7 consolidated tools and mutates descriptors via router`() {
+    fun `compact toolset exposes 9 consolidated tools and mutates descriptors via router`() {
         val tempRoot = Files.createTempDirectory("ares-mcp-compact-").toFile()
         val bridgeDir = File(tempRoot, "bridge").apply { mkdirs() }
         val projectDir = File(tempRoot, "robot-frc")
@@ -321,6 +327,8 @@ class AresMcpStdioServerTest {
                         "ares_codegen_reconcile",
                         "ares_kotlin_scaffold",
                         "ares_code_audit",
+                        "ares_hardware_bringup",
+                        "ares_project_verify",
                     ),
                     toolNames,
                 )
@@ -344,7 +352,10 @@ class AresMcpStdioServerTest {
                         "maxLinearSpeedMps" to 4.1,
                     ),
                 )
-                assertFalse(driveMutate.isError == true)
+                assertFalse(
+                    driveMutate.isError == true,
+                    "DRIVETRAIN mutate failed: ${(driveMutate.content.firstOrNull() as? TextContent)?.text}",
+                )
 
                 val tuningOverlay = client.callTool(
                     name = "ares_descriptor_mutate",
