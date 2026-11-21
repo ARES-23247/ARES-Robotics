@@ -112,7 +112,7 @@ dependencies {
     implementation("org.aresfirst.ares:project-model")
 
     // Database — DuckDB via JDBC
-    implementation("org.duckdb:duckdb_jdbc:1.5.5.1")
+    implementation("org.duckdb:duckdb_jdbc:1.5.6.0")
 
     // Networking — Ktor client
     implementation("io.ktor:ktor-client-cio:3.6.1")
