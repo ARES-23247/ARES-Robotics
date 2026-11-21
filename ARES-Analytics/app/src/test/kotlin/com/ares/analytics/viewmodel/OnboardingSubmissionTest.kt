@@ -116,8 +116,10 @@ class OnboardingSubmissionTest {
             assertFalse(viewModel.state.value.isSaving)
             assertFalse(fixture.directory.resolve("robot").exists())
             assertEquals(0, fixture.configured.get())
+            fixture.drainIntents()
             viewModel.handleIntent(OnboardingIntent.SubmitConfig)
-            withTimeout(15_000) { viewModel.state.first { it.saveSuccess || it.errorMessage != null } }
+            fixture.drainIntents()
+            withTimeout(15_000) { viewModel.state.first { !it.isSaving && (it.saveSuccess || it.errorMessage != null) } }
             assertTrue(viewModel.state.value.saveSuccess, viewModel.state.value.toString())
             fixture.drainIntents()
             assertEquals(2, attempts.get())

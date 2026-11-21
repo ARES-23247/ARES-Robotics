@@ -56,11 +56,11 @@ You can also use Windows' standard repair command from an administrator terminal
 msiexec.exe /fa "ARES Robotics Studio-<version>.msi"
 ```
 
-The release build inspects every generated MSI and fails if the stable upgrade identity,
-maintenance dialog, or Repair button disappears. The protected Windows package job also downloads
-the previous public MSI on a clean runner, installs it, upgrades it with the candidate MSI, verifies
-that only the candidate version remains, repairs that installation, and removes it. A table-only MSI
-inspection is not treated as proof that an upgrade works.
+The release build (`verifyWindowsInstallerMaintenance` running `ARES-Analytics/scripts/verify-windows-installer.ps1`)
+inspects every generated MSI and fails if the stable upgrade identity, maintenance dialog, or Repair
+button disappears. `ARES-Analytics/scripts/verify-windows-installer-upgrade.ps1` provides the local
+elevated end-to-end upgrade, repair, and uninstall verification harness (not yet wired into the
+GitHub-hosted `build-distributions.yml` workflow).
 
 After local verification, the MSI is copied to the repository-root `dist` directory so it is not
 buried under Gradle's intermediate build tree. `dist` is intentionally ignored by Git; installers
@@ -68,16 +68,17 @@ belong in GitHub Releases rather than source history.
 
 ## GitHub Releases
 
-The protected **Build Desktop Packages** workflow creates Windows and macOS packages only after the
-fresh-project acceptance test and native package checks pass. There are two supported release paths:
+Release packaging and publication use a two-stage attested workflow:
 
-- Push a protected semantic-version tag such as `v1.4.0`; the workflow publishes the verified
-  packages automatically.
-- Run the workflow manually, enter the semantic version, and explicitly enable **publish**. The
-  workflow creates the tag and GitHub Release only after every required job succeeds.
-
-A manual run with **publish** disabled is a packaging rehearsal: its installers remain downloadable
-as temporary workflow artifacts but no public tag or release is created.
+- **Build Desktop Packages** (`.github/workflows/build-distributions.yml`) runs on pull requests,
+  merge queue, or manual dispatch. It validates `studioReleaseVerification`, starter mirror
+  acceptance, Windows MSI and macOS DMG packaging, deterministic starter/example archives, and
+  seals an attested 30-day release candidate artifact without creating a public tag or release.
+- **Promote Verified Release Candidate** (`.github/workflows/promote-release-candidate.yml`) is
+  dispatched manually from protected `main` with the successful `candidate_run_id`. Leaving
+  `publish` disabled performs a verification-only promotion rehearsal; enabling `publish` (with
+  `windows_installer_trust` set to `checksum` or `authenticode`) publishes the immutable Maven
+  artifacts first and creates the GitHub Release without rebuilding.
 
 ## Clean removal
 

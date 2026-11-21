@@ -26,6 +26,19 @@ done
 
 "$ROOT/scripts/verify-imported-histories.sh"
 
+if command -v python3 >/dev/null 2>&1; then
+  PYTHON_BIN="python3"
+elif command -v python >/dev/null 2>&1; then
+  PYTHON_BIN="python"
+else
+  echo "Python 3 is required to run monorepo policy verification." >&2
+  exit 1
+fi
+
+"$PYTHON_BIN" "$ROOT/scripts/verify_agent_guidance.py"
+"$PYTHON_BIN" "$ROOT/scripts/verify_kotlin_toolchain.py"
+"$PYTHON_BIN" "$ROOT/scripts/generate_codebase_ledger.py" --verify
+
 if grep -R --include='*.gradle' --include='*.gradle.kts' -nE '\bmavenLocal[[:space:]]*\(' \
   "$ROOT/ARESLib-Kotlin" "$ROOT/ARES-FTC" "$ROOT/ARES-FRC" \
   "$ROOT/ARES-FTC-Starter" "$ROOT/ARES-FRC-Starter" "$ROOT/ARES-Analytics"; then

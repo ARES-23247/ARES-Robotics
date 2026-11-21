@@ -36,23 +36,27 @@ jobs:
     if: needs.changes.outputs.packages == 'true'
     name: Prepare package dependency candidate
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     outputs:
       ares-version: ${{ steps.identity.outputs.ares-version }}
       ares-candidate-version: ${{ steps.identity.outputs.ares-candidate-version }}
       studio-version: ${{ steps.identity.outputs.studio-version }}
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - name: Check out published Maven branch
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: maven
           path: .published-maven
           fetch-depth: 1
-      - uses: actions/setup-java@v6
+          persist-credentials: false
+      - uses: actions/setup-java@d1374f8ac74474200d16ef8ecee22c7ae7a51880 # v6.3.0
         with:
           distribution: temurin
           java-version: '17'
-      - uses: gradle/actions/setup-gradle@v6
+      - uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
 
       - name: Resolve immutable package identities
         id: identity
@@ -94,20 +98,24 @@ jobs:
 
       - name: Publish isolated ARES candidate
         working-directory: ARESLib-Kotlin
+        env:
+          ARES_CANDIDATE_VERSION: ${{ steps.identity.outputs.ares-candidate-version }}
         run: >-
           ./gradlew apiCheck publishReleaseValidation
-          -ParesVersion=${{ steps.identity.outputs.ares-candidate-version }}
+          -ParesVersion="$ARES_CANDIDATE_VERSION"
           --no-parallel --no-daemon --console=plain
 
       - name: Stage exact final ARES repository
         working-directory: ARESLib-Kotlin
         shell: bash
+        env:
+          ARES_VERSION: ${{ steps.identity.outputs.ares-version }}
         run: |
           set -euo pipefail
           rm -rf build/github-repository
           mkdir -p build/github-repository
           git -C ../.published-maven archive HEAD | tar -x -C build/github-repository
-          version="${{ steps.identity.outputs.ares-version }}"
+          version="$ARES_VERSION"
           modules=(
             ares-bom codegen core frc-hardware frc-runtime ftc-hardware ftc-mocks
             project-compiler project-model project-schema simulation-foundation simulator
@@ -133,14 +141,14 @@ jobs:
               --no-parallel --no-daemon --console=plain
           fi
 
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: package-validation-repository
           path: ARESLib-Kotlin/build/release-repository/
           if-no-files-found: error
           retention-days: 3
 
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: final-ares-repository
           path: ARESLib-Kotlin/build/github-repository/
@@ -153,13 +161,15 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-java@v6
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@d1374f8ac74474200d16ef8ecee22c7ae7a51880 # v6.3.0
         with:
           distribution: temurin
           java-version: '17'
-      - uses: gradle/actions/setup-gradle@v6
-      - uses: actions/download-artifact@v8
+      - uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: package-validation-repository
           path: .release-validation
@@ -187,15 +197,18 @@ jobs:
 
       - name: Run the complete released Studio verification contract
         working-directory: ARES-Analytics
+        env:
+          ARES_CANDIDATE_VERSION: ${{ needs.candidate.outputs.ares-candidate-version }}
+          ARES_REPOSITORY_URI: ${{ steps.repository.outputs.uri }}
         run: >-
           xvfb-run -a ./gradlew studioReleaseVerification
-          -ParesVersion=${{ needs.candidate.outputs.ares-candidate-version }}
-          -ParesRepository=${{ steps.repository.outputs.uri }}
+          -ParesVersion="$ARES_CANDIDATE_VERSION"
+          -ParesRepository="$ARES_REPOSITORY_URI"
           --no-parallel --no-daemon --console=plain
 
       - name: Upload deterministic test, coverage, and dashboard reports
         if: always()
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: studio-release-verification
           retention-days: 90
@@ -217,14 +230,17 @@ jobs:
     name: Verify generated starter mirrors
     needs: candidate
     runs-on: windows-latest
+    timeout-minutes: 45
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-java@v6
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@d1374f8ac74474200d16ef8ecee22c7ae7a51880 # v6.3.0
         with:
           distribution: temurin
           java-version: '17'
-      - uses: gradle/actions/setup-gradle@v6
-      - uses: actions/download-artifact@v8
+      - uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: package-validation-repository
           path: .release-validation
@@ -256,11 +272,11 @@ jobs:
           $repoUri = [Uri]::new((Resolve-Path '.release-validation').Path).AbsoluteUri
           .\ARES-Analytics\gradlew.bat -p ARES-Analytics :app:test `
             --tests 'com.ares.analytics.service.project.OfficialProjectTemplateIntegrationTest' `
-            "-ParesVersion=${{ needs.candidate.outputs.ares-candidate-version }}" `
+            "-ParesVersion=$env:ARES_OFFICIAL_TEMPLATE_VALIDATION_VERSION" `
             "-ParesRepository=$repoUri" `
             --no-parallel --no-daemon --console=plain
 
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
           name: zero-code-project-acceptance-logs
@@ -271,6 +287,7 @@ jobs:
     name: Native package (${{ matrix.os }})
     needs: [candidate, studio-verification]
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
     strategy:
       fail-fast: false
       matrix:
@@ -282,13 +299,15 @@ jobs:
             task: ':app:packageReleaseDmg'
             artifact-path: 'ARES-Analytics/app/build/compose/binaries/main-release/dmg/'
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-java@v6
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@d1374f8ac74474200d16ef8ecee22c7ae7a51880 # v6.3.0
         with:
           distribution: temurin
           java-version: '17'
-      - uses: gradle/actions/setup-gradle@v6
-      - uses: actions/download-artifact@v8
+      - uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: final-ares-repository
           path: .release-validation
@@ -308,12 +327,17 @@ jobs:
           ARES_GOOGLE_OAUTH_BROKER_URL: ${{ vars.ARES_GOOGLE_OAUTH_BROKER_URL }}
           ARES_GITHUB_APP_CLIENT_ID: ${{ vars.ARES_GITHUB_APP_CLIENT_ID }}
           ARES_GITHUB_APP_SLUG: ${{ vars.ARES_GITHUB_APP_SLUG }}
+          ARES_WINDOWS_UPDATE_SIGNER_THUMBPRINTS: ${{ vars.ARES_WINDOWS_UPDATE_SIGNER_THUMBPRINTS }}
+          GRADLE_TASK: ${{ matrix.task }}
+          STUDIO_VERSION: ${{ needs.candidate.outputs.studio-version }}
+          ARES_VERSION: ${{ needs.candidate.outputs.ares-version }}
+          ARES_REPOSITORY: ${{ steps.repository.outputs.uri }}
         run: |
           chmod +x ./gradlew
-          ./gradlew ${{ matrix.task }} \
-            -ParesAnalyticsVersion=${{ needs.candidate.outputs.studio-version }} \
-            -ParesVersion=${{ needs.candidate.outputs.ares-version }} \
-            -ParesRepository=${{ steps.repository.outputs.uri }} \
+          ./gradlew "$GRADLE_TASK" \
+            -ParesAnalyticsVersion="$STUDIO_VERSION" \
+            -ParesVersion="$ARES_VERSION" \
+            -ParesRepository="$ARES_REPOSITORY" \
             --no-parallel --no-daemon --console=plain
 
       - name: Verify external MCP stdio from a long Windows install path
@@ -324,7 +348,7 @@ jobs:
           ARES_VERSION: ${{ needs.candidate.outputs.ares-version }}
           ARES_REPOSITORY: ${{ steps.repository.outputs.uri }}
         run: |
-          .\gradlew.bat :mcp:installDist "-ParesVersion=${{ needs.candidate.outputs.ares-version }}" "-ParesRepository=${{ steps.repository.outputs.uri }}"
+          .\gradlew.bat :mcp:installDist "-ParesVersion=$env:ARES_VERSION" "-ParesRepository=$env:ARES_REPOSITORY"
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           python ../scripts/verify_windows_mcp_launcher.py mcp/build/install/mcp ../scripts/ares-mcp.ps1
 
@@ -355,7 +379,7 @@ jobs:
           $manifest = Join-Path $installers[0].DirectoryName 'windows-installer-trust.json'
           $evidence | ConvertTo-Json | Set-Content -LiteralPath $manifest -Encoding UTF8
 
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: ARES-Robotics-Studio-${{ matrix.os }}
           path: ${{ matrix.artifact-path }}
@@ -365,14 +389,17 @@ jobs:
     name: Deterministic project-template archives
     needs: candidate
     runs-on: windows-latest
+    timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - name: Build immutable starter archives
         shell: pwsh
         run: |
           $output = Join-Path $env:RUNNER_TEMP 'starter-release-assets'
           .\scripts\build-starter-archives.ps1 -OutputDirectory $output
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: project-template-release-assets
           path: ${{ runner.temp }}/starter-release-assets/*.zip
@@ -399,34 +426,40 @@ jobs:
   seal-candidate:
     name: Seal attested release candidate
     needs: [candidate, studio-verification, zero-code-project-acceptance, build-packages, starter-archives]
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     permissions:
       contents: read
       id-token: write
       attestations: write
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
+          persist-credentials: false
 
-      - uses: actions/download-artifact@v8
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           pattern: ARES-Robotics-Studio-*
           merge-multiple: true
           path: release-candidate/release-assets
 
-      - uses: actions/download-artifact@v8
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: project-template-release-assets
           path: release-candidate/release-assets
 
-      - uses: actions/download-artifact@v8
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: final-ares-repository
           path: release-candidate/final-ares-repository
 
       - name: Seal every promotable file to this exact Git tree
         shell: bash
+        env:
+          ARES_VERSION: ${{ needs.candidate.outputs.ares-version }}
+          STUDIO_VERSION: ${{ needs.candidate.outputs.studio-version }}
         run: |
           set -euo pipefail
           python scripts/release_candidate.py seal \
@@ -439,8 +472,8 @@ jobs:
             --workflow-ref "$GITHUB_WORKFLOW_REF" \
             --run-id "$GITHUB_RUN_ID" \
             --run-attempt "$GITHUB_RUN_ATTEMPT" \
-            --ares-version "${{ needs.candidate.outputs.ares-version }}" \
-            --studio-version "${{ needs.candidate.outputs.studio-version }}"
+            --ares-version "$ARES_VERSION" \
+            --studio-version "$STUDIO_VERSION"
           python scripts/release_candidate.py verify \
             --root release-candidate \
             --manifest release-candidate/release-candidate.json \
@@ -448,16 +481,16 @@ jobs:
             --expected-tree "$(git rev-parse 'HEAD^{tree}')" \
             --expected-event "$GITHUB_EVENT_NAME" \
             --expected-run-id "$GITHUB_RUN_ID" \
-            --expected-ares-version "${{ needs.candidate.outputs.ares-version }}" \
-            --expected-studio-version "${{ needs.candidate.outputs.studio-version }}" >/dev/null
+            --expected-ares-version "$ARES_VERSION" \
+            --expected-studio-version "$STUDIO_VERSION" >/dev/null
           tar -czf "release-candidate-${GITHUB_RUN_ID}.tar.gz" -C release-candidate .
 
       - name: Attest the sealed candidate archive
-        uses: actions/attest-build-provenance@v3
+        uses: actions/attest-build-provenance@977bb373ede98d70efdf65b84cb5f73e068dcc2a # v3.0.0
         with:
           subject-path: release-candidate-${{ github.run_id }}.tar.gz
 
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: release-candidate
           path: release-candidate-${{ github.run_id }}.tar.gz
@@ -469,8 +502,11 @@ jobs:
     needs: [changes, candidate, studio-verification, zero-code-project-acceptance, build-packages, starter-archives, seal-candidate]
     if: always()
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - name: Check selected scope results
         env:
           NEEDS_JSON: ${{ toJSON(needs) }}

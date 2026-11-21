@@ -209,6 +209,12 @@ subprojects {
 
     apply(plugin = "org.jetbrains.kotlinx.kover")
 
+    plugins.withId("org.jetbrains.kotlin.jvm") {
+        extensions.configure<org.jetbrains.kotlin.gradle.dsl.KotlinJvmProjectExtension> {
+            jvmToolchain(17)
+        }
+    }
+
     val lineCoverageFloor = when (name) {
         "app" -> 38
         "gateway", "shared", "mcp" -> 54

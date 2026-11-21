@@ -20,10 +20,12 @@ jobs:
   policy:
     name: Source and release policy
     runs-on: windows-latest
+    timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Verify monorepo ownership and dependency policy
         shell: pwsh
@@ -45,19 +47,21 @@ jobs:
     needs: changes
     if: needs.changes.outputs.full == 'true' || needs.changes.outputs.lib == 'true'
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     outputs:
       version: ${{ steps.identity.outputs.version }}
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
+          persist-credentials: false
 
-      - uses: actions/setup-java@v6
+      - uses: actions/setup-java@d1374f8ac74474200d16ef8ecee22c7ae7a51880 # v6.3.0
         with:
           distribution: temurin
           java-version: '17'
 
-      - uses: gradle/actions/setup-gradle@v6
+      - uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
 
       - name: Select immutable validation identity
         id: identity
@@ -69,14 +73,16 @@ jobs:
 
       - name: Test API and publish isolated candidate
         working-directory: ARESLib-Kotlin
+        env:
+          CANDIDATE_VERSION: ${{ steps.identity.outputs.version }}
         run: >-
           ./gradlew test apiCheck publishReleaseValidation
-          -ParesVersion=${{ steps.identity.outputs.version }}
+          -ParesVersion="$CANDIDATE_VERSION"
           --no-parallel --no-daemon --console=plain
 
       - name: Retain robot-readiness evidence
         if: always()
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: robot-readiness-evidence
           path: |
@@ -86,7 +92,7 @@ jobs:
           if-no-files-found: warn
           retention-days: 14
 
-      - uses: actions/setup-node@v7
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: '24'
           package-manager-cache: false
@@ -99,7 +105,7 @@ jobs:
           "$browser_tools/node_modules/.bin/playwright" install --with-deps chromium
           NODE_PATH="$browser_tools/node_modules" node --test scripts/test_log_manager_dashboard.cjs
 
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: ares-validation-repository
           path: ARESLib-Kotlin/build/release-repository/
@@ -114,14 +120,17 @@ jobs:
       (needs.changes.outputs.full == 'true' || needs.changes.outputs.ftc == 'true') &&
       (needs.candidate.result == 'success' || needs.candidate.result == 'skipped')
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-java@v6
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@d1374f8ac74474200d16ef8ecee22c7ae7a51880 # v6.3.0
         with:
           distribution: temurin
           java-version: '17'
-      - uses: gradle/actions/setup-gradle@v6
-      - uses: actions/download-artifact@v8
+      - uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         if: needs.candidate.result == 'success'
         with:
           name: ares-validation-repository
@@ -158,7 +167,7 @@ jobs:
           bash ./gradlew generateAresProject :TeamCode:verifyAresProject \
             :TeamCode:testDebugUnitTest :simulator:test :TeamCode:assembleDebug \
             "${dependency_args[@]}" --no-parallel --no-daemon --console=plain
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
           name: biobuzz-consumer-evidence
@@ -168,7 +177,7 @@ jobs:
             ${{ runner.temp }}/biobuzz-consumer/ARES-BIOBUZZ-Example/TeamCode/build/outputs/apk/debug/*.apk
           if-no-files-found: warn
           retention-days: 7
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: lightbot-debug-apk
           path: ARES-FTC/TeamCode/build/outputs/apk/debug/*.apk
@@ -183,14 +192,17 @@ jobs:
       (needs.changes.outputs.full == 'true' || needs.changes.outputs.frc == 'true') &&
       (needs.candidate.result == 'success' || needs.candidate.result == 'skipped')
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-java@v6
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@d1374f8ac74474200d16ef8ecee22c7ae7a51880 # v6.3.0
         with:
           distribution: temurin
           java-version: '17'
-      - uses: gradle/actions/setup-gradle@v6
-      - uses: actions/download-artifact@v8
+      - uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         if: needs.candidate.result == 'success'
         with:
           name: ares-validation-repository
@@ -217,14 +229,17 @@ jobs:
       (needs.changes.outputs.full == 'true' || needs.changes.outputs.ftc_starter == 'true') &&
       (needs.candidate.result == 'success' || needs.candidate.result == 'skipped')
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-java@v6
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@d1374f8ac74474200d16ef8ecee22c7ae7a51880 # v6.3.0
         with:
           distribution: temurin
           java-version: '17'
-      - uses: gradle/actions/setup-gradle@v6
-      - uses: actions/download-artifact@v8
+      - uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         if: needs.candidate.result == 'success'
         with:
           name: ares-validation-repository
@@ -252,14 +267,17 @@ jobs:
       (needs.changes.outputs.full == 'true' || needs.changes.outputs.frc_starter == 'true') &&
       (needs.candidate.result == 'success' || needs.candidate.result == 'skipped')
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-java@v6
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@d1374f8ac74474200d16ef8ecee22c7ae7a51880 # v6.3.0
         with:
           distribution: temurin
           java-version: '17'
-      - uses: gradle/actions/setup-gradle@v6
-      - uses: actions/download-artifact@v8
+      - uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         if: needs.candidate.result == 'success'
         with:
           name: ares-validation-repository
@@ -283,9 +301,12 @@ jobs:
     needs: changes
     if: needs.changes.outputs.full == 'true' || needs.changes.outputs.xrp_starter == 'true'
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-python@v6
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
         with:
           python-version: '3.11'
       - name: Compile DSL to Python and run standalone safety tests
@@ -300,7 +321,7 @@ jobs:
         run: python -m unittest discover -s tests -v
       - name: Retain XRP host readiness evidence
         if: always()
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: xrp-host-readiness-evidence
           path: ARES-XRP-Starter/build/reports/robot-readiness/*.json
@@ -315,14 +336,17 @@ jobs:
       (needs.changes.outputs.full == 'true' || needs.changes.outputs.analytics == 'true') &&
       (needs.candidate.result == 'success' || needs.candidate.result == 'skipped')
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-java@v6
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@d1374f8ac74474200d16ef8ecee22c7ae7a51880 # v6.3.0
         with:
           distribution: temurin
           java-version: '17'
-      - uses: gradle/actions/setup-gradle@v6
-      - uses: actions/download-artifact@v8
+      - uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         if: needs.candidate.result == 'success'
         with:
           name: ares-validation-repository
@@ -334,6 +358,7 @@ jobs:
           CANDIDATE_RESULT: ${{ needs.candidate.result }}
           CANDIDATE_VERSION: ${{ needs.candidate.outputs.version }}
           TEST_APP: ${{ needs.changes.outputs.analytics_app }}
+          TEST_MCP: ${{ needs.changes.outputs.analytics_app }}
           TEST_SHARED: ${{ needs.changes.outputs.analytics_shared }}
           TEST_GATEWAY: ${{ needs.changes.outputs.analytics_gateway }}
         run: |
@@ -342,17 +367,31 @@ jobs:
             dependency_args+=("-ParesVersion=$CANDIDATE_VERSION")
             dependency_args+=("-ParesRepository=file://${GITHUB_WORKSPACE}/.release-validation")
           fi
-          test_tasks=()
-          if [[ "$TEST_SHARED" == "true" ]]; then test_tasks+=(:shared:test); fi
-          if [[ "$TEST_APP" == "true" ]]; then test_tasks+=(:mcp:test :app:test :app:consumerRoundtripTest); fi
-          if [[ "$TEST_GATEWAY" == "true" ]]; then test_tasks+=(:gateway:test); fi
-          if (( ${#test_tasks[@]} == 0 )); then echo "No selected Studio test tasks" >&2; exit 1; fi
+          test_tasks=(:verifyProductionKotlinFileSizes)
+          selected_modules=0
+          if [[ "$TEST_SHARED" == "true" ]]; then
+            test_tasks+=(:shared:test :shared:koverVerify)
+            selected_modules=$((selected_modules + 1))
+          fi
+          if [[ "$TEST_MCP" == "true" ]]; then
+            test_tasks+=(:mcp:test :mcp:koverVerify)
+            selected_modules=$((selected_modules + 1))
+          fi
+          if [[ "$TEST_APP" == "true" ]]; then
+            test_tasks+=(:app:test :app:consumerRoundtripTest :app:koverVerify)
+            selected_modules=$((selected_modules + 1))
+          fi
+          if [[ "$TEST_GATEWAY" == "true" ]]; then
+            test_tasks+=(:gateway:test :gateway:koverVerify)
+            selected_modules=$((selected_modules + 1))
+          fi
+          if (( selected_modules == 0 )); then echo "No selected Studio test tasks" >&2; exit 1; fi
           xvfb-run -a ./gradlew "${test_tasks[@]}" \
             "${dependency_args[@]}" --no-parallel --no-daemon --console=plain
 
       - name: Retain consumer round-trip evidence
         if: always() && needs.changes.outputs.analytics_app == 'true'
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: studio-consumer-roundtrip-evidence
           path: |
@@ -368,8 +407,11 @@ jobs:
     needs: [changes, policy, candidate, ftc, frc, ftc-starter, frc-starter, xrp-starter, analytics]
     if: always()
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - name: Check selected scope results
         env:
           NEEDS_JSON: ${{ toJSON(needs) }}
