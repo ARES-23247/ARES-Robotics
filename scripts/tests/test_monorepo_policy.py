@@ -38,7 +38,7 @@ class MonorepoPolicyTest(unittest.TestCase):
             pins.append(f'{key}={hashlib.sha256(b"fixture archive").hexdigest()}')
         self.write('release/starter-artifacts.properties','\n'.join(pins)+'\n')
         for product in PRODUCTS: self.write(f'{product}/gradle.properties','# fixture\n')
-        for product in ('ARES-Analytics','ARES-FTC','ARES-FTC-Starter','ARES-FRC','ARES-FRC-Starter'):
+        for product in ('ARES-Analytics','ARES-FRC'):
             self.write(f'{product}/gradle/wrapper/gradle-wrapper.properties',f'distributionSha256Sum={"a"*64}\n')
         self.write('ARESLib-Kotlin/ares-micro/pyproject.toml','[project]\nname = "ares-micro"\nversion = "1.0.0"\n')
         for name in ('analytics-validation','build-distributions','codeql','monorepo-ci','verify-autos'):
@@ -167,6 +167,7 @@ class MonorepoPolicyTest(unittest.TestCase):
             ('docs/agents/WORKSPACE_GUIDE.md','C:/Users/alice/dev/ARES-Robotics\n'),
             ('AGENTS.md','/home/alice/ARES-Robotics\n'),
             ('setup.sh','# /home/alice/ARES-Robotics\n'),
+            ('scripts/bad_tool.py','LOCAL_ROOT = "C:/Users/alice/ARES-Robotics"\n'),
             ('ARES-Analytics/scripts/run-local-ares.ps1','# release\\ares-versions.properties\n# C:/Users/alice/tmp\n'),
         ):
             with self.subTest(path=rel):

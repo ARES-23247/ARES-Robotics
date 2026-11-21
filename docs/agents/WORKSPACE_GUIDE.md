@@ -196,7 +196,7 @@ foundation and platform runtimes, and `ares-bom`. Published coordinates use
 - **Build/test:** `.\gradlew.bat compileKotlin compileTestKotlin`, `test`, `:core:test`, `:ftc-hardware:test`, `apiCheck`, `publishReleaseValidation`. Tests are JUnit 5 with tiered E2E suites (`e2e/tier1`, `e2e/tier2`, `ZeroGcRegressionTest`).
 
 ### ARES-FTC (`ARES-FTC/`)
-FTC Android app, team **23247**, season **DECODE**. Built on FTC SDK 11.1 (the `FtcRobotController/` module is upstream boilerplate — don't edit it).
+FTC Android app, team **23247**, season **DECODE**. Built on FTC SDK 12.0.0 (the `FtcRobotController/` module is upstream boilerplate — don't edit it).
 
 - **Canonical robot source:** `.ares/` documents describe the Lightbot reference robot: mecanum
   drivetrain, two independently controlled indicator lights, and one Prism underbody light. The

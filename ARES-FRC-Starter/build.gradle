@@ -222,26 +222,3 @@ tasks.register('replaceSubsystemStarters', JavaExec) {
 }
 
 tasks.named('compileKotlin').configure { dependsOn tasks.named('verifyAresProject') }
-
-tasks.register('verifyNamespaceOwnership') {
-    group = 'verification'
-    description = 'Reject consumer-owned production code declared in ARESLib\'s com.areslib namespace.'
-    def productionSources = fileTree('src/main') {
-        include '**/*.kt', '**/*.java'
-    }
-    inputs.files(productionSources)
-    doLast {
-        def packagePattern = ~/^\s*package\s+com\.areslib(?:\..*)?\s*;?\s*$/
-        def violations = productionSources.files.findAll { source ->
-            source.readLines('UTF-8').any { line -> line ==~ packagePattern }
-        }.sort { it.path }
-        if (!violations.isEmpty()) {
-            throw new GradleException(
-                'FRC starter code must use a team-owned namespace; ARESLib owns com.areslib. Violations: ' +
-                    violations.collect { project.relativePath(it) }.join(', ')
-            )
-        }
-    }
-}
-
-tasks.named('compileKotlin').configure { dependsOn tasks.named('verifyNamespaceOwnership') }

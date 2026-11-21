@@ -110,15 +110,13 @@ foreach ($path in $componentProperties) {
     if ($content -match '(?m)^aresVersion\s*=') { throw "$path duplicates the canonical ARES version." }
 }
 
-# Pin Gradle wrapper distribution checksums on non-ARESLib Gradle roots.
-# ARESLib-Kotlin/gradle/wrapper/gradle-wrapper.properties will add distributionSha256Sum
-# on the next coordinated aresVersion release bump so HEAD:ARESLib-Kotlin stays invariant here.
+# Pin Gradle wrapper distribution checksums on non-release/archive-coupled Gradle roots.
+# ARESLib-Kotlin (pinned to release/ares-source-tree.txt) and starter-archive-coupled wrappers
+# (ARES-FTC, ARES-FTC-Starter, ARES-FRC-Starter, whose contents affect release/starter-artifacts.properties)
+# will add distributionSha256Sum on the next coordinated release/starter version bump.
 foreach ($wrapperPath in @(
     'ARES-Analytics/gradle/wrapper/gradle-wrapper.properties',
-    'ARES-FTC/gradle/wrapper/gradle-wrapper.properties',
-    'ARES-FTC-Starter/gradle/wrapper/gradle-wrapper.properties',
-    'ARES-FRC/gradle/wrapper/gradle-wrapper.properties',
-    'ARES-FRC-Starter/gradle/wrapper/gradle-wrapper.properties'
+    'ARES-FRC/gradle/wrapper/gradle-wrapper.properties'
 )) {
     $fullWrapperPath = Join-Path $root $wrapperPath
     if (-not (Test-Path -LiteralPath $fullWrapperPath -PathType Leaf)) {
@@ -314,7 +312,10 @@ $operationalScripts = @(
     'verify-autos.sh'
 ) + @(
     Get-ChildItem -LiteralPath (Join-Path $root 'scripts') -File |
-        Where-Object { ($_.Extension -in @('.ps1', '.sh')) -and $_.Name -ne 'verify-monorepo-policy.ps1' } |
+        Where-Object {
+            ($_.Extension -in @('.ps1', '.sh', '.py')) -and
+                ($_.Name -notin @('verify-monorepo-policy.ps1', 'verify_agent_guidance.py'))
+        } |
         ForEach-Object { "scripts/$($_.Name)" }
 ) + @(
     Get-ChildItem -LiteralPath (Join-Path $root 'ARES-Analytics/scripts') -File |
