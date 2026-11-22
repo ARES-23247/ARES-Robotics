@@ -19,6 +19,14 @@ repositories {
 dependencies {
     implementation(kotlin("stdlib"))
     api(project(":core"))
+    testImplementation(kotlin("test"))
+    testImplementation("org.junit.jupiter:junit-jupiter:5.14.4")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+}
+
+tasks.test {
+    useJUnitPlatform()
+    include("**/*Test.class", "**/*Tests.class")
 }
 
 kotlin {

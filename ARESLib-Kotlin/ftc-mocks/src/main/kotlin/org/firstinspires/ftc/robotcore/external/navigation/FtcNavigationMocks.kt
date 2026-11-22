@@ -80,9 +80,15 @@ class YawPitchRollAngles(
     val roll: Double = 0.0,
     val acquisitionTime: Long = 0
 ) {
-    fun getYaw(unit: AngleUnit): Double = if (unit == yawUnit) yaw else Math.toRadians(yaw)
-    fun getPitch(unit: AngleUnit): Double = if (unit == yawUnit) pitch else Math.toRadians(pitch)
-    fun getRoll(unit: AngleUnit): Double = if (unit == yawUnit) roll else Math.toRadians(roll)
+    fun getYaw(unit: AngleUnit): Double = convertAngle(yaw, unit)
+    fun getPitch(unit: AngleUnit): Double = convertAngle(pitch, unit)
+    fun getRoll(unit: AngleUnit): Double = convertAngle(roll, unit)
+
+    private fun convertAngle(value: Double, target: AngleUnit): Double = when {
+        target == yawUnit -> value
+        target == AngleUnit.RADIANS -> Math.toRadians(value)
+        else -> Math.toDegrees(value)
+    }
 }
 
 /**
