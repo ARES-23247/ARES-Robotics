@@ -16,7 +16,7 @@ val canonicalMonorepoFtcRuntimeDir = rootProject.projectDir.parentFile
 
 dependencies {
     implementation("org.dyn4j:dyn4j:4.2.2")
-    implementation("com.google.code.gson:gson:2.14.0")
+    implementation("com.google.code.gson:gson:2.15.0")
     implementation(platform("org.aresfirst.ares:ares-bom:$aresVersion"))
     implementation("org.aresfirst.ares:core")
     implementation("org.aresfirst.ares:ftc-hardware")

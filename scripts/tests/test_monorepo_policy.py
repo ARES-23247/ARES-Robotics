@@ -37,8 +37,8 @@ class MonorepoPolicyTest(unittest.TestCase):
             self.write(f'ARES-Analytics/app/src/main/resources/project-templates/{name}-1.0.0.zip', 'fixture archive')
             pins.append(f'{key}={hashlib.sha256(b"fixture archive").hexdigest()}')
         self.write('release/starter-artifacts.properties','\n'.join(pins)+'\n')
-        for product in PRODUCTS: self.write(f'{product}/gradle.properties','# fixture\n')
-        for product in ('ARES-Analytics','ARES-FRC'):
+        for product in PRODUCTS:
+            self.write(f'{product}/gradle.properties','# fixture\n')
             self.write(f'{product}/gradle/wrapper/gradle-wrapper.properties',f'distributionSha256Sum={"a"*64}\n')
         self.write('ARESLib-Kotlin/ares-micro/pyproject.toml','[project]\nname = "ares-micro"\nversion = "1.0.0"\n')
         for name in ('analytics-validation','build-distributions','codeql','monorepo-ci','verify-autos'):
@@ -176,7 +176,10 @@ class MonorepoPolicyTest(unittest.TestCase):
                 self.verify(False,'developer-specific workspace path')
 
     def test_missing_wrapper_sha256_pin_is_rejected(self):
-        self.write('ARES-Analytics/gradle/wrapper/gradle-wrapper.properties','distributionUrl=https\\://example.invalid/gradle.zip\n')
-        self.verify(False,'must pin distributionSha256Sum')
+        for product in ('ARES-Analytics', 'ARESLib-Kotlin', 'ARES-FTC-Starter', 'ARES-FRC-Starter'):
+            with self.subTest(product=product):
+                self.setUp()
+                self.write(f'{product}/gradle/wrapper/gradle-wrapper.properties','distributionUrl=https\\://example.invalid/gradle.zip\n')
+                self.verify(False,'must pin distributionSha256Sum')
 
 if __name__=='__main__': unittest.main()

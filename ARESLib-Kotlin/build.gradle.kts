@@ -51,6 +51,7 @@ allprojects {
 
 buildscript {
     repositories {
+        gradlePluginPortal()
         mavenCentral()
         google()
     }

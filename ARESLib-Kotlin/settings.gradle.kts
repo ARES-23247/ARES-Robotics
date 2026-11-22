@@ -1,3 +1,11 @@
+pluginManagement {
+    repositories {
+        gradlePluginPortal()
+        mavenCentral()
+        google()
+    }
+}
+
 // Configuration must not rewrite user-wide Gradle settings. Toolchains and the invoking IDE or
 // shell own JDK selection; fail with portable instructions when the Gradle JVM is too old.
 val currentJava = JavaVersion.current()

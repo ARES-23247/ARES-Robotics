@@ -3,7 +3,7 @@
   "scope": "Tracked production Kotlin file sizes; no review or test coverage claim.",
   "summary": {
     "totalProductionKotlinFiles": 1271,
-    "grandfatheredFiles": 24,
+    "grandfatheredFiles": 15,
     "violationsOverLimit": 0,
     "microfilesRemaining": 21,
     "maintainabilityRatchet": "PASS"
@@ -8094,7 +8094,7 @@
       "product": "ARESLib-Kotlin",
       "lines": 992,
       "lineLimit": 500,
-      "effectiveLimit": 1031,
+      "effectiveLimit": 992,
       "grandfathered": true,
       "compliant": true,
       "isMicrofile": false
@@ -8104,8 +8104,8 @@
       "product": "ARESLib-Kotlin",
       "lines": 424,
       "lineLimit": 500,
-      "effectiveLimit": 567,
-      "grandfathered": true,
+      "effectiveLimit": 500,
+      "grandfathered": false,
       "compliant": true,
       "isMicrofile": false
     },
@@ -8274,7 +8274,7 @@
       "product": "ARESLib-Kotlin",
       "lines": 597,
       "lineLimit": 500,
-      "effectiveLimit": 617,
+      "effectiveLimit": 597,
       "grandfathered": true,
       "compliant": true,
       "isMicrofile": false
@@ -8314,8 +8314,8 @@
       "product": "ARESLib-Kotlin",
       "lines": 470,
       "lineLimit": 500,
-      "effectiveLimit": 514,
-      "grandfathered": true,
+      "effectiveLimit": 500,
+      "grandfathered": false,
       "compliant": true,
       "isMicrofile": false
     },
@@ -8344,8 +8344,8 @@
       "product": "ARESLib-Kotlin",
       "lines": 480,
       "lineLimit": 500,
-      "effectiveLimit": 661,
-      "grandfathered": true,
+      "effectiveLimit": 500,
+      "grandfathered": false,
       "compliant": true,
       "isMicrofile": false
     },
@@ -9094,7 +9094,7 @@
       "product": "ARESLib-Kotlin",
       "lines": 630,
       "lineLimit": 500,
-      "effectiveLimit": 638,
+      "effectiveLimit": 630,
       "grandfathered": true,
       "compliant": true,
       "isMicrofile": false
@@ -9134,8 +9134,8 @@
       "product": "ARESLib-Kotlin",
       "lines": 301,
       "lineLimit": 500,
-      "effectiveLimit": 525,
-      "grandfathered": true,
+      "effectiveLimit": 500,
+      "grandfathered": false,
       "compliant": true,
       "isMicrofile": false
     },
@@ -9314,7 +9314,7 @@
       "product": "ARESLib-Kotlin",
       "lines": 676,
       "lineLimit": 500,
-      "effectiveLimit": 685,
+      "effectiveLimit": 676,
       "grandfathered": true,
       "compliant": true,
       "isMicrofile": false
@@ -9574,7 +9574,7 @@
       "product": "ARESLib-Kotlin",
       "lines": 967,
       "lineLimit": 500,
-      "effectiveLimit": 1056,
+      "effectiveLimit": 967,
       "grandfathered": true,
       "compliant": true,
       "isMicrofile": false
@@ -10054,8 +10054,8 @@
       "product": "ARESLib-Kotlin",
       "lines": 225,
       "lineLimit": 500,
-      "effectiveLimit": 525,
-      "grandfathered": true,
+      "effectiveLimit": 500,
+      "grandfathered": false,
       "compliant": true,
       "isMicrofile": false
     },
@@ -10394,8 +10394,8 @@
       "product": "ARESLib-Kotlin",
       "lines": 490,
       "lineLimit": 500,
-      "effectiveLimit": 669,
-      "grandfathered": true,
+      "effectiveLimit": 500,
+      "grandfathered": false,
       "compliant": true,
       "isMicrofile": false
     },
@@ -10464,7 +10464,7 @@
       "product": "ARESLib-Kotlin",
       "lines": 730,
       "lineLimit": 500,
-      "effectiveLimit": 755,
+      "effectiveLimit": 730,
       "grandfathered": true,
       "compliant": true,
       "isMicrofile": false
@@ -10494,7 +10494,7 @@
       "product": "ARESLib-Kotlin",
       "lines": 818,
       "lineLimit": 500,
-      "effectiveLimit": 825,
+      "effectiveLimit": 818,
       "grandfathered": true,
       "compliant": true,
       "isMicrofile": false
@@ -10524,8 +10524,8 @@
       "product": "ARESLib-Kotlin",
       "lines": 462,
       "lineLimit": 500,
-      "effectiveLimit": 515,
-      "grandfathered": true,
+      "effectiveLimit": 500,
+      "grandfathered": false,
       "compliant": true,
       "isMicrofile": false
     },
@@ -10844,7 +10844,7 @@
       "product": "ARESLib-Kotlin",
       "lines": 573,
       "lineLimit": 500,
-      "effectiveLimit": 574,
+      "effectiveLimit": 573,
       "grandfathered": true,
       "compliant": true,
       "isMicrofile": false
@@ -10874,8 +10874,8 @@
       "product": "ARESLib-Kotlin",
       "lines": 493,
       "lineLimit": 500,
-      "effectiveLimit": 504,
-      "grandfathered": true,
+      "effectiveLimit": 500,
+      "grandfathered": false,
       "compliant": true,
       "isMicrofile": false
     },
@@ -10944,7 +10944,7 @@
       "product": "ARESLib-Kotlin",
       "lines": 565,
       "lineLimit": 500,
-      "effectiveLimit": 566,
+      "effectiveLimit": 565,
       "grandfathered": true,
       "compliant": true,
       "isMicrofile": false
@@ -11364,7 +11364,7 @@
       "product": "ARESLib-Kotlin",
       "lines": 541,
       "lineLimit": 500,
-      "effectiveLimit": 601,
+      "effectiveLimit": 541,
       "grandfathered": true,
       "compliant": true,
       "isMicrofile": false
@@ -11842,7 +11842,7 @@
     {
       "path": "ARESLib-Kotlin/ftc-mocks/src/main/kotlin/org/firstinspires/ftc/robotcore/external/navigation/FtcNavigationMocks.kt",
       "product": "ARESLib-Kotlin",
-      "lines": 138,
+      "lines": 144,
       "lineLimit": 500,
       "effectiveLimit": 500,
       "grandfathered": false,
@@ -12124,8 +12124,8 @@
       "product": "ARESLib-Kotlin",
       "lines": 455,
       "lineLimit": 500,
-      "effectiveLimit": 621,
-      "grandfathered": true,
+      "effectiveLimit": 500,
+      "grandfathered": false,
       "compliant": true,
       "isMicrofile": false
     },
@@ -12144,7 +12144,7 @@
       "product": "ARESLib-Kotlin",
       "lines": 595,
       "lineLimit": 500,
-      "effectiveLimit": 609,
+      "effectiveLimit": 595,
       "grandfathered": true,
       "compliant": true,
       "isMicrofile": false
@@ -12244,7 +12244,7 @@
       "product": "ARESLib-Kotlin",
       "lines": 723,
       "lineLimit": 500,
-      "effectiveLimit": 757,
+      "effectiveLimit": 723,
       "grandfathered": true,
       "compliant": true,
       "isMicrofile": false
@@ -12354,7 +12354,7 @@
       "product": "ARESLib-Kotlin",
       "lines": 653,
       "lineLimit": 500,
-      "effectiveLimit": 664,
+      "effectiveLimit": 653,
       "grandfathered": true,
       "compliant": true,
       "isMicrofile": false

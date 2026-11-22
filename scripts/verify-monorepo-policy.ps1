@@ -110,13 +110,14 @@ foreach ($path in $componentProperties) {
     if ($content -match '(?m)^aresVersion\s*=') { throw "$path duplicates the canonical ARES version." }
 }
 
-# Pin Gradle wrapper distribution checksums on non-release/archive-coupled Gradle roots.
-# ARESLib-Kotlin (pinned to release/ares-source-tree.txt) and starter-archive-coupled wrappers
-# (ARES-FTC, ARES-FTC-Starter, ARES-FRC-Starter, whose contents affect release/starter-artifacts.properties)
-# will add distributionSha256Sum on the next coordinated release/starter version bump.
+# Pin Gradle wrapper distribution checksums across all six Gradle products.
 foreach ($wrapperPath in @(
-    'ARES-Analytics/gradle/wrapper/gradle-wrapper.properties',
-    'ARES-FRC/gradle/wrapper/gradle-wrapper.properties'
+    'ARESLib-Kotlin/gradle/wrapper/gradle-wrapper.properties',
+    'ARES-FTC/gradle/wrapper/gradle-wrapper.properties',
+    'ARES-FTC-Starter/gradle/wrapper/gradle-wrapper.properties',
+    'ARES-FRC/gradle/wrapper/gradle-wrapper.properties',
+    'ARES-FRC-Starter/gradle/wrapper/gradle-wrapper.properties',
+    'ARES-Analytics/gradle/wrapper/gradle-wrapper.properties'
 )) {
     $fullWrapperPath = Join-Path $root $wrapperPath
     if (-not (Test-Path -LiteralPath $fullWrapperPath -PathType Leaf)) {
