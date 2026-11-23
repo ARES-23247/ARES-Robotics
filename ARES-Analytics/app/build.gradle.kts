@@ -143,7 +143,7 @@ dependencies {
     implementation("org.apache.commons:commons-math3:3.6.1")
 
     // Logging
-    implementation("ch.qos.logback:logback-classic:1.6.7")
+    implementation("ch.qos.logback:logback-classic:1.6.8")
 
     // Testing
     testImplementation(kotlin("test"))
